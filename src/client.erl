@@ -88,25 +88,10 @@ hash(L) ->
 	crypto:hash(sha, L).
 
 
-getClientPrivate() -> hexstr2bin("60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DD"
-																"DA2D4393").
+getClientPrivate() -> <<"60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DD"
+																"DA2D4393">>.
 
 getVersion() -> '6a'.
-
-hexstr2bin(S) ->
-	list_to_binary(hexstr2list(S)).
-
-hexstr2list([X,Y|T]) ->
-	[mkint(X)*16 + mkint(Y) | hexstr2list(T)];
-hexstr2list([]) ->
-	[].
-
-mkint(C) when $0 =< C, C =< $9 ->
-	C - $0;
-mkint(C) when $A =< C, C =< $F ->
-	C - $A + 10;
-mkint(C) when $a =< C, C =< $f ->
-	C - $a + 10.
 
 
 
