@@ -13,6 +13,9 @@ init([]) ->
 				[{sockserv_sup,
 					{sockserv_sup, start_link, []},
 					transient, 10000, supervisor, [sockserv_sup]},
+				 {worldserv_sup,
+					{worldserv_sup, start_link, []},
+					transient, 10000, supervisor, [worldserv_sup]},
 				 {client,
 					{client, start_link, []},
 					transient, 10000, worker, [client]}

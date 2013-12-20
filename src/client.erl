@@ -1,12 +1,12 @@
 -module(client).
 -behavior(gen_server).
 
--record(state, {socket, bpub, generator, prime, salt}).
+-record(state, {realm_socket, world_socket, bpub, generator, prime, salt}).
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 %% api
--export([challenge/0, proof/0, realmlist/0]).
+-export([challenge/0, proof/0, realmlist/0, worldconnect/0]).
 
 -include("include/binary.hrl").
 
@@ -112,6 +112,8 @@ proof() ->
 	gen_server:cast(client, send_proof).
 realmlist() ->
 	gen_server:cast(client, request_realmlist).
+worldconnect() ->
+	gen_server:cast(client, world_connect).
 
 
 init([]) ->
@@ -128,23 +130,31 @@ handle_cast(connect, State) ->
 	{ok, Port} = application:get_env(realm_port),
 	{ok, Socket} = gen_tcp:connect({127,0,0,1}, Port, [binary, {active, true}]),
 	%io:format("CLIENT: socket connected~n"),
-	{noreply, State#state{socket=Socket}};
+	{noreply, State#state{realm_socket=Socket}};
 handle_cast(challenge, State) ->
 	I = getUsername(),
 	Msg = buildChallengeMessage(I),
-	gen_tcp:send(State#state.socket, Msg),
+	gen_tcp:send(State#state.realm_socket, Msg),
 	{noreply, State};
 handle_cast(send_proof, State) ->
 	Msg = buildProofMessage(State),
-	gen_tcp:send(State#state.socket, Msg),
+	gen_tcp:send(State#state.realm_socket, Msg),
 	{noreply, State};
 handle_cast(request_realmlist, State) ->
 	Msg = buildRealmlistMessage(),
-	gen_tcp:send(State#state.socket, Msg),
+	gen_tcp:send(State#state.realm_socket, Msg),
 	{noreply, State};
+handle_cast(world_connect, State) ->
+	{ok, Port} = application:get_env(world_port),
+	{ok, Socket} = gen_tcp:connect({127,0,0,1}, Port, [binary, {active, true}]),
+	io:format("client connecting to world server~n"),
+	{noreply, State#state{world_socket=Socket}};
 handle_cast(_Msg, State) ->
 	{noreply, State}.
 
+handle_info({tcp, _Socket, <<492?W, Msg/binary>>}, State) ->
+	io:format("CLIENT: received world challenge response: ~p~n", [Msg]),
+	{noreply, State};
 handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	io:format("CLIENT: received challenge response~n"),
 	<<_Err?B,
@@ -170,6 +180,7 @@ handle_info({tcp, _Socket, <<1?B, _Msg/binary>>}, State) ->
 	{noreply, State};
 handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State) ->
 	io:format("CLIENT: received realmlist response~n"),
+	worldconnect(),
 	{noreply, State};
 handle_info({tcp, _Socket, Msg}, State) ->
 	io:format("CLIENT: received unexpected tcp response: ~p~n", [Msg]),
@@ -183,8 +194,10 @@ code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
 terminate(shutdown, State) ->
-	io:format("CLIENT: closing connected socket~n"),
-	gen_tcp:close(State#state.socket),
+	io:format("CLIENT: closing connected realm_socket~n"),
+	catch gen_tcp:close(State#state.realm_socket),
+	io:format("CLIENT: closing connected world_socket~n"),
+	catch gen_tcp:close(State#state.world_socket),
 	ok;
 terminate(_Reason, _State) ->
 	ok.

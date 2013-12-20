@@ -19,7 +19,7 @@ start_link(Socket) ->
 	gen_server:start_link(?MODULE, Socket, []).
 
 init(Socket) ->
-	io:format("SERVER: started~n"),
+	io:format("login SERVER: started~n"),
 	gen_server:cast(self(), accept),
 	{ok, #state{socket=Socket}}.
 
