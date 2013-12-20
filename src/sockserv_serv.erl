@@ -41,6 +41,10 @@ handle_cast(send_challenge, State = #state{socket=Socket}) ->
 handle_cast(send_proof, State = #state{socket=Socket, m1=M1, apub=Apub}) ->
 	Msg = build_proof_response(M1, Apub),
 	gen_tcp:send(Socket, Msg),
+	{noreply, State};
+handle_cast(send_realmlist, State=#state{socket=Socket}) ->
+	Msg = build_realmlist_response(),
+	gen_tcp:send(Socket, Msg),
 	{noreply, State}.
 
 handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
@@ -67,6 +71,11 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State) ->
 	{Apub, M1} = extract_proof(Msg),
 	gen_server:cast(self(), send_proof),
 	{noreply, State#state{apub=Apub, m1=M1}};
+handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State) ->
+	ok = inet:setopts(State#state.socket, [{active, once}]),
+	io:format("SERVER: received realmlist req~n"),
+	gen_server:cast(self(), send_realmlist),
+	{noreply, State};
 handle_info(_Msg, State) ->
 	{noreply, State}.
 
@@ -118,6 +127,27 @@ build_proof_response(M1_client, Apub) ->
 				 M2,
 				 _Flags = <<0?B>>],
 	Msg.
+
+build_realmlist_response() ->
+	Realms = [
+						_Icon = <<1?B>>,
+						_Lock = <<0?B>>,
+						_Status = <<1?B>>,
+						_RealmId = <<1?L>>,
+						_RealmName = <<"cool realm">>,
+						_Ip = <<"127.0.0.1">>,
+						_Pop = <<500?B>>,
+						_Chars = <<2?B>>,
+						_TZ = <<1?B>>,
+						_Unk = <<16#15?B>>
+					 ],
+	Msg = [_Cmd = <<16?B>>,
+				 _Size = <<1?W>>,
+				 _Start = <<1?L>>,
+				 _realms = <<1?W>>,
+				 Realms],
+	Msg.
+
 
 extract_username(Msg) ->
 		<<_Err?B,

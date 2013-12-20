@@ -9,7 +9,7 @@ start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-	{ok, Port} = application:get_env(port),
+	{ok, Port} = application:get_env(realm_port),
 	{ok, ListenSocket} = gen_tcp:listen(Port, [{active,once}, binary]),
 	spawn_link(fun empty_listeners/0),
 	{ok, {{simple_one_for_one, 60, 3600},

@@ -6,7 +6,7 @@
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 %% api
--export([challenge/0, proof/0]).
+-export([challenge/0, proof/0, realmlist/0]).
 
 -include("include/binary.hrl").
 
@@ -52,6 +52,11 @@ buildProofMessage(State) ->
 	 _Crc_hash = <<0?SH>>,
 	 _Num_keys = <<0?B>>,
 	 _Unk = <<0?B>>
+	].
+
+buildRealmlistMessage() ->
+	[_Cmd = <<16?B>>,
+	 _unk = <<"abcde">>
 	].
 
 getM(Apub, Bpub, Skey, P, G, Salt) ->
@@ -105,6 +110,8 @@ challenge() ->
 	gen_server:cast(client, challenge).
 proof() ->
 	gen_server:cast(client, send_proof).
+realmlist() ->
+	gen_server:cast(client, request_realmlist).
 
 
 init([]) ->
@@ -118,7 +125,7 @@ handle_call(_E, _From, State) ->
 
 handle_cast(connect, State) ->
 	process_flag(trap_exit, true),
-	{ok, Port} = application:get_env(port),
+	{ok, Port} = application:get_env(realm_port),
 	{ok, Socket} = gen_tcp:connect({127,0,0,1}, Port, [binary, {active, true}]),
 	%io:format("CLIENT: socket connected~n"),
 	{noreply, State#state{socket=Socket}};
@@ -129,6 +136,10 @@ handle_cast(challenge, State) ->
 	{noreply, State};
 handle_cast(send_proof, State) ->
 	Msg = buildProofMessage(State),
+	gen_tcp:send(State#state.socket, Msg),
+	{noreply, State};
+handle_cast(request_realmlist, State) ->
+	Msg = buildRealmlistMessage(),
 	gen_tcp:send(State#state.socket, Msg),
 	{noreply, State};
 handle_cast(_Msg, State) ->
@@ -151,16 +162,18 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	Generator = <<Generator_raw?B>>,
 	Prime = <<Prime_raw:1024>>,
 	Salt = <<Salt_raw:128>>,
+	proof(),
 	{noreply, State#state{bpub=Bpub,generator=Generator,prime=Prime,salt=Salt}};
 handle_info({tcp, _Socket, <<1?B, _Msg/binary>>}, State) ->
 	io:format("CLIENT: received proof response~n"),
+	realmlist(),
+	{noreply, State};
+handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State) ->
+	io:format("CLIENT: received realmlist response~n"),
 	{noreply, State};
 handle_info({tcp, _Socket, Msg}, State) ->
 	io:format("CLIENT: received unexpected tcp response: ~p~n", [Msg]),
 	{noreply, State};
-handle_info(quit, State) ->
-	io:format("CLIENT: received quit resonse"),
-	{stop, normal, State};
 handle_info(Msg, State) ->
 	io:format("CLIENT: received unexpected response: ~p~n", [Msg]),
 	{noreply, State}.
