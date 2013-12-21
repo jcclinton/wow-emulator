@@ -23,7 +23,7 @@ buildChallengeMessage(I) ->
 	[_Cmd = <<0?B>>,
 	_Err = <<1?B>>,
 	_Size = <<S?W>>,
-	_GameName = <<"WoWo">>,
+	_GameName = [<<"WoW">>, <<$\0>>],
 	_V1 = <<2?B>>,
 	_V2 = <<4?B>>,
 	_V3 = <<3?B>>,
@@ -184,6 +184,10 @@ handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State) ->
 	{noreply, State};
 handle_info({tcp, _Socket, Msg}, State) ->
 	io:format("CLIENT: received unexpected tcp response: ~p~n", [Msg]),
+	{noreply, State};
+handle_info(upgrade, State) ->
+	%% loads latest code
+	?MODULE:handle_info(do_upgrade, State),
 	{noreply, State};
 handle_info(Msg, State) ->
 	io:format("CLIENT: received unexpected response: ~p~n", [Msg]),

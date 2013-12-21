@@ -16,7 +16,7 @@
 
 
 start_link(Socket) ->
-	gen_server:start_link(?MODULE, Socket, []).
+	gen_server:start_link({local, ?MODULE}, ?MODULE, Socket, []).
 
 init(Socket) ->
 	io:format("login SERVER: started~n"),
@@ -76,11 +76,16 @@ handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State) ->
 	io:format("SERVER: received realmlist req~n"),
 	gen_server:cast(self(), send_realmlist),
 	{noreply, State};
+handle_info(upgrade, State) ->
+	%% loads latest code
+	?MODULE:handle_info(do_upgrade, State),
+	{noreply, State};
 handle_info(_Msg, State) ->
 	{noreply, State}.
 
 
 code_change(_OldVsn, State, _Extra) ->
+	io:format("code change~n"),
 	{ok, State}.
 
 terminate(normal, _State) ->
@@ -129,24 +134,51 @@ build_proof_response(M1_client, Apub) ->
 	Msg.
 
 build_realmlist_response() ->
+	{ok, Port} = application:get_env(world_port),
+	PortBin = binary_list_from_integer(Port),
+	Ip = [<<1?B>>,
+				<<2?B>>,
+				<<7?B>>,
+				<<$.>>,
+				<<0?B>>,
+				<<$.>>,
+				<<0?B>>,
+				<<$.>>,
+				<<1?B>>,
+				<<$:>>,
+				PortBin,
+				<<$\0>>
+			 ],
 	Realms = [
 						_Icon = <<1?B>>,
 						_Lock = <<0?B>>,
 						_Status = <<1?B>>,
 						_RealmId = <<1?L>>,
-						_RealmName = <<"cool realm">>,
-						_Ip = <<"127.0.0.1">>,
-						_Pop = <<500?B>>,
+						_RealmName = [<<"cool realm">>, <<$\0>>],
+						Ip,
+						_Pop = <<1?B>>,
 						_Chars = <<2?B>>,
 						_TZ = <<1?B>>,
 						_Unk = <<16#15?B>>
 					 ],
-	Msg = [_Cmd = <<16?B>>,
+	Msg = [_Cmd = <<16#10?B>>,
 				 _Size = <<1?W>>,
-				 _Start = <<1?L>>,
+				 _Start = <<0?L>>,
 				 _realms = <<1?W>>,
 				 Realms],
 	Msg.
+
+%% example 1234 -> [<<1>>, <<2>>, <<3>>, <<4>>]
+binary_list_from_integer(Int) ->
+	binary_list_from_integer(Int, [], 10).
+
+binary_list_from_integer(Int, List, Digit) ->
+	TotalRem = Int rem Digit,
+	Rem = TotalRem div (Digit div 10),
+	List2 = [<<Rem?B>> | List],
+	if TotalRem == Int -> List2;
+		 TotalRem /= Int -> binary_list_from_integer(Int, List2, Digit * 10)
+	end.
 
 
 extract_username(Msg) ->
