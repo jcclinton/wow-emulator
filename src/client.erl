@@ -59,6 +59,11 @@ buildRealmlistMessage() ->
 	 _unk = <<"abcde">>
 	].
 
+build_world_challenge_response(_Seed) ->
+	Msg = [],
+	Size = size(Msg),
+	[<<Size?WO>>, Msg].
+
 getM(Apub, Bpub, Skey, P, G, Salt) ->
 	I = getUsername(),
 	P1 = crypto:exor(hash(P), hash(G)),
@@ -152,8 +157,9 @@ handle_cast(world_connect, State) ->
 handle_cast(_Msg, State) ->
 	{noreply, State}.
 
-handle_info({tcp, _Socket, <<492?W, Msg/binary>>}, State) ->
-	io:format("CLIENT: received world challenge response: ~p~n", [Msg]),
+handle_info({tcp, Socket, <<_HdrLen?WO, 492?W, Seed/binary>>}, State) when Socket == State#state.world_socket ->
+	io:format("CLIENT: received world challenge response: ~p~n", [Seed]),
+	Msg = build_world_challenge_response(Seed),
 	{noreply, State};
 handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	io:format("CLIENT: received challenge response~n"),
