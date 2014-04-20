@@ -15,12 +15,16 @@
 %%
 %%
 %%private
-getUsername() -> <<"jcclinton24">>.
-getPassword() -> <<"abc123">>.
+getUsername() ->
+	<<"androsynth">>.
+
+getPassword() ->
+	<<"Poners2431!">>.
+
 
 buildChallengeMessage(I) ->
 	ILen = erlang:byte_size(I),
-	S = 4 + 3 + 2 + 4 + 4 + 4 + 1 + ILen,
+	S = 4 + 4 + 4 + 3 + 2 + 4 + 4 + 4 + 1 + ILen,
 	[_Cmd = <<0?B>>,
 	_Err = <<1?B>>,
 	_Size = <<S?W>>,
@@ -30,6 +34,8 @@ buildChallengeMessage(I) ->
 	_V3 = <<3?B>>,
 	_Build = <<12345?W>>,
 	_Platform = <<"68xx">>,
+	_Os = <<"osxx">>,
+	_Country = <<"usoa">>,
 	_TzBias = <<60?L>>,
 	_Ip = <<0?L>>,
 	_ILen = <<ILen?B>>,
@@ -106,10 +112,11 @@ hash(L) ->
 	crypto:hash(sha, L).
 
 
-getClientPrivate() -> <<"60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DD"
-																"DA2D4393">>.
+%getClientPrivate() -> <<"60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DDDA2D4393">>.
+getClientPrivate() -> logon_lib:getClientPrivate().
 
-getVersion() -> '6a'.
+%getVersion() -> '6'.
+getVersion() -> logon_lib:getVersion().
 
 
 
@@ -185,19 +192,20 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	io:format("CLIENT: received challenge response~n"),
 	<<_Err?B,
 		_Unk2?B,
-		Bpub_raw:1024,
+		Bpub_raw?QQ,
 		_GLen?B,
 		Generator_raw?B,
 		_NLen?B,
-		Prime_raw:1024,
-		Salt_raw:128,
-		_Unk3?W,
-		_Unk4?W>> = Msg,
+		Prime_raw?QQ,
+		Salt_raw?QQ,
+		_Unk3?QH,
+		_Unk4?B>> = Msg,
+
 	%gen_server:cast(self(), send_proof),
-	Bpub = <<Bpub_raw:1024>>,
+	Bpub = <<Bpub_raw?QQ>>,
 	Generator = <<Generator_raw?B>>,
-	Prime = <<Prime_raw:1024>>,
-	Salt = <<Salt_raw:128>>,
+	Prime = <<Prime_raw?QQ>>,
+	Salt = <<Salt_raw?QQ>>,
 	proof(),
 	{noreply, State#state{bpub=Bpub,generator=Generator,prime=Prime,salt=Salt}};
 handle_info({tcp, _Socket, <<1?B, _Msg/binary>>}, State) ->

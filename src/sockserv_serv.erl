@@ -11,6 +11,8 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
+-compile([export_all]).
+
 
 -include("include/binary.hrl").
 
@@ -36,6 +38,7 @@ handle_cast(accept, S = #state{socket=ListenSocket}) ->
 	{noreply, S#state{socket=AcceptSocket}};
 handle_cast(send_challenge, State = #state{socket=Socket}) ->
 	Msg = build_challenge_response(),
+	io:format("sending chal resp: ~p~n", [Msg]),
 	gen_tcp:send(Socket, Msg),
 	{noreply, State};
 handle_cast(send_proof, State = #state{socket=Socket, m1=M1, apub=Apub}) ->
@@ -46,6 +49,7 @@ handle_cast(send_proof, State = #state{socket=Socket, m1=M1, apub=Apub}) ->
 	SKey = logon_lib:computeServerKey(Apub),
 	Key = logon_lib:hash(SKey),
 	ets:insert(connected_clients, {StringName, Key}),
+	io:format("SERVER: sending proof response~n"),
 	gen_tcp:send(Socket, Msg),
 	{noreply, State};
 handle_cast(send_realmlist, State=#state{socket=Socket}) ->
@@ -68,7 +72,7 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	end,
 	io:format("SERVER: received challenge~n"),
 	%io:format("SERVER: received: ~p~n", [Msg]),
-	%io:format("SERVER: received name: ~p~n", [I]),
+	io:format("SERVER: received name: ~p~n", [I]),
 	gen_server:cast(self(), send_challenge),
 	{noreply, State#state{identity=I}};
 handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State) ->
@@ -81,6 +85,10 @@ handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State) ->
 	ok = inet:setopts(State#state.socket, [{active, once}]),
 	io:format("SERVER: received realmlist req~n"),
 	gen_server:cast(self(), send_realmlist),
+	{noreply, State};
+handle_info({tcp, _Socket, Msg}, State) ->
+	ok = inet:setopts(State#state.socket, [{active, once}]),
+	io:format("SERVER: received unknown tcp message: ~p~n", [Msg]),
 	{noreply, State};
 handle_info(upgrade, State) ->
 	%% loads latest code
@@ -101,6 +109,127 @@ terminate(_Reason, _State) ->
 
 
 %% private
+build_challenge_response2() -> <<16#00?B,
+16#00?B,
+16#00?B,
+16#59?B,
+16#93?B,
+16#ab?B,
+16#5a?B,
+16#84?B,
+16#40?B,
+16#a8?B,
+16#e0?B,
+16#79?B,
+16#67?B,
+16#82?B,
+16#eb?B,
+16#7d?B,
+16#e5?B,
+16#0f?B,
+16#8c?B,
+16#1b?B,
+16#73?B,
+16#82?B,
+16#46?B,
+16#e7?B,
+16#cb?B,
+16#87?B,
+16#7d?B,
+16#49?B,
+16#08?B,
+16#3a?B,
+16#d9?B,
+16#fc?B,
+16#9f?B,
+16#b8?B,
+16#3b?B,
+16#01?B,
+16#07?B,
+16#20?B,
+16#b7?B,
+16#9b?B,
+16#3e?B,
+16#2a?B,
+16#87?B,
+16#82?B,
+16#3c?B,
+16#ab?B,
+16#8f?B,
+16#5e?B,
+16#bf?B,
+16#bf?B,
+16#8e?B,
+16#b1?B,
+16#01?B,
+16#08?B,
+16#53?B,
+16#50?B,
+16#06?B,
+16#29?B,
+16#8b?B,
+16#5b?B,
+16#ad?B,
+16#bd?B,
+16#5b?B,
+16#53?B,
+16#e1?B,
+16#89?B,
+16#5e?B,
+16#64?B,
+16#4b?B,
+16#89?B,
+16#b3?B,
+16#d4?B,
+16#7d?B,
+16#c4?B,
+16#01?B,
+16#09?B,
+16#ba?B,
+16#25?B,
+16#45?B,
+16#90?B,
+16#96?B,
+16#ab?B,
+16#dd?B,
+16#0b?B,
+16#fb?B,
+16#bc?B,
+16#32?B,
+16#66?B,
+16#d5?B,
+16#b2?B,
+16#dc?B,
+16#f5?B,
+16#2e?B,
+16#b5?B,
+16#86?B,
+16#d2?B,
+16#d2?B,
+16#e6?B,
+16#12?B,
+16#af?B,
+16#dd?B,
+16#84?B,
+16#63?B,
+16#59?B,
+16#66?B,
+16#9b?B,
+16#9d?B,
+16#9d?B,
+16#97?B,
+16#92?B,
+16#aa?B,
+16#6d?B,
+16#34?B,
+16#c8?B,
+16#29?B,
+16#0d?B,
+16#74?B,
+16#9d?B,
+16#00?B
+>>.
+
 build_challenge_response() ->
 	B = logon_lib:getServerPublic(),
 	G = logon_lib:getGenerator(),
@@ -108,10 +237,11 @@ build_challenge_response() ->
 	S = logon_lib:getSalt(),
 	GLen = erlang:byte_size(G),
 	NLen = erlang:byte_size(N),
-	%io:format("bsize: ~p~n", [erlang:byte_size(B)]),
+	io:format("bsize: ~p~n", [erlang:byte_size(B)]),
 	%io:format("gsize: ~p~n", [erlang:byte_size(G)]),
-	%io:format("nsize: ~p~n", [erlang:byte_size(N)]),
-	%io:format("ssize: ~p~n", [erlang:byte_size(S)]),
+	io:format("nsize: ~p~n", [erlang:byte_size(N)]),
+	io:format("ssize: ~p~n", [erlang:byte_size(S)]),
+	Unk3 = <<16#0123456789ABCDEF?QH>>,
 	Msg = [_Cmd = <<0?B>>,
 					_Err = <<0?B>>,
 					_Unk2 = <<0?B>>,
@@ -121,15 +251,19 @@ build_challenge_response() ->
 					<<NLen?B>>,
 					N,
 					S,
-					_Unk3 = <<0?W>>,
-					_Unk4 = <<0?W>>
+					Unk3,
+					_Unk4 = <<0?B>>
 				],
+
+	Size = lists:foldl(fun(Elem, Acc) -> Acc + size(Elem) end, 0, Msg),
+	io:format("response size: ~p~n", [Size]),
 	Msg.
 
 build_proof_response(M1_client, Apub) ->
 	Bpub = logon_lib:getServerPublic(),
 	Skey = logon_lib:computeServerKey(Apub),
 	M1_server = logon_lib:getM(Apub, Bpub, Skey),
+	%io:format("m server: ~p~n~nm client: ~p~n~n", [M1_server, M1_client]),
 	M1_client = M1_server,
 	K = logon_lib:hash([Skey]),
 	M2 = logon_lib:hash([Apub, M1_server, K]),
@@ -196,6 +330,8 @@ extract_username(Msg) ->
 		_V3?B,
 		_Build?W,
 		_Platform?L,
+		_OS?L,
+		_Country?L,
 		_TzBias?L,
 		_Ip?L,
 		ILen?B,
@@ -220,11 +356,11 @@ extract_username(Msg) ->
 		Iout.
 
 extract_proof(Msg) ->
-	<<Apub_raw:1024,
+	<<Apub_raw?QQ,
 		M1_raw?SH,
 		_Crc_hash?SH,
 		_Num_keys?B,
 		_Unk?B>> = Msg,
-	Apub = <<Apub_raw:1024>>,
+	Apub = <<Apub_raw?QQ>>,
 	M1 = <<M1_raw?SH>>,
 	{Apub, M1}.

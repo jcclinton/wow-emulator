@@ -4,6 +4,8 @@
 -define(IB, /unsigned-big-integer).
 -define(b, /bytes).
 -define(f, :32/float-little).
+-define(QQ, :256?IL).
+-define(QH, :128?IL).
 -define(SH, :160?IL). % sha1
 -define(Q, :64?IL). % quad
 -define(L, :32?IL). % long

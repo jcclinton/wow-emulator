@@ -53,6 +53,7 @@ handle_info({tcp, _Socket, <<_Length?WO, 493?L, Msg/binary>>}, State) ->
 	gen_tcp:send(State#state.socket, <<EncryptedHeader/binary, ResponseData/binary>>),
 	{noreply, State#state{socket=State#state.socket, keyState=NewKeyTup}};
 handle_info({tcp, _Socket, Msg}, State) ->
+	ok = inet:setopts(State#state.socket, [{active, once}]),
 	io:format("world server: received unexpected tcp response: ~p~n", [Msg]),
 	{noreply, State};
 handle_info(Msg, State) ->
