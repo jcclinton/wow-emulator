@@ -41,16 +41,17 @@ handle_cast(_Msg, State) ->
 	{noreply, State}.
 
 
-handle_info({tcp, _Socket, <<Length?WO, Opcode?L, Msg/binary>>}, State) ->
+handle_info({tcp, _Socket, <<_Length?WO, 493?L, Msg/binary>>}, State) ->
 	ok = inet:setopts(State#state.socket, [{active, once}]),
 	io:format("world SERVER: received client auth session~n"),
-	{ResponseName, ResponseData, AccountId, Key1, Key2} = auth_session(Msg),
+	{_ResponseName, ResponseData, _AccountId, Key1, _Key2} = auth_session(Msg),
 	ResponseOpCode = 494,
 	Size = size(ResponseData) + 2,
-	Header = <<Size:WO, ResponseOpCode?W>>,
-	{EncryptedHeader, NewKey} = realm_crypto:encrypt(Header, Key1),
-	gen_tcp:send(State#state.socket, <<EncryptedHeader/binary, ResponseData/binary>>,
-	{noreply, S#state{socket=State#state.socket, key=NewKey}};
+	Header = <<Size?WO, ResponseOpCode?W>>,
+	Key = #crypt_state{i=0, j=0, key=Key1},
+	{EncryptedHeader, NewKey} = world_crypto:encrypt(Header, Key),
+	gen_tcp:send(State#state.socket, <<EncryptedHeader/binary, ResponseData/binary>>),
+	{noreply, State#state{socket=State#state.socket, key=NewKey}};
 handle_info({tcp, _Socket, Msg}, State) ->
 	io:format("world server: received unexpected tcp response: ~p~n", [Msg]),
 	{noreply, State};
@@ -74,8 +75,8 @@ auth_session(Rest) ->
     K      = world_crypto:encryption_key(A),
     EK     = #crypt_state{i=0, j=0, key=K},
     DK     = #crypt_state{i=0, j=0, key=K},
-    {ok, Account} = find_by_name(A),
-    {smsg_auth_response, Data, Account#account.id, EK, DK}.
+		AccountId = logon_lib:getUsername(),
+    {smsg_auth_response, Data, AccountId, EK, DK}.
 
 cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
     {Account, Key} = cmsg_auth_session_extract(Rest, ""),
@@ -89,15 +90,8 @@ cmsg_auth_session_extract(<<Letter?B, Rest/binary>>, Account) ->
     cmsg_auth_session_extract(Rest, Account ++ [Letter]).
 
 smsg_auth_response() ->
-    <<12?B, 0?L, 0?B, 0?L, 1?B>>
+    <<12?B, 0?L, 0?B, 0?L, 1?B>>.
 
-find_by_name(Name) ->
-    Result = do(qlc:q([X || X <- mnesia:table(account),
-                            X#account.name =:= Name])),
-    case Result of
-    [Account] -> {ok, Account};
-    _ -> {error, not_found}
-    end.
 
 
 %% private
@@ -105,8 +99,8 @@ buildAuthChallenge() ->
 	Opcode = 492,
 	Seed   = random:uniform(16#FFFFFFFF),
 	Msg = [
-	 <<Opcode?W>>,
-	 <<Seed?L>>
+	 O = <<Opcode?W>>,
+	 S = <<Seed?L>>
 	],
-	Length = <<size(Msg):WO>>,
-	[Length, Msg].
+	Length = size(O) + size(S),
+	[<<Length?WO>>, Msg].

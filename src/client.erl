@@ -9,6 +9,7 @@
 -export([challenge/0, proof/0, realmlist/0, worldconnect/0]).
 
 -include("include/binary.hrl").
+-include("include/world_records.hrl").
 
 %%
 %%
@@ -60,9 +61,16 @@ buildRealmlistMessage() ->
 	].
 
 build_world_challenge_response(_Seed) ->
-	Msg = [],
-	Size = size(Msg),
-	[<<Size?WO>>, Msg].
+	Build = <<1?L>>,
+	Unk = <<1?L>>,
+	AccountName = getUsername(),
+	Null = <<0?B>>,
+	Rest = [AccountName, Null],
+	Msg = [Build, Unk, Rest],
+	Opcode = 493,
+	Size = size(Build) + size(Unk) + size(AccountName) + size(Null) + 4,
+	Header = [<<Size?WO>>, <<Opcode?L>>],
+	[Header, Msg].
 
 getM(Apub, Bpub, Skey, P, G, Salt) ->
 	I = getUsername(),
@@ -160,6 +168,18 @@ handle_cast(_Msg, State) ->
 handle_info({tcp, Socket, <<_HdrLen?WO, 492?W, Seed/binary>>}, State) when Socket == State#state.world_socket ->
 	io:format("CLIENT: received world challenge response: ~p~n", [Seed]),
 	Msg = build_world_challenge_response(Seed),
+	gen_tcp:send(State#state.world_socket, Msg),
+	{noreply, State};
+handle_info({tcp, Socket, Msg = <<Header?L, _Rest/binary>>}, State) when Socket == State#state.world_socket ->
+	io:format("CLIENT: received encrypted world tcp response: ~p~n", [Msg]),
+	A = binary_to_list(getUsername()),
+	Key1 = world_crypto:encryption_key(A),
+	Key = #crypt_state{i=0, j=0, key=Key1},
+	<<Length?W, Opcode?W>> = world_crypto:decrypt(Header, Key),
+	io:format("CLIENT: received encrypted message with size ~p and opcode: ~p~n", [Length, Opcode]),
+	{noreply, State};
+handle_info({tcp, Socket, Msg}, State) when Socket == State#state.world_socket ->
+	io:format("CLIENT: received unexpected world tcp response: ~p~n", [Msg]),
 	{noreply, State};
 handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	io:format("CLIENT: received challenge response~n"),
