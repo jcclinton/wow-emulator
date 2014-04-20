@@ -1,7 +1,7 @@
 -module(client).
 -behavior(gen_server).
 
--record(state, {realm_socket, world_socket, bpub, generator, prime, salt}).
+-record(state, {realm_socket, world_socket, bpub, generator, prime, salt, keyState}).
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
@@ -169,15 +169,15 @@ handle_info({tcp, Socket, <<_HdrLen?WO, 492?W, Seed/binary>>}, State) when Socke
 	io:format("CLIENT: received world challenge response: ~p~n", [Seed]),
 	Msg = build_world_challenge_response(Seed),
 	gen_tcp:send(State#state.world_socket, Msg),
-	{noreply, State};
-handle_info({tcp, Socket, Msg = <<Header?L, _Rest/binary>>}, State) when Socket == State#state.world_socket ->
-	io:format("CLIENT: received encrypted world tcp response: ~p~n", [Msg]),
 	A = binary_to_list(getUsername()),
-	Key1 = world_crypto:encryption_key(A),
-	Key = #crypt_state{i=0, j=0, key=Key1},
-	<<Length?W, Opcode?W>> = world_crypto:decrypt(Header, Key),
+	Key = world_crypto:encryption_key(A),
+	KTup = {0, 0, Key},
+	{noreply, State#state{keyState=KTup}};
+handle_info({tcp, Socket, Msg = <<EncryptedLength?WO, EncryptedOpcode?W, _Rest/binary>>}, State) when Socket == State#state.world_socket ->
+	io:format("CLIENT: received encrypted world tcp response: ~p~n", [Msg]),
+	{<<Length?WO, Opcode?W>>, NewKTup} = world_crypto:decrypt(<<EncryptedLength?WO, EncryptedOpcode?W>>, State#state.keyState),
 	io:format("CLIENT: received encrypted message with size ~p and opcode: ~p~n", [Length, Opcode]),
-	{noreply, State};
+	{noreply, State#state{keyState=NewKTup}};
 handle_info({tcp, Socket, Msg}, State) when Socket == State#state.world_socket ->
 	io:format("CLIENT: received unexpected world tcp response: ~p~n", [Msg]),
 	{noreply, State};

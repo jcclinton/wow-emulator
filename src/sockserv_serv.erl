@@ -43,7 +43,9 @@ handle_cast(send_proof, State = #state{socket=Socket, m1=M1, apub=Apub}) ->
 	Name = logon_lib:getUsername(),
 	Msg = build_proof_response(M1, Apub),
 	StringName = binary_to_list(Name),
-	ets:insert(connected_clients, {StringName, M1}),
+	SKey = logon_lib:computeServerKey(Apub),
+	Key = logon_lib:hash(SKey),
+	ets:insert(connected_clients, {StringName, Key}),
 	gen_tcp:send(Socket, Msg),
 	{noreply, State};
 handle_cast(send_realmlist, State=#state{socket=Socket}) ->

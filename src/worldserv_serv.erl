@@ -3,7 +3,7 @@
 
 -record(state, {
 					socket,
-					key
+					keyState
 							 }).
 
 
@@ -34,7 +34,7 @@ handle_cast(accept, S = #state{socket=ListenSocket}) ->
 	{noreply, S#state{socket=AcceptSocket}};
 handle_cast(connected, State) ->
 	Msg = buildAuthChallenge(),
-	io:format("world SERVER: building auth message: ~p~n", [Msg]),
+	%io:format("world SERVER: building auth message: ~p~n", [Msg]),
 	gen_tcp:send(State#state.socket, Msg),
 	{noreply, State};
 handle_cast(_Msg, State) ->
@@ -44,14 +44,14 @@ handle_cast(_Msg, State) ->
 handle_info({tcp, _Socket, <<_Length?WO, 493?L, Msg/binary>>}, State) ->
 	ok = inet:setopts(State#state.socket, [{active, once}]),
 	io:format("world SERVER: received client auth session~n"),
-	{_ResponseName, ResponseData, _AccountId, Key1, _Key2} = auth_session(Msg),
+	{_ResponseName, ResponseData, _AccountId, KTup} = auth_session(Msg),
 	ResponseOpCode = 494,
 	Size = size(ResponseData) + 2,
 	Header = <<Size?WO, ResponseOpCode?W>>,
-	Key = #crypt_state{i=0, j=0, key=Key1},
-	{EncryptedHeader, NewKey} = world_crypto:encrypt(Header, Key),
+	io:format("SERVER: sending encrypted message with size ~p and opcode: ~p~n", [Size, ResponseOpCode]),
+	{EncryptedHeader, NewKeyTup} = world_crypto:encrypt(Header, KTup),
 	gen_tcp:send(State#state.socket, <<EncryptedHeader/binary, ResponseData/binary>>),
-	{noreply, State#state{socket=State#state.socket, key=NewKey}};
+	{noreply, State#state{socket=State#state.socket, keyState=NewKeyTup}};
 handle_info({tcp, _Socket, Msg}, State) ->
 	io:format("world server: received unexpected tcp response: ~p~n", [Msg]),
 	{noreply, State};
@@ -73,10 +73,9 @@ auth_session(Rest) ->
     {_, A, _}      = cmsg_auth_session(Rest),
     Data   = smsg_auth_response(),
     K      = world_crypto:encryption_key(A),
-    EK     = #crypt_state{i=0, j=0, key=K},
-    DK     = #crypt_state{i=0, j=0, key=K},
+    KTup     = {0, 0, K},
 		AccountId = logon_lib:getUsername(),
-    {smsg_auth_response, Data, AccountId, EK, DK}.
+    {smsg_auth_response, Data, AccountId, KTup}.
 
 cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
     {Account, Key} = cmsg_auth_session_extract(Rest, ""),

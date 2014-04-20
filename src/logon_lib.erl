@@ -112,7 +112,7 @@ test() ->
 	ServerPublic = getServerPublic(),
 	ClientKey = computeClientKey(ServerPublic),
 	ServerKey = computeServerKey(ClientPublic),
-	ClientKey == ServerKey.
+	hash(ClientKey) == hash(ServerKey).
 
 
 
