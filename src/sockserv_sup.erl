@@ -13,9 +13,9 @@ init([]) ->
 	{ok, ListenSocket} = gen_tcp:listen(Port, [{active,once}, binary]),
 	spawn_link(fun empty_listeners/0),
 	{ok, {{simple_one_for_one, 60, 3600},
-				[{socket,
-					{sockserv_serv, start_link, [ListenSocket]},
-					transient, 1000, worker, [sockserv_serv]}
+				[{socket_user_sup,
+					{sockserv_user_sup, start_link, [ListenSocket]},
+					transient, 1000, supervison, [sockserv_user_sup]}
 				]}}.
 
 
