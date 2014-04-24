@@ -4,7 +4,8 @@
 -record(state, {
   user,
   sess_key,
-  parent_pid
+  parent_pid,
+  send_pid
 							 }).
 -record(user, {
   pos
@@ -27,8 +28,14 @@ init({ParentPid, SKey}) ->
 	{ok, #state{user=#user{}, parent_pid=ParentPid, sess_key=SKey}}.
 
 
+%% receiver has accepted connection
+%% start send process
+handle_call({tcp_accept_socket, Socket}, S = #state{user=User, sess_key=SKey, parent_pid=ParentPid}) ->
+	SendSupPid = get_sibling_pid(ParentPid, sockserv_send_sup),
+	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, SKey]),
+	{noreply, S#state{send_pid=SendPid}};
 handle_call(_E, _From, State) ->
-	{noreply, State}.
+	{reply, ok, State}.
 
 %% initialize controller
 %% start rcv process
@@ -36,20 +43,18 @@ handle_cast(init, S = #state{parent_pid=ParentPid, sess_key=SKey}) ->
 	RcvSupPid = get_sibling_pid(ParentPid, sockserv_rcv_sup),
 	supervisor:start_child(RcvSupPid, [SKey, self(), ParentPid]).
 	{noreply, S};
-%% receiver has accepted connection
-%% start send process
-handle_cast({tcp_accept_socket, Socket}, S = #state{user=User, sess_key=SKey, parent_pid=ParentPid}) ->
-	SendSupPid = get_sibling_pid(ParentPid, sockserv_send_sup),
-	supervisor:start_child(SendSupPid, [Socket, SKey]),
-	{noreply, S};
 handle_cast({tcp_packet_rcvd, {Opcode?WO, Payload/binary}}, S = #state{user=User}) ->
 	{M, F} = opcode_patterns:lookup_function(Opcode),
 	A = [User],
-	NewUser = apply({M,F,A}),
+	{NewUser, {Pids, Msg}} = apply({M,F,A}),
+	routeData(Pids, Msg),
 	{noreply, S#state{user=NewUser}};
+handle_cast({send_to_client, Msg}, S=#state{send_pid = SendPid}) ->
+	gen_fsm:send_event(SendPid, {send, Msg}),
+	{noreply, S};
 handle_cast(Msg, S) ->
 	io:format("unknown casted message: ~p~n", [Msg]),
-	{noreply, S};
+	{noreply, S}.
 
 handle_info(upgrade, State) ->
 	%% loads latest code
@@ -78,3 +83,14 @@ get_sibling_pid(ParentPid, SiblingId) ->
 		Id == SiblingId
 	end, ChildList),
 	Pid.
+
+
+
+%% takes a list of pids and a formatted message
+%% routes the message to the pids
+routeData([], Msg) -> ok;
+routeData([Pid|Rest], Msg) ->
+	routeData(Pid, Msg);
+	routeData(Rest, Msg);
+routeData(Pid, Msg) when erlang:is_pid(Pid) ->
+	gen_server:cast(Pid, {send_to_client, Msg}).

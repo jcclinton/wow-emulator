@@ -19,7 +19,7 @@ init({Socket, SKey}) ->
 
 
 send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=Socket, key_state=KState}) ->
-	%% TODO store accept socket in ets
+	%% TODO store socket in ets
 	Size = size(Data) + 4,
 	Header = <<Size?WO, ResponseOpCode?W>>,
 	{EncryptedHeader, NewKState} = world_crypto:encrypt(Header, KState),
