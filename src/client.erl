@@ -11,114 +11,6 @@
 -include("include/binary.hrl").
 -include("include/world_records.hrl").
 
-%%
-%%
-%%
-%%private
-getUsername() ->
-	<<"androsynth">>.
-
-getPassword() ->
-	<<"Poners2431!">>.
-
-
-buildChallengeMessage(I) ->
-	ILen = erlang:byte_size(I),
-	S = 4 + 4 + 4 + 3 + 2 + 4 + 4 + 4 + 1 + ILen,
-	[_Cmd = <<0?B>>,
-	_Err = <<1?B>>,
-	_Size = <<S?W>>,
-	_GameName = [<<"WoW">>, <<$\0>>],
-	_V1 = <<2?B>>,
-	_V2 = <<4?B>>,
-	_V3 = <<3?B>>,
-	_Build = <<12345?W>>,
-	_Platform = <<"68xx">>,
-	_Os = <<"osxx">>,
-	_Country = <<"usoa">>,
-	_TzBias = <<60?L>>,
-	_Ip = <<0?L>>,
-	_ILen = <<ILen?B>>,
-	I].
-
-
-buildProofMessage(State) ->
-	io:format("begining to build proof msg~n"),
-	G = State#state.generator,
-	P = State#state.prime,
-	Bpub = State#state.bpub,
-	Salt= State#state.salt,
-	Apub = getClientPublic(G, P),
-	Skey = computeClientKey(Apub, Bpub, G, P, Salt),
-	M1 = getM(Apub, Bpub, Skey, P, G, Salt),
-	%io:format("apub size: ~p~n", [erlang:byte_size(Apub)]),
-	%io:format("m1 size: ~p~n", [erlang:byte_size(M1)]),
-	[_Cmd = <<1?B>>,
-	 Apub,
-	 M1,
-	 _Crc_hash = <<0?SH>>,
-	 _Num_keys = <<0?B>>,
-	 _Unk = <<0?B>>
-	].
-
-buildRealmlistMessage() ->
-	[_Cmd = <<16?B>>,
-	 _unk = <<"abcde">>
-	].
-
-build_world_challenge_response(_Seed) ->
-	Build = <<1?L>>,
-	Unk = <<1?L>>,
-	AccountName = getUsername(),
-	Null = <<0?B>>,
-	Rest = [AccountName, Null],
-	Msg = [Build, Unk, Rest],
-	Opcode = 493,
-	Size = size(Build) + size(Unk) + size(AccountName) + size(Null) + 4,
-	Header = [<<Size?WO>>, <<Opcode?L>>],
-	[Header, Msg].
-
-getM(Apub, Bpub, Skey, P, G, Salt) ->
-	I = getUsername(),
-	P1 = crypto:exor(hash(P), hash(G)),
-	K = hash([Skey]),
-	M = hash([P1, hash(I), Salt, Apub, Bpub, K]),
-	M.
-
-computeClientKey(Apub, Bpub, G, P, Salt) ->
-	Version = getVersion(),
-	U = getScrambler(Apub, Bpub),
-	DerivedKey = getDerivedKey(Salt),
-	ClientPrivate = getClientPrivate(),
-	crypto:compute_key(srp, Bpub, {Apub, ClientPrivate}, {user, [DerivedKey, P, G, Version, U]}).
-
-getClientPublic(G, P) ->
-	Priv = getClientPrivate(),
-	Version = getVersion(),
-	%io:format("g: ~p~np: ~p~nversion: ~p~nPriv: ~p~n", [G, P, Version, Priv]),
-	{Pub, _} = crypto:generate_key(srp, {user, [G, P, Version]}, Priv),
-	%io:format("apub: ~p~n", [Pub]),
-	Pub.
-
-getScrambler(Apub, Bpub) ->
-	hash([Apub, Bpub]).
-
-getDerivedKey(Salt) ->
-	U = getUsername(),
-	Pw = getPassword(),
-	hash([Salt, hash([U, <<$:>>, Pw])]).
-
-hash(L) ->
-	crypto:hash(sha, L).
-
-
-%getClientPrivate() -> <<"60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DDDA2D4393">>.
-getClientPrivate() -> logon_lib:getClientPrivate().
-
-%getVersion() -> '6'.
-getVersion() -> logon_lib:getVersion().
-
-
 
 
 
@@ -239,3 +131,111 @@ terminate(shutdown, State) ->
 	ok;
 terminate(_Reason, _State) ->
 	ok.
+
+
+%%
+%%
+%%
+%%private
+getUsername() ->
+	<<"androsynth">>.
+
+getPassword() ->
+	<<"Poners2431!">>.
+
+
+buildChallengeMessage(I) ->
+	ILen = erlang:byte_size(I),
+	S = 4 + 4 + 4 + 3 + 2 + 4 + 4 + 4 + 1 + ILen,
+	[_Cmd = <<0?B>>,
+	_Err = <<1?B>>,
+	_Size = <<S?W>>,
+	_GameName = [<<"WoW">>, <<$\0>>],
+	_V1 = <<2?B>>,
+	_V2 = <<4?B>>,
+	_V3 = <<3?B>>,
+	_Build = <<12345?W>>,
+	_Platform = <<"68xx">>,
+	_Os = <<"osxx">>,
+	_Country = <<"usoa">>,
+	_TzBias = <<60?L>>,
+	_Ip = <<0?L>>,
+	_ILen = <<ILen?B>>,
+	I].
+
+
+buildProofMessage(State) ->
+	io:format("begining to build proof msg~n"),
+	G = State#state.generator,
+	P = State#state.prime,
+	Bpub = State#state.bpub,
+	Salt= State#state.salt,
+	Apub = getClientPublic(G, P),
+	Skey = computeClientKey(Apub, Bpub, G, P, Salt),
+	M1 = getM(Apub, Bpub, Skey, P, G, Salt),
+	%io:format("apub size: ~p~n", [erlang:byte_size(Apub)]),
+	%io:format("m1 size: ~p~n", [erlang:byte_size(M1)]),
+	[_Cmd = <<1?B>>,
+	 Apub,
+	 M1,
+	 _Crc_hash = <<0?SH>>,
+	 _Num_keys = <<0?B>>,
+	 _Unk = <<0?B>>
+	].
+
+buildRealmlistMessage() ->
+	[_Cmd = <<16?B>>,
+	 _unk = <<"abcde">>
+	].
+
+build_world_challenge_response(_Seed) ->
+	Build = <<1?L>>,
+	Unk = <<1?L>>,
+	AccountName = getUsername(),
+	Null = <<0?B>>,
+	Rest = [AccountName, Null],
+	Msg = [Build, Unk, Rest],
+	Opcode = 493,
+	Size = size(Build) + size(Unk) + size(AccountName) + size(Null) + 4,
+	Header = [<<Size?WO>>, <<Opcode?L>>],
+	[Header, Msg].
+
+getM(Apub, Bpub, Skey, P, G, Salt) ->
+	I = getUsername(),
+	P1 = crypto:exor(hash(P), hash(G)),
+	K = hash([Skey]),
+	M = hash([P1, hash(I), Salt, Apub, Bpub, K]),
+	M.
+
+computeClientKey(Apub, Bpub, G, P, Salt) ->
+	Version = getVersion(),
+	U = getScrambler(Apub, Bpub),
+	DerivedKey = getDerivedKey(Salt),
+	ClientPrivate = getClientPrivate(),
+	crypto:compute_key(srp, Bpub, {Apub, ClientPrivate}, {user, [DerivedKey, P, G, Version, U]}).
+
+getClientPublic(G, P) ->
+	Priv = getClientPrivate(),
+	Version = getVersion(),
+	%io:format("g: ~p~np: ~p~nversion: ~p~nPriv: ~p~n", [G, P, Version, Priv]),
+	{Pub, _} = crypto:generate_key(srp, {user, [G, P, Version]}, Priv),
+	%io:format("apub: ~p~n", [Pub]),
+	Pub.
+
+getScrambler(Apub, Bpub) ->
+	hash([Apub, Bpub]).
+
+getDerivedKey(Salt) ->
+	U = getUsername(),
+	Pw = getPassword(),
+	hash([Salt, hash([U, <<$:>>, Pw])]).
+
+hash(L) ->
+	crypto:hash(sha, L).
+
+
+%getClientPrivate() -> <<"60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DDDA2D4393">>.
+getClientPrivate() -> logon_lib:getClientPrivate().
+
+%getVersion() -> '6'.
+getVersion() -> logon_lib:getVersion().

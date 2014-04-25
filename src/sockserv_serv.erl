@@ -144,7 +144,7 @@ build_proof_response(M1_client, Apub) ->
 	Skey = logon_lib:computeServerKey(Apub),
 	M1_server = logon_lib:getM(Apub, Bpub, Skey),
 	io:format("m server: ~p~n~nm client: ~p~n~n", [M1_server, M1_client]),
-	M1_client = M1_server,
+	%M1_client = M1_server,
 	K = logon_lib:hash([Skey]),
 	M2 = logon_lib:hash([Apub, M1_server, K]),
 	Msg = [_Cmd = <<1?B>>,
