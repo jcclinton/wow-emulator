@@ -1,7 +1,7 @@
 -module(sockserv_rcv).
 -behaviour(gen_fsm).
 
--export([start_link/3]).
+-export([start_link/2]).
 -export([init/1, handle_sync_event/4, handle_event/3,
 				 handle_info/3, terminate/3, code_change/4]).
 -export([accept/2, rcv/2, challenge/2, rcv_challenge/2]).
@@ -15,20 +15,18 @@
 				sess_key
 				}).
 
-start_link(ListenSocket, SKey, PairPid) ->
-    gen_fsm:start_link(?MODULE, {ListenSocket, SKey, PairPid}, []).
+start_link(ListenSocket, PairPid) ->
+    gen_fsm:start_link(?MODULE, {ListenSocket, PairPid}, []).
 
-init({ListenSocket, SKey, PairPid}) ->
+init({ListenSocket, PairPid}) ->
 	io:format("starting rcv~n"),
     gen_fsm:send_event(self(), {accept, ListenSocket}),
-	KData = {0, 0, SKey},
-    {ok, accept, #state{hdr_len=4, pair_pid=PairPid, sess_key=SKey, key_state=KData}}.
+    {ok, accept, #state{hdr_len=4, pair_pid=PairPid}}.
 
-accept({accept, ListenSocket}, State = #state{pair_pid=PairPid}) ->
+accept({accept, ListenSocket}, State = #state{}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	%% TODO store accept socket in ets
 	%% restore it upon process crash
-	ok = gen_server:call(PairPid, {tcp_accept_socket, AcceptSocket}),
 	challenge(ok, State#state{accept_socket=AcceptSocket}).
 challenge(_, State = #state{accept_socket=Socket}) ->
 	Msg = buildAuthChallenge(),
@@ -37,8 +35,11 @@ challenge(_, State = #state{accept_socket=Socket}) ->
 rcv_challenge(_, State = #state{accept_socket=Socket, pair_pid=PairPid}) ->
 	{ok, Packet} = gen_tcp:recv(Socket, 0),
 	<<_Length?WO, 493?L, Msg/binary>> = Packet,
-	gen_server:cast(PairPid, {tcp_accept_challenge, Msg}),
-	rcv(ok, State).
+	{_ResponseName, ResponseData, _AccountId, KState} = auth_session(Msg),
+	ResponseOpCode = 494,
+	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, KState}),
+	gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
+	rcv(ok, State#state{key_state=KState}).
 rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
 	%% TODO handle error case
 	Resp = gen_tcp:recv(Socket, HdrLen),
@@ -81,3 +82,26 @@ buildAuthChallenge() ->
 	],
 	Length = size(O) + size(S),
 	[<<Length?WO>>, Msg].
+
+
+auth_session(Rest) ->
+    {_, A, _}      = cmsg_auth_session(Rest),
+    Data   = smsg_auth_response(),
+    K      = world_crypto:encryption_key(A),
+    KTup     = {0, 0, K},
+		AccountId = logon_lib:getUsername(),
+    {smsg_auth_response, Data, AccountId, KTup}.
+
+cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
+    {Account, Key} = cmsg_auth_session_extract(Rest, ""),
+    {Build, Account, Key};
+cmsg_auth_session(_) ->
+    {error, bad_cmsg_auth_session}.
+
+cmsg_auth_session_extract(<<0?B, Rest/bytes>>, Account) ->
+    {Account, binary_to_list(Rest)};
+cmsg_auth_session_extract(<<Letter?B, Rest/binary>>, Account) ->
+    cmsg_auth_session_extract(Rest, Account ++ [Letter]).
+
+smsg_auth_response() ->
+    <<12?B, 0?L, 0?B, 0?L, 1?B>>.

@@ -12,12 +12,11 @@
 				key_state
 				}).
 
-start_link(Socket, SKey) ->
-    gen_fsm:start_link(?MODULE, {Socket, SKey}, []).
+start_link(Socket, KState) ->
+    gen_fsm:start_link(?MODULE, {Socket, KState}, []).
 
-init({Socket, SKey}) ->
+init({Socket, KState}) ->
 	io:format("starting send~n"),
-	KState = {0, 0, SKey},
     {ok, send, #state{socket=Socket, key_state=KState}}.
 
 
@@ -27,7 +26,7 @@ send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=So
 	Header = <<Size?WO, ResponseOpCode?W>>,
 	{EncryptedHeader, NewKState} = world_crypto:encrypt(Header, KState),
 	gen_tcp:send(Socket, <<EncryptedHeader/binary, ResponseData/binary>>),
-    {ok, send, State#state{key_state=NewKState}}.
+    {next_state, send, State#state{key_state=NewKState}}.
 
 %% callbacks
 handle_info(_Info, State, Data) ->
