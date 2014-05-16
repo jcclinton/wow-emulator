@@ -27,7 +27,9 @@ getPassword() ->
 
 %getSalt() -> <<16#b3d47dc40109ba25459096abdd0bfbbc3266d5b2dcf52eb586d2d2e612afdd84:256>>.
 %getSalt() -> <<"mystrongsalt">>.
-getSalt() -> hexstr2bin("BEB25379D1A8581EB5A727673A2441EE").
+getSalt() ->
+	<<"mys">>.
+%hexstr2bin("BEB25379D1A8581EB5A727673A2441EE").
 
 getMult() ->
 	Version = getVersion(),
@@ -116,6 +118,7 @@ getScrambler() ->
 	ClientPublic = getClientPublic(),
 	%Scrambler = hexstr2bin("CE38B9593487DA98554ED47D70A7AE5F462EF019"),
 	Scrambler = hash([ClientPublic, ServerPublic]),
+			%Scrambler = hexstr2bin("02E2476A"),
 	Scrambler.
 
 
@@ -129,11 +132,12 @@ getVerifier() ->
 
 
 
-getClientPrivate2() ->
+getClientPrivate() ->
 	%<<169,208,153,249,164,236,222,68,90,81,39,34,231,97,28,116,134,
                %135,173,43,165,6,229,22,85,208,211,92,62,207,181,246>>.
-	hexstr2bin("60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DDDA2D4393").
-getClientPrivate() ->
+	%hexstr2bin("60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DDDA2D4393").
+	<<16#149F832EE8D67ECF9E7F2785EB0622D8B3FE2344C00F96E1AEF4103CA44D51F9:256>>.
+getClientPrivate2() ->
 	Size = getSize(),
 	Key = {client_priv, Size},
 	Val = get(Key),
@@ -146,11 +150,13 @@ getClientPrivate() ->
 	end.
 
 
-getServerPrivate2() ->
+getServerPrivate() ->
 	%<<169,208,153,249,164,236,222,68,90,81,39,34,231,97,28,116,134,
                %135,173,43,165,6,229,22,85,208,211,92,62,207,181,246>>.
-	hexstr2bin("E487CB59D31AC550471E81F00F6928E01DDA08E974A004F49E61F5D105284D20").
-getServerPrivate() ->
+	%hexstr2bin("E487CB59D31AC550471E81F00F6928E01DDA08E974A004F49E61F5D105284D20").
+	%<<16#6C78CCEAAEC15E69068A87795B2A20ED7B45CFC5A254EBE2F17F144A4D99DB18:256>>.
+	<<16#8C78CCEAAEC15E69068A87795B2A20ED7B45CFC5A254EBE2F17F144A4D99DB18:256>>.
+getServerPrivate2() ->
 	Size = getSize(),
 	Key = {server_priv, Size},
 	Val = get(Key),
@@ -256,10 +262,14 @@ computeClientKeyManually() ->
 	KGXNum = mod( (int(K) * int(V)), int(P)),
 	GX = crypto:mod_pow(G, X, P),
 	KGXNum = mod( (int(K) * int(GX)), int(P)),
+	io:format("bint: ~p~nkgxn: ~p~n", [int(ServerPublic), KGXNum]),
+
 	Sum = (int(ServerPublic) - KGXNum ),
+
 	BaseNum = mod( Sum, int(P) ),
-	Base = <<BaseNum:Size/integer>>,
+	%io:format("sum: ~p~nn: ~p~nbasenum: ~p~n", [Sum, int(P), BaseNum]),
 	Base = crypto:mod_pow(<<Sum:Size/integer>>, <<1>>, P),
+	Base = <<BaseNum:Size/integer>>,
 
 	UXNum = mod( ( int(U) * int(X) ), int(P)),
 	AUXNum = mod( ( int(ClientPrivate) + UXNum ), int(P) ),
@@ -270,6 +280,7 @@ computeClientKeyManually() ->
 	SkeyNum = crypto:mod_exp(BaseNum, AUXNum, int(P)),
 	Skey = <<SkeyNum:Size/integer>>,
 	Skey = crypto:mod_pow(Base, Exp, P),
+
 	%% wrong
 	%Skey = hexstr2bin("B0DC82BABCF30674AE450C0287745E7990A3381F63B387AAF271A10D233861E359B48220F7C4693C9AE12B0A6F67809F0876E2D013800D6C41BB59B6D5979B5C00A172B4A2A5903A0BDCAF8A709585EB2AFAFA8F3499B200210DCC1F10EB33943CD67FC88A2F39A4BE5BEC4EC0A3212DC346D7E474B29EDE8A469FFECA686E5A"),
 	Skey.
