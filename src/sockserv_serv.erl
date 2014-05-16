@@ -44,6 +44,7 @@ handle_cast(send_challenge, State = #state{socket=Socket, server_private=ServerP
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
 	ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, DerivedKey),
+	io:format("server public: ~p~n", [ServerPublic]),
 	Salt = srp:getSalt(),
 	Msg = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 	%io:format("sending chal resp: ~p~n", [Msg]),
@@ -129,15 +130,24 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 	%io:format("nsize: ~p~n", [erlang:byte_size(N)]),
 	%io:format("ssize: ~p~n", [erlang:byte_size(S)]),
 	Unk3 = <<16#0123456789ABCDEF?QH>>,
+	<<ServerPubNum:256>> = ServerPublic,
+	ServerPubLittle = <<ServerPubNum?QQ>>,
+
+	<<Nnum:256>> = N,
+	NLittle = <<Nnum?QQ>>,
+
+	<<SaltNum:256>> = Salt,
+	SaltLittle = <<SaltNum?QQ>>,
+
 	Msg = [_Cmd = <<0?B>>,
 					_Err = <<0?B>>,
 					_Unk2 = <<0?B>>,
-					ServerPublic,
+					ServerPubLittle,
 					<<GLen?B>>,
 					G,
 					<<NLen?B>>,
-					N,
-					Salt,
+					NLittle,
+					SaltLittle,
 					Unk3,
 					_Unk4 = <<0?B>>
 				],
@@ -152,9 +162,12 @@ build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPubli
 	io:format("m server: ~p~n~nm client: ~p~n~n", [ServerM1, ClientM1]),
 	%ClientM1 = ServerM1,
 	M2 = srp:getM2(ClientPublic, ServerM1, Key),
+	<<M2Num:160>> = M2,
+	M2Little = <<M2Num?SH>>,
+
 	Msg = [_Cmd = <<1?B>>,
 				 _Err = <<0?B>>,
-				 M2,
+				 M2Little,
 				 _Flags = <<0?B>>],
 	Msg.
 
@@ -246,6 +259,7 @@ extract_proof(Msg) ->
 		_Crc_hash?SH,
 		_Num_keys?B,
 		_Unk?B>> = Msg,
-	ClientPublic = <<ClientPublic_raw?QQ>>,
-	M1 = <<M1_raw?SH>>,
+	ClientPublic = <<ClientPublic_raw?QQB>>,
+	M1 = <<M1_raw?SHB>>,
+	io:format("client public: ~p~nm1: ~p~n", [ClientPublic, M1]),
 	{ClientPublic, M1}.
