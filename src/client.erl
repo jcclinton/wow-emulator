@@ -1,7 +1,7 @@
 -module(client).
 -behavior(gen_server).
 
--record(state, {realm_socket, world_socket, bpub, client_private, generator, prime, salt, keyState}).
+-record(state, {realm_socket, world_socket, server_public, client_private, generator, prime, salt, keyState}).
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
@@ -42,7 +42,8 @@ handle_cast(connect, State) ->
 	{ok, Port} = application:get_env(realm_port),
 	{ok, Socket} = gen_tcp:connect({127,0,0,1}, Port, [binary, {active, true}]),
 	%io:format("CLIENT: socket connected~n"),
-	{noreply, State#state{realm_socket=Socket}};
+	ClientPrivate = srp:generatePrivate(),
+	{noreply, State#state{realm_socket=Socket, client_private=ClientPrivate}};
 handle_cast(challenge, State) ->
 	I = getUsername(),
 	Msg = buildChallengeMessage(I),
@@ -84,7 +85,7 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	io:format("CLIENT: received challenge response~n"),
 	<<_Err?B,
 		_Unk2?B,
-		Bpub_raw?QQ,
+		ServerPublic_raw?QQ,
 		_GLen?B,
 		Generator_raw?B,
 		_NLen?B,
@@ -94,13 +95,12 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 		_Unk4?B>> = Msg,
 
 	%gen_server:cast(self(), send_proof),
-	Bpub = <<Bpub_raw?QQ>>,
+	ServerPublic = <<ServerPublic_raw?QQ>>,
 	Generator = <<Generator_raw?B>>,
 	Prime = <<Prime_raw?QQ>>,
 	Salt = <<Salt_raw?QQ>>,
-	ClientPrivate = getClientPrivate(),
 	proof(),
-	{noreply, State#state{bpub=Bpub,generator=Generator,prime=Prime,salt=Salt, client_private=ClientPrivate}};
+	{noreply, State#state{server_public=ServerPublic,generator=Generator,prime=Prime,salt=Salt}};
 handle_info({tcp, _Socket, <<1?B, _Msg/binary>>}, State) ->
 	io:format("CLIENT: received proof response~n"),
 	realmlist(),
@@ -139,10 +139,10 @@ terminate(_Reason, _State) ->
 %%
 %%private
 getUsername() ->
-	<<"androsynth">>.
+	<<"alice">>.
 
 getPassword() ->
-	<<"Poners2431!">>.
+	<<"password123">>.
 
 
 buildChallengeMessage(I) ->
@@ -170,15 +170,16 @@ buildProofMessage(State) ->
 	G = State#state.generator,
 	P = State#state.prime,
 	ClientPrivate = State#state.client_private,
-	Bpub = State#state.bpub,
+	ServerPublic = State#state.server_public,
 	Salt= State#state.salt,
-	Apub = getClientPublic(G, P, ClientPrivate),
-	Skey = computeClientKey(Apub, Bpub, G, P, Salt, ClientPrivate),
-	M1 = getM(Apub, Bpub, Skey, P, G, Salt),
-	%io:format("apub size: ~p~n", [erlang:byte_size(Apub)]),
+	ClientPublic = getClientPublic(G, P, ClientPrivate),
+	Skey = computeClientKey(ClientPublic, ServerPublic, G, P, Salt, ClientPrivate),
+	Key = hash([Skey]),
+	M1 = getM(ClientPublic, ServerPublic, Key, P, G, Salt),
+	%io:format("client public size: ~p~n", [erlang:byte_size(ClientPublic)]),
 	%io:format("m1 size: ~p~n", [erlang:byte_size(M1)]),
 	[_Cmd = <<1?B>>,
-	 Apub,
+	 ClientPublic,
 	 M1,
 	 _Crc_hash = <<0?SH>>,
 	 _Num_keys = <<0?B>>,
@@ -202,12 +203,9 @@ build_world_challenge_response(_Seed) ->
 	Header = [<<Size?WO>>, <<Opcode?L>>],
 	[Header, Msg].
 
-getM(Apub, Bpub, Skey, P, G, Salt) ->
+getM(ClientPublic, ServerPublic, Key, Prime, Generator, Salt) ->
 	I = getUsername(),
-	P1 = crypto:exor(hash(P), hash(G)),
-	K = hash([Skey]),
-	M = hash([P1, hash(I), Salt, Apub, Bpub, K]),
-	M.
+	srp:getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key).
 
 computeClientKey(ClientPublic, ServerPublic, G, P, Salt, ClientPrivate) ->
 	DerivedKey = getDerivedKey(Salt),
@@ -223,6 +221,3 @@ getDerivedKey(Salt) ->
 
 hash(L) ->
 	crypto:hash(sha, L).
-
-
-getClientPrivate() -> logon_lib:getClientPrivate().

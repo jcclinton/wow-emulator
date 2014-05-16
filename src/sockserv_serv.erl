@@ -4,7 +4,10 @@
 -record(state, {name, % players name
 								socket, % the current socket
 								identity,
-								apub,
+								derived_key,
+								server_private,
+								client_public,
+								server_public,
 								m1
 							 }).
 
@@ -30,25 +33,33 @@ handle_call(_E, _From, State) ->
 	{noreply, State}.
 
 handle_cast(accept, S = #state{socket=ListenSocket}) ->
-	%io:format("LSock: ~p~n", [ListenSocket]),
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
-	%io:format("ASock: ~p~n", [AcceptSocket]),
-	%io:format("SERVER: socket accepted~n"),
-	%sockserv_sup:start_socket(),
-	{noreply, S#state{socket=AcceptSocket}};
-handle_cast(send_challenge, State = #state{socket=Socket}) ->
-	Msg = build_challenge_response(),
+	ServerPrivate = srp:generatePrivate(),
+	Username = srp:getUsername(),
+	Pw = srp:getPassword(),
+	Salt = srp:getSalt(),
+	DerivedKey = srp:getDerivedKey(Username, Pw, Salt),
+	{noreply, S#state{socket=AcceptSocket, server_private=ServerPrivate, derived_key=DerivedKey}};
+handle_cast(send_challenge, State = #state{socket=Socket, server_private=ServerPrivate, derived_key=DerivedKey}) ->
+	Generator = srp:getGenerator(),
+	Prime = srp:getPrime(),
+	ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, DerivedKey),
+	Salt = srp:getSalt(),
+	Msg = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 	%io:format("sending chal resp: ~p~n", [Msg]),
 	gen_tcp:send(Socket, Msg),
-	{noreply, State};
-handle_cast(send_proof, State = #state{socket=Socket, m1=M1, apub=Apub}) ->
+	{noreply, State#state{server_public=ServerPublic}};
+handle_cast(send_proof, State = #state{socket=Socket, m1=M1, client_public=ClientPublic, server_public=ServerPublic, server_private=ServerPrivate, derived_key=DerivedKey}) ->
 	%% TODO remove this hardcoding
-	Name = logon_lib:getUsername(),
-	Msg = build_proof_response(M1, Apub),
+	Name = srp:getUsername(),
+	Salt = srp:getSalt(),
+	Generator = srp:getGenerator(),
+	Prime = srp:getPrime(),
+	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, DerivedKey),
+	Key = srp:hash([Skey]),
 	StringName = binary_to_list(Name),
-	SKey = logon_lib:computeServerKey(Apub),
-	Key = logon_lib:hash(SKey),
 	ets:insert(connected_clients, {StringName, Key}),
+	Msg = build_proof_response(Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	io:format("SERVER: sending proof response~n"),
 	gen_tcp:send(Socket, Msg),
 	{noreply, State};
@@ -78,9 +89,9 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State) ->
 	ok = inet:setopts(State#state.socket, [{active, once}]),
 	io:format("SERVER: received proof~n"),
-	{Apub, M1} = extract_proof(Msg),
+	{ClientPublic, M1} = extract_proof(Msg),
 	gen_server:cast(self(), send_proof),
-	{noreply, State#state{apub=Apub, m1=M1}};
+	{noreply, State#state{client_public=ClientPublic, m1=M1}};
 handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State) ->
 	ok = inet:setopts(State#state.socket, [{active, once}]),
 	io:format("SERVER: received realmlist req~n"),
@@ -110,27 +121,23 @@ terminate(_Reason, _State) ->
 
 %% private
 
-build_challenge_response() ->
-	B = logon_lib:getServerPublic(),
-	G = logon_lib:getGenerator(),
-	N = logon_lib:getPrime(),
-	S = logon_lib:getSalt(),
+build_challenge_response(ServerPublic, G, N, Salt) ->
 	GLen = erlang:byte_size(G),
 	NLen = erlang:byte_size(N),
-	io:format("bsize: ~p~n", [erlang:byte_size(B)]),
+	%io:format("bsize: ~p~n", [erlang:byte_size(B)]),
 	%io:format("gsize: ~p~n", [erlang:byte_size(G)]),
-	io:format("nsize: ~p~n", [erlang:byte_size(N)]),
-	io:format("ssize: ~p~n", [erlang:byte_size(S)]),
+	%io:format("nsize: ~p~n", [erlang:byte_size(N)]),
+	%io:format("ssize: ~p~n", [erlang:byte_size(S)]),
 	Unk3 = <<16#0123456789ABCDEF?QH>>,
 	Msg = [_Cmd = <<0?B>>,
 					_Err = <<0?B>>,
 					_Unk2 = <<0?B>>,
-					B,
+					ServerPublic,
 					<<GLen?B>>,
 					G,
 					<<NLen?B>>,
 					N,
-					S,
+					Salt,
 					Unk3,
 					_Unk4 = <<0?B>>
 				],
@@ -139,14 +146,12 @@ build_challenge_response() ->
 	io:format("response size: ~p~n", [Size]),
 	Msg.
 
-build_proof_response(M1_client, Apub) ->
-	Bpub = logon_lib:getServerPublic(),
-	Skey = logon_lib:computeServerKey(Apub),
-	M1_server = logon_lib:getM(Apub, Bpub, Skey),
-	io:format("m server: ~p~n~nm client: ~p~n~n", [M1_server, M1_client]),
-	%M1_client = M1_server,
-	K = logon_lib:hash([Skey]),
-	M2 = logon_lib:hash([Apub, M1_server, K]),
+build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPublic, Key) ->
+	I = srp:getUsername(),
+	ServerM1 = srp:getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key),
+	io:format("m server: ~p~n~nm client: ~p~n~n", [ServerM1, ClientM1]),
+	%ClientM1 = ServerM1,
+	M2 = srp:getM2(ClientPublic, ServerM1, Key),
 	Msg = [_Cmd = <<1?B>>,
 				 _Err = <<0?B>>,
 				 M2,
@@ -236,11 +241,11 @@ extract_username(Msg) ->
 		Iout.
 
 extract_proof(Msg) ->
-	<<Apub_raw?QQ,
+	<<ClientPublic_raw?QQ,
 		M1_raw?SH,
 		_Crc_hash?SH,
 		_Num_keys?B,
 		_Unk?B>> = Msg,
-	Apub = <<Apub_raw?QQ>>,
+	ClientPublic = <<ClientPublic_raw?QQ>>,
 	M1 = <<M1_raw?SH>>,
-	{Apub, M1}.
+	{ClientPublic, M1}.

@@ -7,7 +7,7 @@ getUsername() -> <<"alice">>.
 
 getPassword() -> <<"password123">>.
 
-getSalt() -> <<"mystrongsalt">>.
+getSalt() -> <<16#b3d47dc40109ba25459096abdd0bfbbc3266d5b2dcf52eb586d2d2e612afdd84:256>>.
 
 getGenerator() -> <<7/integer>>.
 
@@ -19,13 +19,6 @@ getMultiplier() -> <<3/integer>>.
 getSize() -> 256.
 
 % randomly generated 32 byte number
-getClientPrivate() ->
-	generatePrivate().
-
-% randomly generated 32 byte number
-getServerPrivate() ->
-	generatePrivate().
-
 generatePrivate() ->
 	Size = getSize(),
 	crypto:rand_bytes(Size div 8).
@@ -91,6 +84,12 @@ computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, De
 	Verifier = getVerifier(Generator, Prime, DerivedKey),
 	crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}).
 
+getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key) ->
+	P1 = crypto:exor(hash(Prime), hash(Generator)),
+	hash([P1, hash(I), Salt, ClientPublic, ServerPublic, Key]).
+
+getM2(ClientPublic, M1, Key) ->
+	hash([ClientPublic, M1, Key]).
 
 
 test() ->
@@ -117,6 +116,8 @@ test() ->
 
 
 %% utility functions
+hash(L) -> crypto:hash(sha, L).
+
 int_to_bin(Int) ->
 	Len0 = length(erlang:integer_to_list(Int, 16)),
 	Len1 = Len0 + (Len0 rem 2),

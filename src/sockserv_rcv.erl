@@ -87,7 +87,7 @@ auth_session(Rest) ->
     Data   = smsg_auth_response(),
     K      = world_crypto:encryption_key(A),
     KTup     = {0, 0, K},
-		AccountId = logon_lib:getUsername(),
+		AccountId = srp:getUsername(),
     {smsg_auth_response, Data, AccountId, KTup}.
 
 cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
