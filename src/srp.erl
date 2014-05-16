@@ -41,18 +41,12 @@ getPrime() ->
 
 
 %% v = g^x
-getVerifier() ->
-	Generator = getGenerator(),
-	Prime = getPrime(),
-	DerivedKey = getDerivedKey(),
+getVerifier(Generator, Prime, DerivedKey) ->
 	crypto:mod_pow(Generator, DerivedKey, Prime).
 
 
 %% x = H(salt, H(username, :, password))
-getDerivedKey() ->
-	Username = getUsername(),
-	Password = getPassword(),
-	Salt = getSalt(),
+getDerivedKey(Username, Password, Salt) ->
 	crypto:hash(sha, [Salt, crypto:hash(sha, [Username, <<$:>>, Password])]).
 
 getScrambler(ClientPublic, ServerPublic) ->
@@ -60,31 +54,23 @@ getScrambler(ClientPublic, ServerPublic) ->
 
 
 %% client public key
-getClientPublic(ClientPrivate) ->
-	Generator = getGenerator(),
-	Prime = getPrime(),
+getClientPublic(Generator, Prime, ClientPrivate) ->
 	Version = getVersion(),
 																																															{Pub, ClientPrivate} = crypto:generate_key(srp, {user, [Generator, Prime, Version]}, ClientPrivate),
 	Pub.
 
 %% server public key
-getServerPublic(ServerPrivate) ->
-	Generator = getGenerator(),
-	Prime = getPrime(),
+getServerPublic(Generator, Prime, ServerPrivate, DerivedKey) ->
 	Version = getVersion(),
-	Verifier = getVerifier(),
+	Verifier = getVerifier(Generator, Prime, DerivedKey),
 	{Pub, ServerPrivate} = crypto:generate_key(srp, {host, [Verifier, Generator, Prime, Version]}, ServerPrivate),
 Pub.
 
 
 %% client session key
 %% doesnt use compute_key because there currently is a bug in otp
-computeClientKey(ClientPrivate, ServerPublic) ->
-	ClientPublic = getClientPublic(ClientPrivate),
+computeClientKey(ClientPrivate, ServerPublic, ClientPublic, Generator, Prime, DerivedKey) ->
 	U = getScrambler(ClientPublic, ServerPublic),
-	Generator = getGenerator(),
-	Prime = getPrime(),
-	DerivedKey = getDerivedKey(),
 	PrimeI = bin_to_int(Prime),
 	Multiplier = getMultiplier(),
 	BX = crypto:mod_pow(Generator, DerivedKey, Prime),
@@ -99,24 +85,32 @@ computeClientKey(ClientPrivate, ServerPublic) ->
 
 
 %% server session key
-computeServerKey(ServerPrivate, ClientPublic) ->
-	ServerPublic = getServerPublic(ServerPrivate),
+computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, DerivedKey) ->
 	U = getScrambler(ClientPublic, ServerPublic),
-	Prime = getPrime(),
 	Version = getVersion(),
-	Verifier = getVerifier(),
+	Verifier = getVerifier(Generator, Prime, DerivedKey),
 	crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}).
 
 
 
 test() ->
 	%% these session keys should match
+	G = getGenerator(),
+	P = getPrime(),
+	U = getUsername(),
+	Pw = getPassword(),
+	Salt = getSalt(),
+	DerivedKey = getDerivedKey(U, Pw, Salt),
+
 	ClientPrivate = generatePrivate(),
 	ServerPrivate = generatePrivate(),
-	ServerPublic = getServerPublic(ServerPrivate),
-	ClientPublic = getClientPublic(ClientPrivate),
-	ClientKey = computeClientKey(ClientPrivate, ServerPublic),
-	ServerKey = computeServerKey(ServerPrivate, ClientPublic),
+
+	ServerPublic = getServerPublic(G, P, ServerPrivate, DerivedKey),
+	ClientPublic = getClientPublic(G, P, ClientPrivate),
+
+	ClientKey = computeClientKey(ClientPrivate, ServerPublic, ClientPublic, G, P, DerivedKey),
+	ServerKey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, G, P, DerivedKey),
+
 	io:format("client skey: ~p~n", [ClientKey]),
 	io:format("server skey: ~p~n", [ServerKey]),
 	ClientKey == ServerKey.

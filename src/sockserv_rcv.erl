@@ -25,8 +25,6 @@ init({ListenSocket, PairPid}) ->
 
 accept({accept, ListenSocket}, State = #state{}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
-	%% TODO store accept socket in ets
-	%% restore it upon process crash
 	challenge(ok, State#state{accept_socket=AcceptSocket}).
 challenge(_, State = #state{accept_socket=Socket}) ->
 	Msg = buildAuthChallenge(),

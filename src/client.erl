@@ -1,7 +1,7 @@
 -module(client).
 -behavior(gen_server).
 
--record(state, {realm_socket, world_socket, bpub, generator, prime, salt, keyState}).
+-record(state, {realm_socket, world_socket, bpub, client_private, generator, prime, salt, keyState}).
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
@@ -98,8 +98,9 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	Generator = <<Generator_raw?B>>,
 	Prime = <<Prime_raw?QQ>>,
 	Salt = <<Salt_raw?QQ>>,
+	ClientPrivate = getClientPrivate(),
 	proof(),
-	{noreply, State#state{bpub=Bpub,generator=Generator,prime=Prime,salt=Salt}};
+	{noreply, State#state{bpub=Bpub,generator=Generator,prime=Prime,salt=Salt, client_private=ClientPrivate}};
 handle_info({tcp, _Socket, <<1?B, _Msg/binary>>}, State) ->
 	io:format("CLIENT: received proof response~n"),
 	realmlist(),
@@ -168,10 +169,11 @@ buildProofMessage(State) ->
 	io:format("begining to build proof msg~n"),
 	G = State#state.generator,
 	P = State#state.prime,
+	ClientPrivate = State#state.client_private,
 	Bpub = State#state.bpub,
 	Salt= State#state.salt,
-	Apub = getClientPublic(G, P),
-	Skey = computeClientKey(Apub, Bpub, G, P, Salt),
+	Apub = getClientPublic(G, P, ClientPrivate),
+	Skey = computeClientKey(Apub, Bpub, G, P, Salt, ClientPrivate),
 	M1 = getM(Apub, Bpub, Skey, P, G, Salt),
 	%io:format("apub size: ~p~n", [erlang:byte_size(Apub)]),
 	%io:format("m1 size: ~p~n", [erlang:byte_size(M1)]),
@@ -207,35 +209,20 @@ getM(Apub, Bpub, Skey, P, G, Salt) ->
 	M = hash([P1, hash(I), Salt, Apub, Bpub, K]),
 	M.
 
-computeClientKey(Apub, Bpub, G, P, Salt) ->
-	Version = getVersion(),
-	U = getScrambler(Apub, Bpub),
+computeClientKey(ClientPublic, ServerPublic, G, P, Salt, ClientPrivate) ->
 	DerivedKey = getDerivedKey(Salt),
-	ClientPrivate = getClientPrivate(),
-	crypto:compute_key(srp, Bpub, {Apub, ClientPrivate}, {user, [DerivedKey, P, G, Version, U]}).
+	srp:computeClientKey(ClientPrivate, ServerPublic, ClientPublic, G, P, DerivedKey).
 
-getClientPublic(G, P) ->
-	Priv = getClientPrivate(),
-	Version = getVersion(),
-	%io:format("g: ~p~np: ~p~nversion: ~p~nPriv: ~p~n", [G, P, Version, Priv]),
-	{Pub, _} = crypto:generate_key(srp, {user, [G, P, Version]}, Priv),
-	%io:format("apub: ~p~n", [Pub]),
-	Pub.
-
-getScrambler(Apub, Bpub) ->
-	hash([Apub, Bpub]).
+getClientPublic(G, P, ClientPriv) ->
+	srp:getClientPublic(G, P, ClientPriv).
 
 getDerivedKey(Salt) ->
 	U = getUsername(),
 	Pw = getPassword(),
-	hash([Salt, hash([U, <<$:>>, Pw])]).
+	srp:getDerivedKey(U, Pw, Salt).
 
 hash(L) ->
 	crypto:hash(sha, L).
 
 
-%getClientPrivate() -> <<"60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DDDA2D4393">>.
 getClientPrivate() -> logon_lib:getClientPrivate().
-
-%getVersion() -> '6'.
-getVersion() -> logon_lib:getVersion().
