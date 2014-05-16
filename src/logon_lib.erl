@@ -26,9 +26,7 @@ getPassword() ->
 
 
 %getSalt() -> <<16#b3d47dc40109ba25459096abdd0bfbbc3266d5b2dcf52eb586d2d2e612afdd84:256>>.
-%getSalt() -> <<"mystrongsalt">>.
-getSalt() ->
-	<<"mys">>.
+getSalt() -> <<"mystrongsalt">>.
 %hexstr2bin("BEB25379D1A8581EB5A727673A2441EE").
 
 getMult() ->
@@ -54,7 +52,7 @@ srp_pad_to(Width, Binary) ->
 
 getGenerator() ->
 	P = getPrime(),
-	crypto:mod_pow(<<7>>, <<1>>, P).
+	crypto:mod_pow(<<7/integer>>, <<1>>, P).
 
 getVersion() -> '6'.
 
@@ -150,13 +148,13 @@ getClientPrivate2() ->
 	end.
 
 
-getServerPrivate() ->
+getServerPrivate2() ->
 	%<<169,208,153,249,164,236,222,68,90,81,39,34,231,97,28,116,134,
                %135,173,43,165,6,229,22,85,208,211,92,62,207,181,246>>.
 	%hexstr2bin("E487CB59D31AC550471E81F00F6928E01DDA08E974A004F49E61F5D105284D20").
 	%<<16#6C78CCEAAEC15E69068A87795B2A20ED7B45CFC5A254EBE2F17F144A4D99DB18:256>>.
 	<<16#8C78CCEAAEC15E69068A87795B2A20ED7B45CFC5A254EBE2F17F144A4D99DB18:256>>.
-getServerPrivate2() ->
+getServerPrivate() ->
 	Size = getSize(),
 	Key = {server_priv, Size},
 	Val = get(Key),
@@ -223,6 +221,26 @@ getServerPublic() ->
 
 
 computeClientKey() ->
+	    ServerPublic = getServerPublic(),
+	    ClientPrivate = getClientPrivate(),
+			U = getScrambler(),
+	    Generator = getGenerator(),
+	    Prime = getPrime(),
+	    Version = getVersion(),
+	    DerivedKey = getDerivedKey(),
+			PrimeI = bin_to_int(Prime),
+			Multiplier = getMultiplier(Version, Generator, Prime),
+    BX = crypto:mod_pow(Generator, DerivedKey, Prime),
+    BTMPI0 = bin_to_int(ServerPublic) - bin_to_int(Multiplier) * bin_to_int(BX),
+    BTMPI = BTMPI0 rem PrimeI,
+    Base = if
+        BTMPI > 0 -> int_to_bin(BTMPI);
+        true -> int_to_bin(BTMPI + PrimeI)
+    end,
+    Exponent = int_to_bin(bin_to_int(ClientPrivate) + bin_to_int(U) * bin_to_int(DerivedKey)),
+    crypto:mod_pow(Base, Exponent, Prime).
+
+computeClientKeyOld() ->
 	ServerPublic = getServerPublic(),
 	ClientPrivate = getClientPrivate(),
 	ClientPublic = getClientPublic(),
@@ -262,27 +280,50 @@ computeClientKeyManually() ->
 	KGXNum = mod( (int(K) * int(V)), int(P)),
 	GX = crypto:mod_pow(G, X, P),
 	KGXNum = mod( (int(K) * int(GX)), int(P)),
-	io:format("bint: ~p~nkgxn: ~p~n", [int(ServerPublic), KGXNum]),
+	%io:format("bint: ~p~nkgxn: ~p~n", [int(ServerPublic), KGXNum]),
 
 	Sum = (int(ServerPublic) - KGXNum ),
+	Sum2 = if
+			Sum > 0 -> Sum;
+			true -> Sum + int(P)
+	end,
 
-	BaseNum = mod( Sum, int(P) ),
+	%BaseNum = mod( Sum, int(P) ),
 	%io:format("sum: ~p~nn: ~p~nbasenum: ~p~n", [Sum, int(P), BaseNum]),
-	Base = crypto:mod_pow(<<Sum:Size/integer>>, <<1>>, P),
-	Base = <<BaseNum:Size/integer>>,
+	Base = crypto:mod_pow(<<Sum2:Size/integer>>, <<1>>, P),
+	%Base = <<BaseNum:Size/integer>>,
 
-	UXNum = mod( ( int(U) * int(X) ), int(P)),
-	AUXNum = mod( ( int(ClientPrivate) + UXNum ), int(P) ),
-	Exp = <<AUXNum:Size/integer>>,
+	UXNum = ( int(U) * int(X) ),
+	SumExp = int(ClientPrivate) + UXNum,
+	Exp = <<SumExp:Size/integer>>,
 
 	%io:format("kgxnum: ~p~nbasenum: ~p~nbase: ~p~n~nuxnum: ~p~nauxnum: ~p~nexp: ~p~n~n", [KGXNum, BaseNum, Base, UXNum, AUXNum, Exp]),
 
-	SkeyNum = crypto:mod_exp(BaseNum, AUXNum, int(P)),
-	Skey = <<SkeyNum:Size/integer>>,
+	%SkeyNum = crypto:mod_exp(BaseNum, AUXNum, int(P)),
+	%Skey = <<SkeyNum:Size/integer>>,
 	Skey = crypto:mod_pow(Base, Exp, P),
 
-	%% wrong
-	%Skey = hexstr2bin("B0DC82BABCF30674AE450C0287745E7990A3381F63B387AAF271A10D233861E359B48220F7C4693C9AE12B0A6F67809F0876E2D013800D6C41BB59B6D5979B5C00A172B4A2A5903A0BDCAF8A709585EB2AFAFA8F3499B200210DCC1F10EB33943CD67FC88A2F39A4BE5BEC4EC0A3212DC346D7E474B29EDE8A469FFECA686E5A"),
+
+			Generator = G,
+			Prime = P,
+			Version = getVersion(),
+			DerivedKey = X,
+
+			PrimeI = bin_to_int(Prime),
+			Multiplier = getMultiplier(Version, Generator, Prime),
+    BX = crypto:mod_pow(Generator, DerivedKey, Prime),
+    BTMPI0 = bin_to_int(ServerPublic) - bin_to_int(Multiplier) * bin_to_int(BX),
+    BTMPI = BTMPI0 rem PrimeI,
+    Base2 = if
+        BTMPI > 0 -> int_to_bin(BTMPI);
+        true -> int_to_bin(BTMPI + PrimeI)
+    end,
+
+		UXNum2 = bin_to_int(U) * bin_to_int(DerivedKey),
+		SumExp2 = bin_to_int(ClientPrivate) + UXNum2,
+    Exponent = int_to_bin(SumExp2),
+    _Skey2 = crypto:mod_pow(Base2, Exponent, Prime),
+
 	Skey.
 
 computeServerKeyManually() ->
@@ -383,3 +424,28 @@ mkint(C) when $A =< C, C =< $F ->
     C - $A + 10;
 mkint(C) when $a =< C, C =< $f ->
     C - $a + 10.
+
+	padded(V, N) when byte_size(V) =:= byte_size(N) -> V;
+padded(V, N) when byte_size(V) < byte_size(N) ->
+    NLen = byte_size(N),
+    PadLen = (NLen - byte_size(V)) * 8,
+    Pad = <<0:PadLen>>,
+    [Pad, V].
+
+int_to_bin(Int) ->
+    Len0 = length(erlang:integer_to_list(Int, 16)),
+    Len1 = Len0 + (Len0 rem 2),
+    Bits = Len1 * 4,
+    <<Int:Bits>>.
+
+bin_to_int(Bin) ->
+    Bits = byte_size(Bin) * 8,
+    <<Val:Bits>> = Bin,
+    Val.
+
+getMultiplier('6a', Generator, Prime) ->
+    crypto:hash(sha, [Prime, padded(Generator, Prime)]);
+getMultiplier('6', _Generator, _Prime) ->
+    <<3/integer>>;
+getMultiplier('3', _Generator, _Prime) ->
+    <<1/integer>>.

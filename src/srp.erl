@@ -81,7 +81,7 @@
 
     
     %% client session key
-    computeClientKey() ->
+    computeClientKey_old() ->
 	    ServerPublic = getServerPublic(),
 	    ClientPrivate = getClientPrivate(),
 	    ClientPublic = getClientPublic(),
@@ -91,6 +91,28 @@
 	    Version = getVersion(),
 	    DerivedKey = getDerivedKey(),
 	    crypto:compute_key(srp, ServerPublic, {ClientPublic, ClientPrivate}, {user, [DerivedKey, Prime, Generator, Version, U]}).
+
+		computeClientKey() ->
+	    ServerPublic = getServerPublic(),
+	    ClientPrivate = getClientPrivate(),
+	    ClientPublic = getClientPublic(),
+			U = getScrambler(),
+	    Generator = getGenerator(),
+	    Prime = getPrime(),
+	    Version = getVersion(),
+	    DerivedKey = getDerivedKey(),
+			PrimeI = bin_to_int(Prime),
+			Multiplier = getMultiplier(Version, Generator, Prime),
+    BX = crypto:mod_pow(Generator, DerivedKey, Prime),
+    BTMPI0 = bin_to_int(ServerPublic) - bin_to_int(Multiplier) * bin_to_int(BX),
+    BTMPI = BTMPI0 rem PrimeI,
+    Base = if
+        BTMPI > 0 -> int_to_bin(BTMPI);
+        true -> int_to_bin(BTMPI + PrimeI)
+    end,
+    Exponent = int_to_bin(bin_to_int(ClientPrivate) + bin_to_int(U) * bin_to_int(DerivedKey)),
+    crypto:mod_pow(Base, Exponent, Prime).
+
 
     %% server session key
     computeServerKey() ->
@@ -149,3 +171,29 @@ srp_scrambler(_Version, UserPublic, HostPublic, Prime) ->
     C1 = crypto:sha_update(C0, srp_pad_to(PadLength, UserPublic)),
     C2 = crypto:sha_update(C1, srp_pad_to(PadLength, HostPublic)),
     crypto:sha_final(C2).
+
+
+	padded(V, N) when byte_size(V) =:= byte_size(N) -> V;
+padded(V, N) when byte_size(V) < byte_size(N) ->
+    NLen = byte_size(N),
+    PadLen = (NLen - byte_size(V)) * 8,
+    Pad = <<0:PadLen>>,
+    [Pad, V].
+
+int_to_bin(Int) ->
+    Len0 = length(erlang:integer_to_list(Int, 16)),
+    Len1 = Len0 + (Len0 rem 2),
+    Bits = Len1 * 4,
+    <<Int:Bits>>.
+
+bin_to_int(Bin) ->
+    Bits = byte_size(Bin) * 8,
+    <<Val:Bits>> = Bin,
+    Val.
+
+getMultiplier('6a', Generator, Prime) ->
+    crypto:hash(sha, [Prime, padded(Generator, Prime)]);
+getMultiplier('6', _Generator, _Prime) ->
+    <<3/integer>>;
+getMultiplier('3', _Generator, _Prime) ->
+    <<1/integer>>.
