@@ -3,7 +3,7 @@
 -compile([export_all]).
 
 
-getUsername() -> <<"alice">>.
+getUsername() -> <<"ALICE">>.
 
 getPassword() -> <<"password123">>.
 
@@ -85,7 +85,7 @@ computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, De
 	crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}).
 
 getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key) ->
-	P1 = crypto:exor(hash(Prime), hash(Generator)),
+	P1 = crypto:exor(hash(Prime), hash(padded(Generator, Prime))),
 	hash([P1, hash(I), Salt, ClientPublic, ServerPublic, Key]).
 
 getM2(ClientPublic, M1, Key) ->
@@ -128,3 +128,11 @@ bin_to_int(Bin) ->
 	Bits = byte_size(Bin) * 8,
 	<<Val:Bits>> = Bin,
 	Val.
+
+
+padded(V, N) when byte_size(V) =:= byte_size(N) -> V;
+padded(V, N) when byte_size(V) < byte_size(N) ->
+	NLen = byte_size(N),
+	PadLen = (NLen - byte_size(V)) * 8,
+	Pad = <<0:PadLen>>,
+	[Pad, V].

@@ -9,7 +9,7 @@ start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-	UseClient = false,
+	UseDummyClient = true,
 	ClientProc = {client,
 								{client, start_link, []},
 									transient, 10000, worker, [client]},
@@ -19,5 +19,5 @@ init([]) ->
 				 {worldserv_sup,
 					{worldserv_sup, start_link, []},
 					transient, 10000, supervisor, [worldserv_sup]}],
-	FinalProcs = if UseClient -> Procs ++ [ClientProc]; true -> Procs end,
+	FinalProcs = if UseDummyClient -> Procs ++ [ClientProc]; true -> Procs end,
 	{ok, {{one_for_one, 60, 3600}, FinalProcs}}.

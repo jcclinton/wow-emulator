@@ -34,7 +34,8 @@ handle_call(_E, _From, State) ->
 
 handle_cast(accept, S = #state{socket=ListenSocket}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
-	ServerPrivate = srp:generatePrivate(),
+	%ServerPrivate = srp:generatePrivate(),
+	ServerPrivate = <<116,251,24,248,115,211,4,76,142,129,49,189,104,186,81,185,50,182,209,247,131,98,164,163,244,125,158,200,101,214,37,146>>,
 	Username = srp:getUsername(),
 	Pw = srp:getPassword(),
 	Salt = srp:getSalt(),
@@ -44,7 +45,6 @@ handle_cast(send_challenge, State = #state{socket=Socket, server_private=ServerP
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
 	ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, DerivedKey),
-	io:format("server public: ~p~n", [ServerPublic]),
 	Salt = srp:getSalt(),
 	Msg = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 	%io:format("sending chal resp: ~p~n", [Msg]),
@@ -152,8 +152,8 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 					_Unk4 = <<0?B>>
 				],
 
-	Size = lists:foldl(fun(Elem, Acc) -> Acc + size(Elem) end, 0, Msg),
-	io:format("response size: ~p~n", [Size]),
+	%Size = lists:foldl(fun(Elem, Acc) -> Acc + size(Elem) end, 0, Msg),
+	%io:format("response size: ~p~n", [Size]),
 	Msg.
 
 build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPublic, Key) ->
@@ -261,5 +261,5 @@ extract_proof(Msg) ->
 		_Unk?B>> = Msg,
 	ClientPublic = <<ClientPublic_raw?QQB>>,
 	M1 = <<M1_raw?SHB>>,
-	io:format("client public: ~p~nm1: ~p~n", [ClientPublic, M1]),
+	%io:format("client public: ~p~nm1: ~p~n", [ClientPublic, M1]),
 	{ClientPublic, M1}.
