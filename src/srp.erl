@@ -2,6 +2,8 @@
 -export([test/0]).
 -compile([export_all]).
 
+-include("include/binary.hrl").
+
 
 getUsername() -> <<"ALICE">>.
 
@@ -85,11 +87,42 @@ computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, De
 	crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}).
 
 getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key) ->
-	P1 = crypto:exor(hash(Prime), hash(padded(Generator, Prime))),
+	P1 = crypto:exor(hash(Prime), hash(Generator)),
 	hash([P1, hash(I), Salt, ClientPublic, ServerPublic, Key]).
 
 getM2(ClientPublic, M1, Key) ->
 	hash([ClientPublic, M1, Key]).
+
+
+testHash() ->
+	Input = <<33,160,108,167,81,171,166,251,140,141,115,156,11,60,54,128,176,74,174,119,139,209,173,232,150,179,178,62,133,100,116,2>>,
+	interleaveHash(Input).
+
+interleaveHash(Input) ->
+	%% todo remove all zero bytes from beginning of input
+	{E, F} = getBytes(Input, {[], []}, 0),
+	G = hash(E),
+	H = hash(F),
+	Out = combineHashes(G, H, []),
+	%io:format("input: ~p~nE: ~p~nF: ~p~nG: ~p~nH: ~p~nout: ~p~n", [Input, E, F, G, H, Out]),
+	iolist_to_binary(Out).
+
+getBytes(<<>>, Data, _N) -> Data;
+getBytes(<<T?B, Rest/binary>>, {E, F}, N) ->
+	IsEven = N rem 2 == 0,
+	NewData = if IsEven ->
+			NewE = E ++ [T],
+			{NewE, F};
+		true ->
+			NewF = F ++ [T],
+			{E, NewF}
+		end,
+	getBytes(Rest, NewData, N+1).
+
+combineHashes(<<>>, <<>>, Data) -> Data;
+combineHashes(<<G0?B, GRest/binary>>, <<H0?B, HRest/binary>>, Data) ->
+	NewData = Data ++ [G0] ++ [H0],
+	combineHashes(GRest, HRest, NewData).
 
 
 test() ->
