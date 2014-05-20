@@ -69,7 +69,7 @@ handle_info({tcp, Socket, <<_HdrLen?WO, 492?W, Seed/binary>>}, State) when Socke
 	io:format("CLIENT: received world challenge response: ~p~n", [Seed]),
 	Msg = build_world_challenge_response(Seed),
 	gen_tcp:send(State#state.world_socket, Msg),
-	A = binary_to_list(getUsername()),
+	A = binary_to_list(getUsername(upper)),
 	Key = world_crypto:encryption_key(A),
 	KTup = {0, 0, Key},
 	{noreply, State#state{keyState=KTup}};
@@ -138,6 +138,10 @@ terminate(_Reason, _State) ->
 %%
 %%
 %%private
+getUsername(upper) ->
+	U = getUsername(),
+	srp:normalize(U).
+
 getUsername() ->
 	<<"alice">>.
 
@@ -199,7 +203,7 @@ buildRealmlistMessage() ->
 build_world_challenge_response(_Seed) ->
 	Build = <<1?L>>,
 	Unk = <<1?L>>,
-	AccountName = getUsername(),
+	AccountName = getUsername(upper),
 	Null = <<0?B>>,
 	Rest = [AccountName, Null],
 	Msg = [Build, Unk, Rest],

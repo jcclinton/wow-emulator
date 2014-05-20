@@ -6,6 +6,6 @@
 {mod, {sockserv_app, []}},
 {env,
  [{realm_port, 3724},
- {world_port, 8640}
+ {world_port, 8899}
  ]}
 ]}.

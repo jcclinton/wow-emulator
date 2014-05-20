@@ -52,7 +52,8 @@ handle_cast(send_challenge, State = #state{socket=Socket, server_private=ServerP
 	{noreply, State#state{server_public=ServerPublic}};
 handle_cast(send_proof, State = #state{socket=Socket, m1=M1, client_public=ClientPublic, server_public=ServerPublic, server_private=ServerPrivate, derived_key=DerivedKey}) ->
 	%% TODO remove this hardcoding
-	Name = srp:getUsername(),
+	NameReg = srp:getUsername(),
+	Name = srp:normalize(NameReg),
 	Salt = srp:getSalt(),
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
@@ -187,39 +188,60 @@ build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPubli
 	Msg.
 
 build_realmlist_response() ->
-	{ok, Port} = application:get_env(world_port),
-	PortBin = binary_list_from_integer(Port),
-	Ip = [<<1?B>>,
-				<<2?B>>,
-				<<7?B>>,
+	%{ok, Port} = application:get_env(world_port),
+	%PortBin = binary_list_from_integer(Port),
+	PortBin = [<<$8>>, <<$8>>, <<$9>>, <<$9>>],
+	Ip = [<<$1?B>>,
+				<<$2?B>>,
+				<<$7?B>>,
 				<<$.>>,
-				<<0?B>>,
+				<<$0?B>>,
 				<<$.>>,
-				<<0?B>>,
+				<<$0?B>>,
 				<<$.>>,
-				<<1?B>>,
+				<<$1?B>>,
 				<<$:>>,
 				PortBin,
 				<<$\0>>
 			 ],
 	Realms = [
-						_Icon = <<1?B>>,
+						_Icon = <<1?L>>,
 						_Lock = <<0?B>>,
-						_Status = <<1?B>>,
-						_RealmId = <<1?L>>,
+						%_Status = <<1?B>>,
+						%_RealmId = <<1?L>>,
 						_RealmName = [<<"cool realm">>, <<$\0>>],
 						Ip,
-						_Pop = <<1?B>>,
+						_Pop = <<1?L>>,
 						_Chars = <<2?B>>,
 						_TZ = <<1?B>>,
-						_Unk = <<16#15?B>>
+						_Unk = <<16#0?B>>
 					 ],
+					 
+                %pkt << uint32(i->second.icon);              // realm type
+                %pkt << uint8(realmflags);                   // realmflags
+                %pkt << name;                                // name
+                %pkt << i->second.address;                   // address
+                %pkt << float(i->second.populationLevel);
+                %pkt << uint8(AmountOfCharacters);
+                %pkt << uint8(i->second.timezone);           // realm category
+                %pkt << uint8(0x00);  
+
+	Payload = [_Start = <<0?L>>,
+				 _realms = <<1?B>>,
+				 Realms,
+				 <<2?W>>],
+	Size = getSize(Payload),
 	Msg = [_Cmd = <<16#10?B>>,
-				 _Size = <<1?W>>,
-				 _Start = <<0?L>>,
-				 _realms = <<1?W>>,
-				 Realms],
+				_Size = <<Size?W>>,
+				Payload],
 	Msg.
+
+getSize([]) -> 0;
+getSize([Hd|Tail]) when is_binary(Hd) ->
+	size(Hd) + getSize(Tail);
+getSize([Hd|Tail]) ->
+	getSize(Hd) + getSize(Tail).
+
 
 %% example 1234 -> [<<1>>, <<2>>, <<3>>, <<4>>]
 binary_list_from_integer(Int) ->
