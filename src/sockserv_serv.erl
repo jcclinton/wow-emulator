@@ -35,7 +35,7 @@ handle_call(_E, _From, State) ->
 handle_cast(accept, S = #state{socket=ListenSocket}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	%ServerPrivate = srp:generatePrivate(),
-	ServerPrivate = <<116,251,24,248,115,211,4,76,142,129,49,189,104,186,81,185,50,182,209,247,131,98,164,163,244,125,158,200,101,214,37,146>>,
+	ServerPrivate = <<16#74FB18F873D3044C8E8131BD68BA51B932B6D1F78362A4A3F47D9EC865D62592?QQB>>,
 	Username = srp:getUsername(),
 	Pw = srp:getPassword(),
 	Salt = srp:getSalt(),
@@ -134,6 +134,8 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 	%io:format("nsize: ~p~n", [erlang:byte_size(N)]),
 	%io:format("ssize: ~p~n", [erlang:byte_size(S)]),
 	Unk3 = <<16#0123456789ABCDEF?QH>>,
+
+	%% convert from big endian to little endian
 	<<ServerPubNum:256>> = ServerPublic,
 	ServerPubLittle = <<ServerPubNum?QQ>>,
 
@@ -142,6 +144,8 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 
 	<<SaltNum:256>> = Salt,
 	SaltLittle = <<SaltNum?QQ>>,
+	%% salt is already little endian
+	%SaltLittle = Salt,
 
 	Msg = [_Cmd = <<0?B>>,
 					_Err = <<0?B>>,
@@ -162,6 +166,9 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 
 build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPublic, Key) ->
 	I = srp:getUsername(),
+	io:format("client pub: ~p~n~nserver pub: ~p~n~n", [ClientPublic, ServerPublic]),
+	%io:format("I: ~p~n~nPrime: ~p~n~nGen: ~p~n~nSalt: ~p~n~n", [I, Prime, Generator, Salt]),
+
 	ServerM1 = srp:getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key),
 	io:format("m1 server: ~p~n~nm1 client: ~p~n~n", [ServerM1, ClientM1]),
 	%ClientM1 = ServerM1,

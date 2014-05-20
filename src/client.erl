@@ -177,7 +177,8 @@ buildProofMessage(State) ->
 	%Key = hash([Skey]),
 	%M1 = getM(ClientPublic, ServerPublic, Key, P, G, Salt),
 
-	ClientPublic = <<16#8985507fe6263740873c3605a4d6507592ad02095ac88e871ab623ac9f5bb388:256>>,
+	%%ClientPublic = <<16#8985507fe6263740873c3605a4d6507592ad02095ac88e871ab623ac9f5bb388:256>>,
+	ClientPublic = <<16#0f6621dd4a39e4df6e9b2d07e8169eb0d33c917276bdbb1eeefc61f20f809649:256>>,
 	M1 = <<16#c098171e12b60dc72d64eaa63614e5dff07ce1cf:160>>,
 	%io:format("client public size: ~p~n", [erlang:byte_size(ClientPublic)]),
 	%io:format("m1 size: ~p~n", [erlang:byte_size(M1)]),
