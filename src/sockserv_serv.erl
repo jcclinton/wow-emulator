@@ -142,10 +142,10 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 	<<Nnum:256>> = N,
 	NLittle = <<Nnum?QQ>>,
 
-	<<SaltNum:256>> = Salt,
-	SaltLittle = <<SaltNum?QQ>>,
+	%<<SaltNum:256>> = Salt,
+	%SaltLittle = <<SaltNum?QQ>>,
 	%% salt is already little endian
-	%SaltLittle = Salt,
+	SaltLittle = Salt,
 
 	Msg = [_Cmd = <<0?B>>,
 					_Err = <<0?B>>,
@@ -173,13 +173,17 @@ build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPubli
 	io:format("m1 server: ~p~n~nm1 client: ~p~n~n", [ServerM1, ClientM1]),
 	%ClientM1 = ServerM1,
 	M2 = srp:getM2(ClientPublic, ServerM1, Key),
-	<<M2Num:160>> = M2,
+	<<M2Num?SHB>> = M2,
 	M2Little = <<M2Num?SH>>,
+	io:format("m2: ~p~n~n", [M2]),
 
 	Msg = [_Cmd = <<1?B>>,
 				 _Err = <<0?B>>,
 				 M2Little,
-				 _Flags = <<0?B>>],
+				 _Flags = <<0?B>>,
+				 <<0?B>>,
+				 <<0?B>>,
+				 <<0?B>>],
 	Msg.
 
 build_realmlist_response() ->
