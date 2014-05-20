@@ -44,26 +44,19 @@ getDerivedKey(UBin, PwBin, Salt) ->
 	UNormBin = normalize(UBin),
 	PwNormBin = normalize(PwBin),
 	PassHash = crypto:hash(sha, [UNormBin, <<$:>>, PwNormBin]),
-	PassHashhex = bin_to_hex_list(PassHash),
-	<<PassHashint?SHB>> = PassHash,
-	io:format("PassHashhex: ~p~nPassHashint: ~p~n", [PassHashhex, PassHashint]),
 	X = crypto:hash(sha, [Salt, PassHash]),
-	<<XNum?SH>> = X,
-	<<XNum?SHB>>.
+	l_to_b_endian(X, 160).
 
 normalize(String) ->
 	S1 = binary_to_list(String),
 	S2 = string:to_upper(S1),
 	list_to_binary(S2).
 
-getScrambler(ClientPublicB, ServerPublicB) ->
-	<<Anum?QQB>> = ClientPublicB,
-	ClientPublicL = <<Anum?QQ>>,
-	<<Bnum?QQB>> = ServerPublicB,
-	ServerPublicL = <<Bnum?QQ>>,
+getScrambler(ClientPublic, ServerPublic) ->
+	ClientPublicL = b_to_l_endian(ClientPublic, 256),
+	ServerPublicL = b_to_l_endian(ServerPublic, 256),
 	U = crypto:hash(sha, [ClientPublicL, ServerPublicL]),
-	<<Unum?SH>> = U,
-	<<Unum?SHB>>.
+	l_to_b_endian(U, 160).
 
 
 %% client public key
@@ -104,39 +97,34 @@ computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, De
 	Verifier = getVerifier(Generator, Prime, DerivedKey),
 	crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}).
 
-getM1(Prime, Generator, UBin, Salt, ClientPublic, ServerPublic, Key) ->
-	Phashb = hash(Prime),
-	<<Phashint?SH>> = Phashb,
-	Phash = <<Phashint?SHB>>,
-	Phashhex = bin_to_hex_list(Phash),
-	io:format("Prime hash: ~p~nPrime hash hex: ~p~nPrime hash int: ~p~n", [Phash, Phashhex, Phashint]),
-	Ghashb = hash(Generator),
-	<<Ghashint?SH>> = Ghashb,
-	Ghash = <<Ghashint?SHB>>,
-	Ghashhex = bin_to_hex_list(Ghash),
-	io:format("gen hash: ~p~ngen hash hex: ~p~ngen hash int: ~p~n", [Ghash, Ghashhex, Ghashint]),
+getM1(Prime, Generator, UBin, SaltL, ClientPublic, ServerPublic, Key) ->
+	PrimeL = b_to_l_endian(Prime, 256),
+	PhashL = hash(PrimeL),
+	Phash = l_to_b_endian(PhashL, 160),
+
+	GhashL = hash(Generator),
+	Ghash = l_to_b_endian(GhashL, 160),
+
 	P1 = crypto:exor(Phash, Ghash),
-	P1hex = bin_to_hex_list(P1),
-	<<P1int?SHB>> = P1,
-	P1l = <<P1int?SH>>,
-	io:format("P1: ~p~nP1hex: ~p~nP1int: ~p~n", [P1, P1hex, P1int]),
+	P1L = b_to_l_endian(P1, 160),
+
 	UNorm = normalize(UBin),
-	NameHashB = hash(UNorm),
-	<<NameHashInt?SHB>> = NameHashB,
-	NameHash = <<NameHashInt?SH>>,
-	NameHashhex = bin_to_hex_list(NameHash),
-	io:format("name hash: ~p~nNameHashhex: ~p~nNameHashint: ~p~n", [NameHash, NameHashhex, NameHashInt]),
-	%L = [P1l, NameHashL, Salt, ClientPublic, ServerPublic, Key],
-	L = [P1l, NameHashB, Salt, ClientPublic, ServerPublic, Key],
+	NameHash = hash(UNorm),
+
+	ServerPublicL = b_to_l_endian(ServerPublic, 256),
+	ClientPublicL = b_to_l_endian(ClientPublic, 256),
+	KeyL = b_to_l_endian(Key, 320),
+	L = [P1L, NameHash, SaltL, ClientPublicL, ServerPublicL, KeyL],
 	Ml = hash(L),
-	<<MInt?SH>> = Ml,
-	M = <<MInt?SHB>>,
-	MHex = bin_to_hex_list(M),
-	io:format("next hash: ~p~nNextHashhex: ~p~nNextHashint: ~p~n", [M, MHex, MInt]),
-	M.
+	l_to_b_endian(Ml, 160).
+
 
 getM2(ClientPublic, M1, Key) ->
-	hash([ClientPublic, M1, Key]).
+	ClientPublicL = b_to_l_endian(ClientPublic, 256),
+	KeyL = b_to_l_endian(Key, 320),
+	M1L = b_to_l_endian(M1, 160),
+	M2 = hash([ClientPublicL, M1L, KeyL]),
+	l_to_b_endian(M2, 160).
 
 
 
@@ -172,13 +160,15 @@ testM() ->
 
 
 interleaveHash(Input) ->
+	InputL = b_to_l_endian(Input, 256),
 	%% todo remove all zero bytes from beginning of input
-	{E, F} = getBytes(Input, {[], []}, 0),
+	{E, F} = getBytes(InputL, {[], []}, 0),
 	G = hash(E),
 	H = hash(F),
 	Out = combineHashes(G, H, []),
 	%io:format("input: ~p~nE: ~p~nF: ~p~nG: ~p~nH: ~p~nout: ~p~n", [Input, E, F, G, H, Out]),
-	iolist_to_binary(Out).
+	OutBin = iolist_to_binary(Out),
+	l_to_b_endian(OutBin, 320).
 
 getBytes(<<>>, Data, _N) -> Data;
 getBytes(<<T?B, Rest/binary>>, {E, F}, N) ->
@@ -196,6 +186,7 @@ combineHashes(<<>>, <<>>, Data) -> Data;
 combineHashes(<<G0?B, GRest/binary>>, <<H0?B, HRest/binary>>, Data) ->
 	NewData = Data ++ [G0] ++ [H0],
 	combineHashes(GRest, HRest, NewData).
+
 
 
 test() ->
@@ -242,50 +233,48 @@ doTest() ->
 	%<<ServerPrivateint?QQB>> = ServerPrivate,
 	%io:format("ServerPrivate: ~p~nServerPrivatehex: ~p~nServerPrivateint: ~p~n", [ServerPrivate, ServerPrivatehex, ServerPrivateint]),
 	ServerPublic = getServerPublic(G, P, ServerPrivate, X),
-	Bhex = bin_to_hex_list(ServerPublic),
-	<<Bint?QQB>> = ServerPublic,
-	io:format("B: ~p~nBhex: ~p~nBint: ~p~n", [ServerPublic, Bhex, Bint]),
+	%Bhex = bin_to_hex_list(ServerPublic),
+	%<<Bint?QQB>> = ServerPublic,
+	%io:format("B: ~p~nBhex: ~p~nBint: ~p~n", [ServerPublic, Bhex, Bint]),
 
 	%ClientPublic = <<16#090fb4ad2d9529a293b17109502cb2cbccf0e45aa2ab7a0f642f67b0b98a2237?QQ>>,
 	%ClientPublic = <<16#07ce1adff32cd842a7eeac823d21c428a070bed023ae0abaa99f2f72679a4154?QQ>>,
 	ClientPublic = <<16#16BBAB42E66EF61FA06FBB0E050D4E4A7C563E08F8FE0ADB48CD95B4D2A9911C?QQB>>,
-	Ahex = bin_to_hex(ClientPublic),
-	<<Aint?QQB>> = ClientPublic,
-	ClientPublicL = <<Aint?QQ>>,
+	%Ahex = bin_to_hex(ClientPublic),
+	%<<Aint?QQB>> = ClientPublic,
+	%ClientPublicL = <<Aint?QQ>>,
 
 	%M1l = <<16#a85e37b98eb43a8b49cda94c48fc906b5659c571?SH>>,
 	%M1l = <<16#87d7c73d976f531dd4d584ac9d64fc08f7b64c54?SH>>,
 	M1 = <<16#BDF080D5E28C69BADEC89ABD2FD2D234698F32C9?SHB>>,
 	<<M1num?SHB>> = M1,
-	M1 = <<M1num?SHB>>,
 	Mhex = bin_to_hex_list(M1),
-	io:format("A: ~p~nAhex: ~p~nAint: ~p~n", [ClientPublic, Ahex, Aint]),
+	%io:format("A: ~p~nAhex: ~p~nAint: ~p~n", [ClientPublic, Ahex, Aint]),
 	io:format("M: ~p~nMhex: ~p~nMint: ~p~n", [M1, Mhex, M1num]),
 
 	Skey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, G, P, X),
-	<<Skeyint?QQB>> = Skey,
-	Skeyhex = bin_to_hex_list(Skey),
-	io:format("skey: ~p~nskey hex: ~p~nskey int: ~p~n", [Skey, Skeyhex, Skeyint]),
+	%<<Skeyint?QQB>> = Skey,
+	%Skeyhex = bin_to_hex_list(Skey),
+	%io:format("skey: ~p~nskey hex: ~p~nskey int: ~p~n", [Skey, Skeyhex, Skeyint]),
 
-	Skeyl = <<Skeyint?QQ>>,
-	Keyl = srp:interleaveHash(Skeyl),
-	<<Keyint?SL>> = Keyl,
-	Key = <<Keyint?SLB>>,
-	Keyhex = bin_to_hex_list(Key),
-	io:format("key: ~p~nkey hex: ~p~nkey int: ~p~n", [Key, Keyhex, Keyint]),
+	%Skeyl = <<Skeyint?QQ>>,
+	Key = srp:interleaveHash(Skey),
+	%<<Keyint?SLB>> = Key,
+	%Keyl = <<Keyint?SL>>,
+	%Keyhex = bin_to_hex_list(Key),
+	%io:format("key: ~p~nkey hex: ~p~nkey int: ~p~n", [Key, Keyhex, Keyint]),
 
-	<<Pnum?QQB>> = P,
-	Pl = <<Pnum?QQ>>,
-	Bl = <<Bint?QQ>>,
-	M1Server = getM1(Pl, G, U, Salt, ClientPublicL, Bl, Keyl),
+	%<<Pnum?QQB>> = P,
+	%Pl = <<Pnum?QQ>>,
+	%Pl = b_to_l_endian(P, 256),
+	%Bl = <<Bint?QQ>>,
+	M1Server = getM1(P, G, U, Salt, ClientPublic, ServerPublic, Key),
 	M1serverhex = bin_to_hex_list(M1Server),
 	<<M1Serverint?SHB>> = M1Server,
 	io:format("Ms: ~p~nMshex: ~p~nMsint: ~p~n", [M1Server, M1serverhex, M1Serverint]),
 
-	M1L = <<M1Serverint?SH>>,
-	M2L = getM2(ClientPublicL, M1L, Keyl),
-	<<M2Int?SH>> = M2L,
-	M2 = <<M2Int?SHB>>,
+	M2 = getM2(ClientPublic, M1, Key),
+	<<M2Int?SHB>> = M2,
 	M2Hex = bin_to_hex_list(M2),
 	io:format("M2: ~p~nM2hex: ~p~nM2int: ~p~n", [M2, M2Hex, M2Int]),
 	ok.
@@ -316,6 +305,27 @@ doTest() ->
 
 %% utility functions
 hash(L) -> crypto:hash(sha, L).
+
+l_to_b_endian(Msg, 256) ->
+	<<Num?QQ>> = Msg,
+	<<Num?QQB>>;
+l_to_b_endian(Msg, 160) ->
+	<<Num?SH>> = Msg,
+	<<Num?SHB>>;
+l_to_b_endian(Msg, 320) ->
+	<<Num?SL>> = Msg,
+	<<Num?SLB>>.
+
+b_to_l_endian(Msg, 256) ->
+	<<Num?QQB>> = Msg,
+	<<Num?QQ>>;
+b_to_l_endian(Msg, 160) ->
+	<<Num?SHB>> = Msg,
+	<<Num?SH>>;
+b_to_l_endian(Msg, 320) ->
+	<<Num?SLB>> = Msg,
+	<<Num?SL>>.
+
 
 int_to_bin(Int) ->
 	Len0 = length(erlang:integer_to_list(Int, 16)),
