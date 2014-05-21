@@ -60,7 +60,7 @@ handle_cast(send_proof, State = #state{socket=Socket, m1=M1, client_public=Clien
 	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, DerivedKey),
 	%io:format("server skey: ~p~n", [Skey]),
 	Key = srp:interleaveHash(Skey),
-	KeySize = size(Key),
+	%KeySize = size(Key),
 	%io:format("output key: ~p~nsize: ~p~n", [Key, KeySize]),
 	%Key = srp:hash([Skey]),
 	StringName = binary_to_list(Name),
@@ -172,7 +172,9 @@ build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPubli
 
 	ServerM1 = srp:getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key),
 	%io:format("m1 server: ~p~n~nm1 client: ~p~n~n", [ServerM1, ClientM1]),
-	%ClientM1 = ServerM1,
+	if ClientM1 == ServerM1 -> ok;
+		true -> io:format("CLIENTM1 and SERVERM1 do not match!~n")
+	end,
 	M2 = srp:getM2(ClientPublic, ServerM1, Key),
 	<<M2Num?SHB>> = M2,
 	M2Little = <<M2Num?SH>>,

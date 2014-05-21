@@ -29,12 +29,22 @@ accept({accept, ListenSocket}, State = #state{}) ->
 	challenge(ok, State#state{accept_socket=AcceptSocket}).
 challenge(_, State = #state{accept_socket=Socket}) ->
 	Msg = buildAuthChallenge(),
+	io:format("sending auth challenge~n"),
 	gen_tcp:send(Socket, Msg),
 	rcv_challenge(ok, State).
 rcv_challenge(_, State = #state{accept_socket=Socket, pair_pid=PairPid}) ->
-	{ok, Packet} = gen_tcp:recv(Socket, 0),
-	io:format("received world challenge~n"),
-	<<_Length?WO, 493?L, Msg/binary>> = Packet,
+	%{ok, Packet} = gen_tcp:recv(Socket, 0),
+
+	%<<Length?WO, 493?L, Msg/binary>> = Packet,
+	%io:format("received world challenge with length ~p and msg: ~p~n", [Length, Msg]),
+
+	{ok, Packet} = gen_tcp:recv(Socket, 2),
+	<<Length?WO>> = Packet,
+	io:format("received world challenge with length ~p~n", [Length]),
+	{ok, PacketData} = gen_tcp:recv(Socket, Length),
+	io:format("received world challenge data~n"),
+	<<493?L, Msg/binary>> = PacketData,
+
 	{_ResponseName, ResponseData, _AccountId, KState} = auth_session(Msg),
 	ResponseOpCode = 494,
 	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, KState}),
@@ -42,9 +52,10 @@ rcv_challenge(_, State = #state{accept_socket=Socket, pair_pid=PairPid}) ->
 	rcv(ok, State#state{key_state=KState}).
 rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
 	%% TODO handle error case
+	io:format("waiting for client header of length ~p...~n", [HdrLen]),
 	Resp = gen_tcp:recv(Socket, HdrLen),
 	{ok, Packet} = Resp,
-	io:format("received resp: ~p~n", [Resp]),
+	io:format("received encrypted header: ~p~n", [Resp]),
 	%io:format("received tcp data with socket: ~p and hdrlen: ~p and with resp: ~p~n", [Socket, HdrLen, Resp]),
 	<<EncryptedLength?WO, EncryptedOpcode?W>> = Packet,
 	{EData, NewKState} = world_crypto:decrypt(<<EncryptedLength?WO, EncryptedOpcode?W>>, KeyState),
@@ -96,6 +107,7 @@ buildAuthChallenge() ->
 auth_session(Rest) ->
     {_, A, _}      = cmsg_auth_session(Rest),
     Data   = smsg_auth_response(),
+		io:format("authorizing session for ~p~n", [A]),
     K      = world_crypto:encryption_key(A),
     KTup     = {0, 0, K},
 		AccountId = srp:getUsername(),
