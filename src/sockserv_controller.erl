@@ -48,7 +48,7 @@ handle_cast({tcp_accept_challenge, Msg}, State) ->
 	routeData(self(), Msg),
 	{noreply, State};
 handle_cast({tcp_packet_rcvd, <<Opcode?WO, Payload/binary>>}, S = #state{user=User}) ->
-	io:format("received opcode ~p with payload ~p~n", [Opcode, Payload]),
+	io:format("controller: received opcode ~p with payload ~p~n", [Opcode, Payload]),
 	{_M, _F} = opcode_patterns:lookup_function(Opcode),
 	_A = [User, Payload],
 	%{NewUser, {Pids, Msg}} = apply({M,F,A}),

@@ -58,10 +58,10 @@ handle_cast(send_proof, State = #state{socket=Socket, m1=M1, client_public=Clien
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
 	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, DerivedKey),
-	io:format("server skey: ~p~n", [Skey]),
+	%io:format("server skey: ~p~n", [Skey]),
 	Key = srp:interleaveHash(Skey),
 	KeySize = size(Key),
-	io:format("output key: ~p~nsize: ~p~n", [Key, KeySize]),
+	%io:format("output key: ~p~nsize: ~p~n", [Key, KeySize]),
 	%Key = srp:hash([Skey]),
 	StringName = binary_to_list(Name),
 	ets:insert(connected_clients, {StringName, Key}),
@@ -89,7 +89,7 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 	end,
 	io:format("SERVER: received challenge~n"),
 	%io:format("SERVER: received: ~p~n", [Msg]),
-	io:format("SERVER: received name: ~p~n", [I]),
+	%io:format("SERVER: received name: ~p~n", [I]),
 	gen_server:cast(self(), send_challenge),
 	{noreply, State#state{identity=I}};
 handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State) ->
@@ -167,16 +167,16 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 
 build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPublic, Key) ->
 	I = srp:getUsername(),
-	io:format("client pub: ~p~n~nserver pub: ~p~n~n", [ClientPublic, ServerPublic]),
+	%io:format("client pub: ~p~n~nserver pub: ~p~n~n", [ClientPublic, ServerPublic]),
 	%io:format("I: ~p~n~nPrime: ~p~n~nGen: ~p~n~nSalt: ~p~n~n", [I, Prime, Generator, Salt]),
 
 	ServerM1 = srp:getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key),
-	io:format("m1 server: ~p~n~nm1 client: ~p~n~n", [ServerM1, ClientM1]),
+	%io:format("m1 server: ~p~n~nm1 client: ~p~n~n", [ServerM1, ClientM1]),
 	%ClientM1 = ServerM1,
 	M2 = srp:getM2(ClientPublic, ServerM1, Key),
 	<<M2Num?SHB>> = M2,
 	M2Little = <<M2Num?SH>>,
-	io:format("m2: ~p~n~n", [M2]),
+	%io:format("m2: ~p~n~n", [M2]),
 
 	Msg = [_Cmd = <<1?B>>,
 				 _Err = <<0?B>>,

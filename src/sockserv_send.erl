@@ -25,6 +25,7 @@ send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=So
 	Size = size(ResponseData) + 4,
 	Header = <<Size?WO, ResponseOpCode?W>>,
 	{EncryptedHeader, NewKState} = world_crypto:encrypt(Header, KState),
+	io:format("sending world data~n"),
 	gen_tcp:send(Socket, <<EncryptedHeader/binary, ResponseData/binary>>),
     {next_state, send, State#state{key_state=NewKState}}.
 
