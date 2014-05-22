@@ -22,13 +22,13 @@ init({Socket, PairPid}) ->
 
 send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=Socket, pair_pid=PairPid}) ->
 	%% TODO store socket in ets
-	Size = size(ResponseData) + 4,
+	Size = size(ResponseData),
 	Header = <<Size?WO, ResponseOpCode?W>>,
 	KState = gen_server:call(PairPid, key_state),
 	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KState),
 	gen_server:cast(PairPid, {new_key_state, NewKeyState}),
 	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
-	io:format("sending world data: ~p~nand with header: ~p~n", [Packet, Header]),
+	io:format("sending packet: ~p~n", [Packet]),
 	gen_tcp:send(Socket, Packet),
     {next_state, send, State}.
 

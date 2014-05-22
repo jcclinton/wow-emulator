@@ -237,19 +237,13 @@ doTest() ->
 	<<Bint?QQB>> = ServerPublic,
 	io:format("B: ~p~nBhex: ~p~nBint: ~p~n", [ServerPublic, Bhex, Bint]),
 
-	%ClientPublic = <<16#090fb4ad2d9529a293b17109502cb2cbccf0e45aa2ab7a0f642f67b0b98a2237?QQ>>,
-	%ClientPublic = <<16#07ce1adff32cd842a7eeac823d21c428a070bed023ae0abaa99f2f72679a4154?QQ>>,
-	%ClientPublic = <<16#16BBAB42E66EF61FA06FBB0E050D4E4A7C563E08F8FE0ADB48CD95B4D2A9911C?QQB>>,
-	ClientPublic = <<16#831AF0FB832DC66589823BFB5689CAFCC9E60CC5A47DF7302887365BFA7D5872?QQB>>,
+	ClientPublic = <<16#63547EDF0AB99A777D094B3BA93EC6739B3851D7CF956B7EF21BEE3846F6A3D5?QQB>>,
 	%ClientPublic = l_to_b_endian(ClientPublicL, 256),
 	Ahex = bin_to_hex(ClientPublic),
 	<<Aint?QQB>> = ClientPublic,
 	%ClientPublicL = <<Aint?QQ>>,
 
-	%M1l = <<16#a85e37b98eb43a8b49cda94c48fc906b5659c571?SH>>,
-	%M1l = <<16#87d7c73d976f531dd4d584ac9d64fc08f7b64c54?SH>>,
-	%M1 = <<16#BDF080D5E28C69BADEC89ABD2FD2D234698F32C9?SHB>>,
-	M1 = <<16#4284018C9453135DAB113475D2ABEA50CF841C1F?SHB>>,
+	M1 = <<16#487AC99DB5E745D79F55CCCBCD44ED989FF2A65?SHB>>,
 	%M1 = l_to_b_endian(M1L, 160),
 	<<M1num?SHB>> = M1,
 	Mhex = bin_to_hex_list(M1),
@@ -263,10 +257,13 @@ doTest() ->
 
 	%Skeyl = <<Skeyint?QQ>>,
 	Key = srp:interleaveHash(Skey),
-	%<<Keyint?SLB>> = Key,
+	<<Keyint?SLB>> = Key,
 	%Keyl = <<Keyint?SL>>,
-	%Keyhex = bin_to_hex_list(Key),
-	%io:format("key: ~p~nkey hex: ~p~nkey int: ~p~n", [Key, Keyhex, Keyint]),
+	Keyhex = bin_to_hex_list(Key),
+	io:format("key: ~p~nkey hex: ~p~nkey int: ~p~n", [Key, Keyhex, Keyint]),
+
+	encryptHeader(Key),
+
 
 	%<<Pnum?QQB>> = P,
 	%Pl = <<Pnum?QQ>>,
@@ -275,13 +272,30 @@ doTest() ->
 	M1Server = getM1(P, G, U, Salt, ClientPublic, ServerPublic, Key),
 	M1serverhex = bin_to_hex_list(M1Server),
 	<<M1Serverint?SHB>> = M1Server,
-	io:format("Ms: ~p~nMshex: ~p~nMsint: ~p~n", [M1Server, M1serverhex, M1Serverint]),
+	%io:format("Ms: ~p~nMshex: ~p~nMsint: ~p~n", [M1Server, M1serverhex, M1Serverint]),
 
 	M2 = getM2(ClientPublic, M1, Key),
 	<<M2Int?SHB>> = M2,
 	M2Hex = bin_to_hex_list(M2),
-	io:format("M2: ~p~nM2hex: ~p~nM2int: ~p~n", [M2, M2Hex, M2Int]),
+	%io:format("M2: ~p~nM2hex: ~p~nM2int: ~p~n", [M2, M2Hex, M2Int]),
 	ok.
+
+	encryptHeader(Key) ->
+		KeyL = b_to_l_endian(Key, 320),
+		KeyLList = binary_to_list(KeyL),
+		KeyState = {0,0,KeyLList},
+
+		Header = <<0, 6, 236, 1>>,
+
+		{EncHeader1, NewKeyState} = world_crypto:encrypt(Header, KeyState),
+		EncHeader = binary_to_list(EncHeader1),
+		lists:foreach(fun(El) -> io:format("element: ~p~n", [El]) end, EncHeader),
+		io:format("old header: ~p~nnew header: ~p~n", [Header, EncHeader]),
+
+		ok.
+
+
+
 
 	testU() ->
 		I = getUsername(),

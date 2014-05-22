@@ -20,7 +20,7 @@ start_link(ListenSocket, PairPid) ->
 init({ListenSocket, PairPid}) ->
 	io:format("starting rcv~n"),
     gen_fsm:send_event(self(), {accept, ListenSocket}),
-    {ok, accept, #state{hdr_len=4, pair_pid=PairPid}}.
+    {ok, accept, #state{hdr_len=6, pair_pid=PairPid}}.
 
 accept({accept, ListenSocket}, State = #state{}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
@@ -44,9 +44,9 @@ rcv_challenge(_, State = #state{accept_socket=Socket, pair_pid=PairPid}) ->
 	io:format("received world challenge data~n"),
 	<<493?L, Msg/binary>> = PacketData,
 
-	{_ResponseName, ResponseData, _AccountId, KState} = auth_session(Msg),
+	{_ResponseName, ResponseData, _AccountId, KeyState} = auth_session(Msg),
+	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, KeyState}),
 	ResponseOpCode = 494,
-	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, KState}),
 	gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
 	rcv(ok, State).
 rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid}) ->
@@ -56,12 +56,16 @@ rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid}) -
 	{ok, Packet} = Resp,
 	io:format("received encrypted header: ~p~n", [Resp]),
 	%io:format("received tcp data with socket: ~p and hdrlen: ~p and with resp: ~p~n", [Socket, HdrLen, Resp]),
-	<<EncryptedLength?WO, EncryptedOpcode?W>> = Packet,
+	EncryptedHeader = Packet,
 	KeyState = gen_server:call(PairPid, key_state),
-	{EData, NewKeyState} = world_crypto:decrypt(<<EncryptedLength?WO, EncryptedOpcode?W>>, KeyState),
+	{Header, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
 	gen_server:cast(PairPid, {new_key_state, NewKeyState}),
-	io:format("decrypted data: ~p~n", [EData]),
-	<<Length?WO, Opcode?W>> = EData,
+	io:format("decrypted header: ~p~n", [Header]),
+
+		HeaderL = binary_to_list(Header),
+		lists:foreach(fun(El) -> io:format("element: ~p~n", [El]) end, HeaderL),
+
+	<<Length?WO, Opcode?L>> = Header,
 	io:format("rcv: received opcode ~p with length ~p~n", [Opcode, Length]),
 	Result = gen_tcp:recv(Socket, Length),
 	case Result of
@@ -109,9 +113,9 @@ auth_session(Rest) ->
     {_, A, _}      = cmsg_auth_session(Rest),
     Data   = smsg_auth_response(),
 		io:format("authorizing session for ~p~n", [A]),
+		AccountId = srp:getUsername(),
     K      = world_crypto:encryption_key(A),
     KTup     = {0, 0, K},
-		AccountId = srp:getUsername(),
     {smsg_auth_response, Data, AccountId, KTup}.
 
 cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
@@ -126,4 +130,4 @@ cmsg_auth_session_extract(<<Letter?B, Rest/binary>>, Account) ->
     cmsg_auth_session_extract(Rest, Account ++ [Letter]).
 
 smsg_auth_response() ->
-    <<12?B, 0?L, 0?B, 0?L, 1?B>>.
+    <<16#0c?B, 0?L, 0?B, 0?L>>.
