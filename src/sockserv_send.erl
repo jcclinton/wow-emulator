@@ -9,28 +9,26 @@
 -include("include/binary.hrl").
 
 -record(state, {socket,
-	pair_pid
+	key_state
 				}).
 
-start_link(Socket, PairPid) ->
-    gen_fsm:start_link(?MODULE, {Socket, PairPid}, []).
+start_link(Socket, KeyState) ->
+    gen_fsm:start_link(?MODULE, {Socket, KeyState}, []).
 
-init({Socket, PairPid}) ->
+init({Socket, KeyState}) ->
 	io:format("starting send~n"),
-    {ok, send, #state{socket=Socket, pair_pid=PairPid}}.
+    {ok, send, #state{socket=Socket, key_state=KeyState}}.
 
 
-send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=Socket, pair_pid=PairPid}) ->
+send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=Socket, key_state=KeyState}) ->
 	%% TODO store socket in ets
 	Size = size(ResponseData),
 	Header = <<Size?WO, ResponseOpCode?W>>,
-	KState = gen_server:call(PairPid, key_state),
-	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KState),
-	gen_server:cast(PairPid, {new_key_state, NewKeyState}),
+	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
 	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
 	io:format("sending packet: ~p~n", [Packet]),
 	gen_tcp:send(Socket, Packet),
-    {next_state, send, State}.
+	{next_state, send, State#state{key_state=NewKeyState}}.
 
 %% callbacks
 handle_info(_Info, State, Data) ->

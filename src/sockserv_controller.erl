@@ -5,8 +5,7 @@
   user,
   sess_key,
   parent_pid,
-  send_pid,
-	key_state
+  send_pid
 							 }).
 -record(user, {
   pos
@@ -32,19 +31,15 @@ init({ParentPid}) ->
 
 %% receiver has accepted connection
 %% start send process
-handle_call(key_state, _From, S = #state{key_state=KState}) ->
-	{reply, KState, S};
-handle_call({tcp_accept_socket, Socket, KState}, _From, S = #state{parent_pid=ParentPid}) ->
+handle_call({tcp_accept_socket, Socket, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
 	SendSupPid = get_sibling_pid(ParentPid, sockserv_send_sup),
-	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, self()]),
-	{reply, ok, S#state{send_pid=SendPid, key_state=KState}};
+	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, KeyState]),
+	{reply, ok, S#state{send_pid=SendPid}};
 handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
 %% initialize controller
 %% start rcv process
-handle_cast({new_key_state, NewKeyState}, State) ->
-	{noreply, State#state{key_state=NewKeyState}};
 handle_cast(init, State = #state{parent_pid=ParentPid}) ->
 	RcvSupPid = get_sibling_pid(ParentPid, sockserv_rcv_sup),
 	supervisor:start_child(RcvSupPid, [self()]),
@@ -53,8 +48,8 @@ handle_cast({tcp_accept_challenge, Msg}, State) ->
 	routeData(self(), Msg),
 	{noreply, State};
 handle_cast({tcp_packet_rcvd, <<Opcode?WO, Payload/binary>>}, S = #state{user=User}) ->
-	io:format("controller: received opcode ~p with payload ~p~n", [Opcode, Payload]),
-	{_M, _F} = opcode_patterns:lookup_function(Opcode),
+	io:format("looking up opcode ~p~n", [Opcode]),
+	{_M, _F} = opcode_patterns:lookup(Opcode),
 	_A = [User, Payload],
 	%{NewUser, {Pids, Msg}} = apply({M,F,A}),
 	NewUser = User,

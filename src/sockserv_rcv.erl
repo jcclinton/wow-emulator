@@ -11,7 +11,8 @@
 -record(state, {accept_socket,
 				hdr_len,
 				pair_pid,
-				sess_key
+				sess_key,
+				key_state
 				}).
 
 start_link(ListenSocket, PairPid) ->
@@ -48,36 +49,32 @@ rcv_challenge(_, State = #state{accept_socket=Socket, pair_pid=PairPid}) ->
 	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, KeyState}),
 	ResponseOpCode = 494,
 	gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
-	rcv(ok, State).
-rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid}) ->
+	rcv(ok, State#state{key_state=KeyState}).
+rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
 	%% TODO handle error case
-	io:format("waiting for client header of length ~p...~n", [HdrLen]),
+	io:format("waiting for client header~n"),
 	Resp = gen_tcp:recv(Socket, HdrLen),
 	{ok, Packet} = Resp,
 	io:format("received encrypted header: ~p~n", [Resp]),
 	%io:format("received tcp data with socket: ~p and hdrlen: ~p and with resp: ~p~n", [Socket, HdrLen, Resp]),
 	EncryptedHeader = Packet,
-	KeyState = gen_server:call(PairPid, key_state),
 	{Header, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
-	gen_server:cast(PairPid, {new_key_state, NewKeyState}),
 	io:format("decrypted header: ~p~n", [Header]),
 
-		HeaderL = binary_to_list(Header),
-		lists:foreach(fun(El) -> io:format("element: ~p~n", [El]) end, HeaderL),
-
-	<<Length?WO, Opcode?L>> = Header,
+	<<LengthRaw?WO, Opcode?L>> = Header,
+	Length = LengthRaw - 4,
 	io:format("rcv: received opcode ~p with length ~p~n", [Opcode, Length]),
-	Result = gen_tcp:recv(Socket, Length),
-	case Result of
-		{error, closed} -> ok;
-		{ok, Rest} ->
-			io:format("rcv: received payload ~p~n", [Rest]),
-			Payload = <<Opcode?W, Rest/binary>>,
-			Msg = {tcp_packet_rcvd, Payload},
-			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
-			gen_server:cast(PairPid, Msg)
-		end,
-	rcv(ok, State).
+	Rest = if Length > 0 ->
+			{ok, Data} = gen_tcp:recv(Socket, Length),
+			Data;
+		true -> <<"">>
+	end,
+	io:format("rcv: received payload ~p~n", [Rest]),
+	Payload = <<Opcode?WO, Rest/binary>>,
+	Msg = {tcp_packet_rcvd, Payload},
+	%% sends to a process that handles the operation for this opcode, probaly a 'user' process
+	gen_server:cast(PairPid, Msg),
+	rcv(ok, State#state{key_state=NewKeyState}).
 
 %% callbacks
 handle_info(_Info, State, Data) ->
