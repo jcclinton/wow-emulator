@@ -13,7 +13,7 @@ encrypt(Header, Key) ->
 
 %% @spec encrypt(binary(), binary(), binary()) -> binary().
 encrypt(<<>>, Key, Result) -> {Result, Key};
-encrypt(<<OldByte:8?I, Header/binary>>, {SI, SJ, K}, Result) ->
+encrypt(<<OldByte?B, Header/binary>>, {SI, SJ, K}, Result) ->
     NewByte = ((lists:nth(SI+1, K) bxor OldByte) + SJ) band 255,
     NewSI   = (SI+1) rem ?K,
     encrypt(Header, {NewSI, NewByte, K}, <<Result/binary, NewByte:8>>).
@@ -24,7 +24,7 @@ decrypt(Header, Key) ->
 
 %% @spec decrypt(binary(), binary(), binary()) -> binary().
 decrypt(<<>>, Key, Result) -> {Result, Key};
-decrypt(<<OldByte:8?I, Header/binary>>, {RI, RJ, K}, Result) ->
+decrypt(<<OldByte?B, Header/binary>>, {RI, RJ, K}, Result) ->
     NewByte = (lists:nth(RI+1, K) bxor (OldByte - RJ)) band 255,
     NewRI   = (RI + 1) rem ?K,
     decrypt(Header, {NewRI, OldByte, K}, <<Result/binary, NewByte:8>>).

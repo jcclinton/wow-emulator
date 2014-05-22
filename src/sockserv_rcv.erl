@@ -10,7 +10,6 @@
 
 -record(state, {accept_socket,
 				hdr_len,
-				key_state,
 				pair_pid,
 				sess_key
 				}).
@@ -49,8 +48,8 @@ rcv_challenge(_, State = #state{accept_socket=Socket, pair_pid=PairPid}) ->
 	ResponseOpCode = 494,
 	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, KState}),
 	gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
-	rcv(ok, State#state{key_state=KState}).
-rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
+	rcv(ok, State).
+rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid}) ->
 	%% TODO handle error case
 	io:format("waiting for client header of length ~p...~n", [HdrLen]),
 	Resp = gen_tcp:recv(Socket, HdrLen),
@@ -58,7 +57,9 @@ rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, ke
 	io:format("received encrypted header: ~p~n", [Resp]),
 	%io:format("received tcp data with socket: ~p and hdrlen: ~p and with resp: ~p~n", [Socket, HdrLen, Resp]),
 	<<EncryptedLength?WO, EncryptedOpcode?W>> = Packet,
-	{EData, NewKState} = world_crypto:decrypt(<<EncryptedLength?WO, EncryptedOpcode?W>>, KeyState),
+	KeyState = gen_server:call(PairPid, key_state),
+	{EData, NewKeyState} = world_crypto:decrypt(<<EncryptedLength?WO, EncryptedOpcode?W>>, KeyState),
+	gen_server:cast(PairPid, {new_key_state, NewKeyState}),
 	io:format("decrypted data: ~p~n", [EData]),
 	<<Length?WO, Opcode?W>> = EData,
 	io:format("rcv: received opcode ~p with length ~p~n", [Opcode, Length]),
@@ -72,7 +73,7 @@ rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, ke
 			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
 			gen_server:cast(PairPid, Msg)
 		end,
-	rcv(ok, State#state{key_state=NewKState}).
+	rcv(ok, State).
 
 %% callbacks
 handle_info(_Info, State, Data) ->

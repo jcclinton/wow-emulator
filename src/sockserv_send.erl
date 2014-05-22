@@ -9,25 +9,28 @@
 -include("include/binary.hrl").
 
 -record(state, {socket,
-				key_state
+	pair_pid
 				}).
 
-start_link(Socket, KState) ->
-    gen_fsm:start_link(?MODULE, {Socket, KState}, []).
+start_link(Socket, PairPid) ->
+    gen_fsm:start_link(?MODULE, {Socket, PairPid}, []).
 
-init({Socket, KState}) ->
+init({Socket, PairPid}) ->
 	io:format("starting send~n"),
-    {ok, send, #state{socket=Socket, key_state=KState}}.
+    {ok, send, #state{socket=Socket, pair_pid=PairPid}}.
 
 
-send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=Socket, key_state=KState}) ->
+send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=Socket, pair_pid=PairPid}) ->
 	%% TODO store socket in ets
 	Size = size(ResponseData) + 4,
 	Header = <<Size?WO, ResponseOpCode?W>>,
-	{EncryptedHeader, NewKState} = world_crypto:encrypt(Header, KState),
-	io:format("sending world data~n"),
-	gen_tcp:send(Socket, <<EncryptedHeader/binary, ResponseData/binary>>),
-    {next_state, send, State#state{key_state=NewKState}}.
+	KState = gen_server:call(PairPid, key_state),
+	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KState),
+	gen_server:cast(PairPid, {new_key_state, NewKeyState}),
+	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
+	io:format("sending world data: ~p~nand with header: ~p~n", [Packet, Header]),
+	gen_tcp:send(Socket, Packet),
+    {next_state, send, State}.
 
 %% callbacks
 handle_info(_Info, State, Data) ->

@@ -5,7 +5,8 @@
   user,
   sess_key,
   parent_pid,
-  send_pid
+  send_pid,
+	key_state
 							 }).
 -record(user, {
   pos
@@ -31,15 +32,19 @@ init({ParentPid}) ->
 
 %% receiver has accepted connection
 %% start send process
+handle_call(key_state, _From, S = #state{key_state=KState}) ->
+	{reply, KState, S};
 handle_call({tcp_accept_socket, Socket, KState}, _From, S = #state{parent_pid=ParentPid}) ->
 	SendSupPid = get_sibling_pid(ParentPid, sockserv_send_sup),
-	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, KState]),
-	{reply, ok, S#state{send_pid=SendPid}};
+	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, self()]),
+	{reply, ok, S#state{send_pid=SendPid, key_state=KState}};
 handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
 %% initialize controller
 %% start rcv process
+handle_cast({new_key_state, NewKeyState}, State) ->
+	{noreply, State#state{key_state=NewKeyState}};
 handle_cast(init, State = #state{parent_pid=ParentPid}) ->
 	RcvSupPid = get_sibling_pid(ParentPid, sockserv_rcv_sup),
 	supervisor:start_child(RcvSupPid, [self()]),
