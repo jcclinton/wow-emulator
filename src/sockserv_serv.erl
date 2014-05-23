@@ -14,7 +14,6 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--compile([export_all]).
 
 
 -include("include/binary.hrl").
@@ -114,9 +113,9 @@ code_change(_OldVsn, State, _Extra) ->
 	io:format("code change~n"),
 	{ok, State}.
 
-terminate(normal, _State) ->
-	ok;
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+	io:format("REALMD: closing connected realm_socket~n"),
+	catch gen_tcp:close(State#state.socket),
 	ok.
 
 

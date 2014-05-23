@@ -8,7 +8,7 @@
 
 -include("include/binary.hrl").
 
--record(state, {accept_socket,
+-record(state, {socket,
 				hdr_len,
 				pair_pid,
 				sess_key,
@@ -28,13 +28,13 @@ accept({accept, ListenSocket}, State = #state{}) ->
 	%% start another acceptor
 	worldserv_sup:start_socket(),
 	io:format("received accept socket~n"),
-	challenge(ok, State#state{accept_socket=AcceptSocket}).
-challenge(_, State = #state{accept_socket=Socket}) ->
+	challenge(ok, State#state{socket=AcceptSocket}).
+challenge(_, State = #state{socket=Socket}) ->
 	Msg = buildAuthChallenge(),
 	io:format("sending auth challenge~n"),
 	gen_tcp:send(Socket, Msg),
 	rcv_challenge(ok, State).
-rcv_challenge(_, State = #state{accept_socket=Socket, pair_pid=PairPid}) ->
+rcv_challenge(_, State = #state{socket=Socket, pair_pid=PairPid}) ->
 	%{ok, Packet} = gen_tcp:recv(Socket, 0),
 
 	%<<Length?WO, 493?L, Msg/binary>> = Packet,
@@ -52,7 +52,7 @@ rcv_challenge(_, State = #state{accept_socket=Socket, pair_pid=PairPid}) ->
 	ResponseOpCode = 494,
 	gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
 	rcv(ok, State#state{key_state=KeyState}).
-rcv(_, State = #state{accept_socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
+rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
 	%% TODO handle error case
 	io:format("waiting for client header~n"),
 	Resp = gen_tcp:recv(Socket, HdrLen),
@@ -88,7 +88,9 @@ handle_event(_Event, State, Data) ->
 handle_sync_event(_Event, _From, State, Data) ->
 	{next_state, State, Data}.
 
-terminate(_Reason, _State, _Data) ->
+terminate(_Reason, State, _Data) ->
+	io:format("WORLD RCV: closing connected realm_socket~n"),
+	catch gen_tcp:close(State#state.socket),
 	ok.
 
 code_change(_OldVsn, State, Data, _Extra) ->

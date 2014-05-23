@@ -124,13 +124,11 @@ handle_info(Msg, State) ->
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
-terminate(shutdown, State) ->
+terminate(_Reason, State) ->
 	io:format("CLIENT: closing connected realm_socket~n"),
 	catch gen_tcp:close(State#state.realm_socket),
 	io:format("CLIENT: closing connected world_socket~n"),
 	catch gen_tcp:close(State#state.world_socket),
-	ok;
-terminate(_Reason, _State) ->
 	ok.
 
 
