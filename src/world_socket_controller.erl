@@ -1,4 +1,4 @@
--module(sockserv_controller).
+-module(world_socket_controller).
 -behavior(gen_server).
 
 -record(state, {
@@ -32,7 +32,7 @@ init({ParentPid}) ->
 %% receiver has accepted connection
 %% start send process
 handle_call({tcp_accept_socket, Socket, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
-	SendSupPid = get_sibling_pid(ParentPid, sockserv_send_sup),
+	SendSupPid = get_sibling_pid(ParentPid, world_socket_send_sup),
 	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, KeyState]),
 	{reply, ok, S#state{send_pid=SendPid}};
 handle_call(_E, _From, State) ->
@@ -41,7 +41,7 @@ handle_call(_E, _From, State) ->
 %% initialize controller
 %% start rcv process
 handle_cast(init, State = #state{parent_pid=ParentPid}) ->
-	RcvSupPid = get_sibling_pid(ParentPid, sockserv_rcv_sup),
+	RcvSupPid = get_sibling_pid(ParentPid, world_socket_rcv_sup),
 	supervisor:start_child(RcvSupPid, [self()]),
 	{noreply, State};
 handle_cast({tcp_accept_challenge, Msg}, State) ->

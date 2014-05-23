@@ -1,4 +1,4 @@
--module(sockserv_rcv).
+-module(world_socket_rcv).
 -behaviour(gen_fsm).
 
 -export([start_link/2]).
@@ -26,7 +26,7 @@ init({ListenSocket, PairPid}) ->
 accept({accept, ListenSocket}, State = #state{}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	%% start another acceptor
-	worldserv_sup:start_socket(),
+	world_server_sup:start_socket(),
 	io:format("received accept socket~n"),
 	challenge(ok, State#state{socket=AcceptSocket}).
 challenge(_, State = #state{socket=Socket}) ->

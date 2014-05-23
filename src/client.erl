@@ -15,7 +15,7 @@
 
 %% public
 start_link() ->
-	gen_server:start_link({local, client}, ?MODULE, [], []).
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 challenge() ->
 	gen_server:cast(client, challenge).

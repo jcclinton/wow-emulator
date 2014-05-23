@@ -1,4 +1,4 @@
--module(worldserv_sup).
+-module(login_server_sup).
 -behavior(supervisor).
 
 -export([start_link/0, start_socket/0, get_count/0]).
@@ -8,20 +8,22 @@
 get_count() ->
 	supervisor:count_children(?MODULE).
 
+
 start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-	{ok, Port} = application:get_env(world_port),
-	{ok, ListenSocket} = gen_tcp:listen(Port, [{active,false}, binary]),
+	{ok, Port} = application:get_env(realm_port),
+	{ok, ListenSocket} = gen_tcp:listen(Port, [{active,once}, binary]),
 	spawn_link(fun() ->
 		empty_listeners()
 	end),
 	{ok, {{simple_one_for_one, 60, 3600},
-				[{socket_user_sup,
-					{sockserv_user_sup, start_link, [ListenSocket]},
-					transient, 1000, supervisor, [sockserv_user_sup]}
+				[{login_server,
+					{login_server, start_link, [ListenSocket]},
+					transient, 1000, worker, [login_server]}
 				]}}.
+
 
 start_socket() ->
 	supervisor:start_child(?MODULE, []).

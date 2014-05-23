@@ -1,4 +1,4 @@
--module(sockserv_serv).
+-module(login_server).
 -behavior(gen_server).
 
 -record(state, {name, % players name
@@ -34,7 +34,7 @@ handle_call(_E, _From, State) ->
 handle_cast({accept, ListenSocket}, State) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	% start new acceptor
-	sockserv_sup:start_socket(),
+	login_server_sup:start_socket(),
 	ServerPrivate = srp:generatePrivate(),
 	Username = srp:getUsername(),
 	Pw = srp:getPassword(),

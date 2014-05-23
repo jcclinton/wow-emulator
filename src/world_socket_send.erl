@@ -1,4 +1,4 @@
--module(sockserv_send).
+-module(world_socket_send).
 -behaviour(gen_fsm).
 
 -export([start_link/2]).
