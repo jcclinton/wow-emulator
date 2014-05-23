@@ -3,7 +3,6 @@
 -export([encrypt/2, decrypt/2, encryption_key/1]).
 
 -include("binary.hrl").
--include("include/world_records.hrl").
 
 -define(K, 20).
 

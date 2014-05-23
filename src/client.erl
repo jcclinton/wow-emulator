@@ -9,7 +9,6 @@
 -export([challenge/0, proof/0, realmlist/0, worldconnect/0]).
 
 -include("include/binary.hrl").
--include("include/world_records.hrl").
 
 
 

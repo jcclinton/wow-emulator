@@ -12,7 +12,6 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 
 -include("include/binary.hrl").
--include("include/world_records.hrl").
 
 
 start_link(Socket) ->
