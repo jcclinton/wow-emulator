@@ -32,6 +32,4 @@ decrypt(<<OldByte?B, Header/binary>>, {RI, RJ, K}, Result) ->
 %% @spec encrypt(string()) -> list().
 encryption_key(A) ->
     [{_, K}] = ets:lookup(connected_clients, A),
-    %Seed = 16#38A78315F8922530719867B18C04E2AA,
-    %binary_to_list(crypto:sha_mac(<<Seed:128?IB>>, K)).
 		binary_to_list(K).

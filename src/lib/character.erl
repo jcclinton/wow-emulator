@@ -1,11 +1,11 @@
 -module(character).
--export([enum/2]).
+-export([enum/1]).
 
 -include("include/binary.hrl").
 
-enum(User, Payload) ->
+enum(_PropList) ->
 	Pids = [self()],
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_enum),
 	Num = 0,
 	Msg = <<Opcode?W, Num?B>>,
-	{User, {Pids, Msg}}.
+	{[], {Pids, Msg}}.
