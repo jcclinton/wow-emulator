@@ -25,6 +25,8 @@ init({ListenSocket, PairPid}) ->
 
 accept({accept, ListenSocket}, State = #state{}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
+	%% start another acceptor
+	worldserv_sup:start_socket(),
 	io:format("received accept socket~n"),
 	challenge(ok, State#state{accept_socket=AcceptSocket}).
 challenge(_, State = #state{accept_socket=Socket}) ->

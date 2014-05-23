@@ -21,7 +21,7 @@
 
 
 start_link(Socket) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, Socket, []).
+	gen_server:start_link(?MODULE, Socket, []).
 
 init(Socket) ->
 	io:format("login SERVER: started~n"),
@@ -34,6 +34,8 @@ handle_call(_E, _From, State) ->
 
 handle_cast(accept, S = #state{socket=ListenSocket}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
+	% start new acceptor
+	sockserv_sup:start_socket(),
 	%ServerPrivate = srp:generatePrivate(),
 	ServerPrivate = <<16#74FB18F873D3044C8E8131BD68BA51B932B6D1F78362A4A3F47D9EC865D62592?QQB>>,
 	Username = srp:getUsername(),
