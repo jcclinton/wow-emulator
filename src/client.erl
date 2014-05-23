@@ -225,6 +225,3 @@ getDerivedKey(Salt) ->
 	U = getUsername(),
 	Pw = getPassword(),
 	srp:getDerivedKey(U, Pw, Salt).
-
-hash(L) ->
-	crypto:hash(sha, L).

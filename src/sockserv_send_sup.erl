@@ -9,8 +9,8 @@ start_link() ->
 	supervisor:start_link(?MODULE, []).
 
 init([]) ->
-	{ok, {{simple_one_for_one, 60, 3600},
+	{ok, {{simple_one_for_one, 3, 5},
 		[{sockserv_send,
 		  {sockserv_send, start_link, []},
-		  permanent, 1000, worker, [sockserv_send]}
+		  transient, 1000, worker, [sockserv_send]}
 		]}}.
