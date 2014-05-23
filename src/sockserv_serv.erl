@@ -20,39 +20,59 @@
 -include("include/binary.hrl").
 
 
-start_link(Socket) ->
-	gen_server:start_link(?MODULE, Socket, []).
+start_link(ListenSocket) ->
+	gen_server:start_link(?MODULE, ListenSocket, []).
 
-init(Socket) ->
+init(ListenSocket) ->
 	io:format("login SERVER: started~n"),
-	gen_server:cast(self(), accept),
-	{ok, #state{socket=Socket}}.
+	gen_server:cast(self(), {accept, ListenSocket}),
+	{ok, #state{}}.
 
 
 handle_call(_E, _From, State) ->
 	{noreply, State}.
 
-handle_cast(accept, S = #state{socket=ListenSocket}) ->
+handle_cast({accept, ListenSocket}, State) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	% start new acceptor
 	sockserv_sup:start_socket(),
-	%ServerPrivate = srp:generatePrivate(),
-	ServerPrivate = <<16#74FB18F873D3044C8E8131BD68BA51B932B6D1F78362A4A3F47D9EC865D62592?QQB>>,
+	ServerPrivate = srp:generatePrivate(),
 	Username = srp:getUsername(),
 	Pw = srp:getPassword(),
 	Salt = srp:getSalt(),
 	DerivedKey = srp:getDerivedKey(Username, Pw, Salt),
-	{noreply, S#state{socket=AcceptSocket, server_private=ServerPrivate, derived_key=DerivedKey}};
-handle_cast(send_challenge, State = #state{socket=Socket, server_private=ServerPrivate, derived_key=DerivedKey}) ->
+	{noreply, State#state{socket=AcceptSocket, server_private=ServerPrivate, derived_key=DerivedKey}}.
+
+
+
+handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket, server_private=ServerPrivate, derived_key=DerivedKey}) ->
+	ok = inet:setopts(Socket, [{active, once}]),
+	I = try extract_username(Msg) of
+		_ -> extract_username(Msg)
+	catch
+		throw:zero_ilen -> gen_tcp:send(Socket, <<100>>),
+											 io:format("zero_ilen!~n"),
+											 <<"">>;
+		throw:bad_i_size -> gen_tcp:send(Socket, <<200>>),
+											 io:format("bad_i_size!~n"),
+												<<"">>;
+				_ -> <<"">>
+	end,
+	io:format("SERVER: received challenge~n"),
+	%io:format("SERVER: received: ~p~n", [Msg]),
+	%io:format("SERVER: received name: ~p~n", [I]),
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
 	ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, DerivedKey),
 	Salt = srp:getSalt(),
-	Msg = build_challenge_response(ServerPublic, Generator, Prime, Salt),
+	MsgOut = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 	%io:format("sending chal resp: ~p~n", [Msg]),
-	gen_tcp:send(Socket, Msg),
-	{noreply, State#state{server_public=ServerPublic}};
-handle_cast(send_proof, State = #state{socket=Socket, m1=M1, client_public=ClientPublic, server_public=ServerPublic, server_private=ServerPrivate, derived_key=DerivedKey}) ->
+	gen_tcp:send(Socket, MsgOut),
+	{noreply, State#state{identity=I, server_public=ServerPublic}};
+handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, server_public=ServerPublic, server_private=ServerPrivate, derived_key=DerivedKey}) ->
+	ok = inet:setopts(Socket, [{active, once}]),
+	io:format("SERVER: received proof~n"),
+	{ClientPublic, M1} = extract_proof(Msg),
 	%% TODO remove this hardcoding
 	NameReg = srp:getUsername(),
 	Name = srp:normalize(NameReg),
@@ -68,46 +88,18 @@ handle_cast(send_proof, State = #state{socket=Socket, m1=M1, client_public=Clien
 	StringName = binary_to_list(Name),
 	KeyL = srp:b_to_l_endian(Key, 320),
 	ets:insert(connected_clients, {StringName, KeyL}),
-	Msg = build_proof_response(Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	io:format("SERVER: sending proof response~n"),
-	gen_tcp:send(Socket, Msg),
-	{noreply, State};
-handle_cast(send_realmlist, State=#state{socket=Socket}) ->
-	Msg = build_realmlist_response(),
-	gen_tcp:send(Socket, Msg),
-	{noreply, State}.
-
-handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
-	ok = inet:setopts(State#state.socket, [{active, once}]),
-	I = try extract_username(Msg) of
-		_ -> extract_username(Msg)
-	catch
-		throw:zero_ilen -> gen_tcp:send(State#state.socket, <<100>>),
-											 io:format("zero_ilen!~n"),
-											 <<"">>;
-		throw:bad_i_size -> gen_tcp:send(State#state.socket, <<200>>),
-											 io:format("bad_i_size!~n"),
-												<<"">>;
-				_ -> <<"">>
-	end,
-	io:format("SERVER: received challenge~n"),
-	%io:format("SERVER: received: ~p~n", [Msg]),
-	%io:format("SERVER: received name: ~p~n", [I]),
-	gen_server:cast(self(), send_challenge),
-	{noreply, State#state{identity=I}};
-handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State) ->
-	ok = inet:setopts(State#state.socket, [{active, once}]),
-	io:format("SERVER: received proof~n"),
-	{ClientPublic, M1} = extract_proof(Msg),
-	gen_server:cast(self(), send_proof),
+	MsgOut = build_proof_response(Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
+	gen_tcp:send(Socket, MsgOut),
 	{noreply, State#state{client_public=ClientPublic, m1=M1}};
-handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State) ->
-	ok = inet:setopts(State#state.socket, [{active, once}]),
+handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State=#state{socket=Socket}) ->
+	ok = inet:setopts(Socket, [{active, once}]),
 	io:format("SERVER: received realmlist req~n"),
-	gen_server:cast(self(), send_realmlist),
+	MsgOut = build_realmlist_response(),
+	gen_tcp:send(Socket, MsgOut),
 	{noreply, State};
-handle_info({tcp, _Socket, Msg}, State) ->
-	ok = inet:setopts(State#state.socket, [{active, once}]),
+handle_info({tcp, _Socket, Msg}, State=#state{socket=Socket}) ->
+	ok = inet:setopts(Socket, [{active, once}]),
 	io:format("SERVER: received unknown tcp message: ~p~n", [Msg]),
 	{noreply, State};
 handle_info(upgrade, State) ->
