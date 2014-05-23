@@ -49,11 +49,11 @@ handle_cast({tcp_accept_challenge, Msg}, State) ->
 	{noreply, State};
 handle_cast({tcp_packet_rcvd, <<Opcode?WO, Payload/binary>>}, S = #state{user=User}) ->
 	io:format("looking up opcode ~p~n", [Opcode]),
-	{_M, _F} = opcode_patterns:lookup(Opcode),
-	_A = [User, Payload],
-	%{NewUser, {Pids, Msg}} = apply({M,F,A}),
-	NewUser = User,
-	%routeData(Pids, Msg),
+	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
+	%A = [User, Payload],
+	{NewUser, {Pids, Msg}} = M:F(User, Payload),
+	%{NewUser, {Pids, Msg}} = erlang:apply({M,F,A}),
+	routeData(Pids, Msg),
 	{noreply, S#state{user=NewUser}};
 handle_cast({send_to_client, Msg}, S=#state{send_pid = SendPid}) ->
 	gen_fsm:send_event(SendPid, {send, Msg}),

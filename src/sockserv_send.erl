@@ -22,8 +22,9 @@ init({Socket, KeyState}) ->
 
 send({send, <<ResponseOpCode?W, ResponseData/binary>>}, State = #state{socket=Socket, key_state=KeyState}) ->
 	%% TODO store socket in ets
-	Size = size(ResponseData),
+	Size = size(ResponseData) + 2,
 	Header = <<Size?WO, ResponseOpCode?W>>,
+	io:format("unencrypted header being sent: ~p~n", [Header]),
 	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
 	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
 	io:format("sending packet: ~p~n", [Packet]),
