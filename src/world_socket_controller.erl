@@ -48,7 +48,7 @@ handle_cast({tcp_accept_challenge, Msg}, State) ->
 	routeData(self(), Msg),
 	{noreply, State};
 handle_cast({tcp_packet_rcvd, <<Opcode?WO, Payload/binary>>}, S = #state{user=User}) ->
-	io:format("looking up opcode ~p~n", [Opcode]),
+	%io:format("looking up opcode ~p~n", [Opcode]),
 	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
 	Args = [{payload, Payload}],
 	NewUser = try M:F(Args) of

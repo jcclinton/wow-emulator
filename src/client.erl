@@ -1,7 +1,15 @@
 -module(client).
 -behavior(gen_server).
 
--record(state, {realm_socket, world_socket, server_public, client_private, generator, prime, salt, keyState}).
+-record(state, {realm_socket,
+								world_socket,
+								server_public,
+								client_private,
+								generator,
+								prime,
+								salt,
+								verifier,
+								keyState}).
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
@@ -9,6 +17,7 @@
 -export([challenge/0, proof/0, realmlist/0, worldconnect/0]).
 
 -include("include/binary.hrl").
+-include("include/database_records.hrl").
 
 
 
@@ -42,12 +51,15 @@ handle_cast(connect, State) ->
 	{ok, Socket} = gen_tcp:connect({127,0,0,1}, Port, [binary, {active, true}]),
 	%io:format("CLIENT: socket connected~n"),
 	ClientPrivate = srp:generatePrivate(),
+	challenge(),
 	{noreply, State#state{realm_socket=Socket, client_private=ClientPrivate}};
 handle_cast(challenge, State) ->
 	I = getUsername(upper),
 	Msg = buildChallengeMessage(I),
+	Account = account:lookup(I),
+	Verifier = Account#account.verifier,
 	gen_tcp:send(State#state.realm_socket, Msg),
-	{noreply, State};
+	{noreply, State#state{verifier=Verifier}};
 handle_cast(send_proof, State) ->
 	Msg = buildProofMessage(State),
 	gen_tcp:send(State#state.realm_socket, Msg),
@@ -94,9 +106,9 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State) ->
 		_Unk4?B>> = Msg,
 
 	%gen_server:cast(self(), send_proof),
-	ServerPublic = <<ServerPublic_raw?QQ>>,
+	ServerPublic = <<ServerPublic_raw?QQB>>,
 	Generator = <<Generator_raw?B>>,
-	Prime = <<Prime_raw?QQ>>,
+	Prime = <<Prime_raw?QQB>>,
 	Salt = <<Salt_raw?QQ>>,
 	proof(),
 	{noreply, State#state{server_public=ServerPublic,generator=Generator,prime=Prime,salt=Salt}};
@@ -174,9 +186,15 @@ buildProofMessage(State) ->
 	ServerPublic = State#state.server_public,
 	Salt= State#state.salt,
 	ClientPublic = getClientPublic(G, P, ClientPrivate),
-	Skey = computeClientKey(ClientPublic, ServerPublic, G, P, Salt, ClientPrivate),
+	Verifier = State#state.verifier,
+	Skey = computeClientKey(ClientPublic, ServerPublic, P, Salt, ClientPrivate, Verifier),
 	Key = srp:interleaveHash(Skey),
+	io:format("CLIENT verifier: ~p~n", [Verifier]),
+	io:format("CLIENT priv key: ~p~n", [ClientPrivate]),
+	io:format("CLIENT sess key: ~p~n", [Skey]),
 	M1 = getM(ClientPublic, ServerPublic, Key, P, G, Salt),
+	io:format("C: client pub: ~p~n~nserver pub: ~p~n~n", [ClientPublic, ServerPublic]),
+	io:format("C: Prime: ~p~n~nGen: ~p~n~nSalt: ~p~n~n", [P, G, Salt]),
 
 	%ClientPublic = <<16#0f6621dd4a39e4df6e9b2d07e8169eb0d33c917276bdbb1eeefc61f20f809649:256>>,
 	%M1 = <<16#c098171e12b60dc72d64eaa63614e5dff07ce1cf:160>>,
@@ -210,17 +228,17 @@ build_world_challenge_response(_Seed) ->
 	[Header, Msg].
 
 getM(ClientPublic, ServerPublic, Key, Prime, Generator, Salt) ->
-	I = getUsername(),
+	I = getUsername(upper),
 	srp:getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key).
 
-computeClientKey(ClientPublic, ServerPublic, G, P, Salt, ClientPrivate) ->
+computeClientKey(ClientPublic, ServerPublic, P, Salt, ClientPrivate, Verifier) ->
 	DerivedKey = getDerivedKey(Salt),
-	srp:computeClientKey(ClientPrivate, ServerPublic, ClientPublic, G, P, DerivedKey).
+	srp:computeClientKey(ClientPrivate, ServerPublic, ClientPublic, P, Verifier, DerivedKey).
 
 getClientPublic(G, P, ClientPriv) ->
 	srp:getClientPublic(G, P, ClientPriv).
 
 getDerivedKey(Salt) ->
-	U = getUsername(),
+	U = getUsername(upper),
 	Pw = getPassword(),
 	srp:getDerivedKey(U, Pw, Salt).

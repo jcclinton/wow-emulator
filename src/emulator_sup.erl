@@ -9,7 +9,7 @@ start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-	UseDummyClient = true,
+	UseDummyClient = false,
 	ClientProc = {client,
 								{client, start_link, []},
 									permanent, 10000, worker, [client]},

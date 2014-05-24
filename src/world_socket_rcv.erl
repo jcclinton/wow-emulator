@@ -27,11 +27,11 @@ accept({accept, ListenSocket}, State = #state{}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	%% start another acceptor
 	world_server_sup:start_socket(),
-	io:format("received accept socket~n"),
+	%io:format("received accept socket~n"),
 	challenge(ok, State#state{socket=AcceptSocket}).
 challenge(_, State = #state{socket=Socket}) ->
 	Msg = buildAuthChallenge(),
-	io:format("sending auth challenge~n"),
+	%io:format("sending auth challenge~n"),
 	gen_tcp:send(Socket, Msg),
 	rcv_challenge(ok, State).
 rcv_challenge(_, State = #state{socket=Socket, pair_pid=PairPid}) ->
@@ -42,9 +42,9 @@ rcv_challenge(_, State = #state{socket=Socket, pair_pid=PairPid}) ->
 
 	{ok, Packet} = gen_tcp:recv(Socket, 2),
 	<<Length?WO>> = Packet,
-	io:format("received world challenge with length ~p~n", [Length]),
+	%io:format("received world challenge with length ~p~n", [Length]),
 	{ok, PacketData} = gen_tcp:recv(Socket, Length),
-	io:format("received world challenge data~n"),
+	%io:format("received world challenge data~n"),
 	<<493?L, Msg/binary>> = PacketData,
 
 	{_ResponseName, ResponseData, _AccountId, KeyState} = auth_session(Msg),
@@ -54,14 +54,14 @@ rcv_challenge(_, State = #state{socket=Socket, pair_pid=PairPid}) ->
 	rcv(ok, State#state{key_state=KeyState}).
 rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
 	%% TODO handle error case
-	io:format("waiting for client header~n"),
+	%io:format("waiting for client header~n"),
 	Resp = gen_tcp:recv(Socket, HdrLen),
 	{ok, Packet} = Resp,
-	io:format("received encrypted header: ~p~n", [Resp]),
+	%io:format("received encrypted header: ~p~n", [Resp]),
 	%io:format("received tcp data with socket: ~p and hdrlen: ~p and with resp: ~p~n", [Socket, HdrLen, Resp]),
 	EncryptedHeader = Packet,
 	{Header, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
-	io:format("decrypted header: ~p~n", [Header]),
+	%io:format("decrypted header: ~p~n", [Header]),
 
 	<<LengthRaw?WO, Opcode?L>> = Header,
 	Length = LengthRaw - 4,
@@ -71,7 +71,7 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state
 			Data;
 		true -> <<"">>
 	end,
-	io:format("rcv: received payload ~p~n", [Rest]),
+	%io:format("rcv: received payload ~p~n", [Rest]),
 	Payload = <<Opcode?WO, Rest/binary>>,
 	Msg = {tcp_packet_rcvd, Payload},
 	%% sends to a process that handles the operation for this opcode, probaly a 'user' process

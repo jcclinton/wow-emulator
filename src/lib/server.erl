@@ -1,5 +1,5 @@
 -module(server).
--export([pong/1, noop/1]).
+-export([pong/1, null/1]).
 
 -include("include/binary.hrl").
 
@@ -16,5 +16,8 @@ pong(PropList) ->
 	{[], {Pids, Msg}}.
 
 
-noop(_PropList) ->
-	{[], {[], <<>>}}.
+null(_PropList) ->
+	Pids = self(),
+	Opcode = opcode_patterns:getNumByAtom(msg_null_action),
+	Msg = <<Opcode?W>>,
+	{[], {Pids, Msg}}.

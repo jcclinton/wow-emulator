@@ -65,6 +65,8 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 			ServerPrivate = srp:generatePrivate(),
 			Verifier = Account#account.verifier,
 			Salt = Account#account.salt,
+			%io:format("SERVER verifier: ~p~n", [Verifier]),
+			%io:format("SERVER priv: ~p~n", [ServerPrivate]),
 			ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, Verifier),
 			MsgOut = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 			%io:format("sending chal resp: ~p~n", [Msg]),
@@ -81,14 +83,14 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	%io:format("server skey: ~p~n", [Skey]),
 	Key = srp:interleaveHash(Skey),
 	%KeySize = size(Key),
-	%io:format("output key: ~p~nsize: ~p~n", [Key, KeySize]),
+	%io:format("SERVER sess key: ~p~n", [Skey]),
 	%Key = srp:hash([Skey]),
 	StringName = binary_to_list(Name),
 	KeyL = srp:b_to_l_endian(Key, 320),
 	ets:insert(connected_clients, {StringName, KeyL}),
-	io:format("SERVER: sending proof response~n"),
+	%io:format("SERVER: sending proof response~n"),
 	Generator = srp:getGenerator(),
-	MsgOut = build_proof_response(Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
+	MsgOut = build_proof_response(Name, Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	gen_tcp:send(Socket, MsgOut),
 	{noreply, State#state{client_public=ClientPublic, m1=M1}};
 handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State=#state{socket=Socket}) ->
@@ -131,10 +133,10 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 	Unk3 = <<16#0123456789ABCDEF?QH>>,
 
 	%% convert from big endian to little endian
-	<<ServerPubNum:256>> = ServerPublic,
+	<<ServerPubNum?QQB>> = ServerPublic,
 	ServerPubLittle = <<ServerPubNum?QQ>>,
 
-	<<Nnum:256>> = N,
+	<<Nnum?QQB>> = N,
 	NLittle = <<Nnum?QQ>>,
 
 	%<<SaltNum:256>> = Salt,
@@ -159,10 +161,9 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 	%io:format("response size: ~p~n", [Size]),
 	Msg.
 
-build_proof_response(Prime, Generator, Salt, ClientM1, ClientPublic, ServerPublic, Key) ->
-	I = srp:getUsername(),
-	%io:format("client pub: ~p~n~nserver pub: ~p~n~n", [ClientPublic, ServerPublic]),
-	%io:format("I: ~p~n~nPrime: ~p~n~nGen: ~p~n~nSalt: ~p~n~n", [I, Prime, Generator, Salt]),
+build_proof_response(I, Prime, Generator, Salt, ClientM1, ClientPublic, ServerPublic, Key) ->
+	%io:format("S: client pub: ~p~n~nserver pub: ~p~n~n", [ClientPublic, ServerPublic]),
+	%io:format("S: I: ~p~n~nPrime: ~p~n~nGen: ~p~n~nSalt: ~p~n~n", [I, Prime, Generator, Salt]),
 
 	ServerM1 = srp:getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key),
 	%io:format("m1 server: ~p~n~nm1 client: ~p~n~n", [ServerM1, ClientM1]),

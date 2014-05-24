@@ -79,6 +79,7 @@ computeClientKey(ClientPrivate, ServerPublic, ClientPublic, Generator, Prime, De
 	PrimeI = bin_to_int(Prime),
 	Multiplier = getMultiplier(),
 	BX = crypto:mod_pow(Generator, DerivedKey, Prime),
+	%BX = Verifier,
 	BTMPI0 = bin_to_int(ServerPublic) - bin_to_int(Multiplier) * bin_to_int(BX),
 	BTMPI = BTMPI0 rem PrimeI,
 	Base = if
@@ -193,15 +194,19 @@ test() ->
 	P = getPrime(),
 	U = getUsername(),
 	Pw = getPassword(),
-	Salt = getTestSalt(),
+	Salt = <<239,27,221,246,114,96,221,34,69,81,89,69,2,149,254,80,151,158,153,201,136,9,145,38,2,169,119,228,227,174,159,220>>,
 	DerivedKey = getDerivedKey(U, Pw, Salt),
 	Verifier = getVerifier(G, P, DerivedKey),
+	Verifier = <<84,14,176,38,65,71,128,194,248,49,15,114,126,147,21,11,135,75,92,127,27,50,130,135,187,94,109,209,234,99,173,223>>,
 
-	ClientPrivate = generatePrivate(),
-	ServerPrivate = generatePrivate(),
+	ClientPrivate = <<253,115,16,39,52,87,177,71,73,100,222,219,213,230,228,201,137,27,18,106,252,205,236,212,107,177,235,23,175,224,72,158>>,
+	ServerPrivate = <<86,103,234,37,43,208,155,3,195,133,252,143,192,89,104,231,9,243,28,252,184,124,48,244,160,131,167,8,127,144,202,93>>,
 
-	ServerPublic = getServerPublic(G, P, ServerPrivate, DerivedKey),
+	io:format("prime: ~p~n", [P]),
+	ServerPublic = getServerPublic(G, P, ServerPrivate, Verifier),
 	ClientPublic = getClientPublic(G, P, ClientPrivate),
+	io:format("client pub: ~p~n", [ClientPublic]),
+	io:format("server pub: ~p~n", [ServerPublic]),
 
 	ClientKey = computeClientKey(ClientPrivate, ServerPublic, ClientPublic, G, P, DerivedKey),
 	ServerKey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, P, Verifier),
