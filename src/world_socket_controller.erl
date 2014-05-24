@@ -3,6 +3,7 @@
 
 -record(state, {
   user,
+	account_id,
   sess_key,
   parent_pid,
   send_pid
@@ -31,10 +32,10 @@ init({ParentPid}) ->
 
 %% receiver has accepted connection
 %% start send process
-handle_call({tcp_accept_socket, Socket, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
+handle_call({tcp_accept_socket, Socket, AccountId, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
 	SendSupPid = get_sibling_pid(ParentPid, world_socket_send_sup),
 	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, KeyState]),
-	{reply, ok, S#state{send_pid=SendPid}};
+	{reply, ok, S#state{send_pid=SendPid, account_id=AccountId}};
 handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
@@ -47,10 +48,10 @@ handle_cast(init, State = #state{parent_pid=ParentPid}) ->
 handle_cast({tcp_accept_challenge, Msg}, State) ->
 	routeData(self(), Msg),
 	{noreply, State};
-handle_cast({tcp_packet_rcvd, <<Opcode?WO, Payload/binary>>}, S = #state{user=User}) ->
+handle_cast({tcp_packet_rcvd, <<Opcode?WO, Payload/binary>>}, S = #state{user=User, account_id=AccountId}) ->
 	%io:format("looking up opcode ~p~n", [Opcode]),
 	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
-	Args = [{payload, Payload}],
+	Args = [{payload, Payload}, {account_id, AccountId}],
 	NewUser = try M:F(Args) of
 		{Result, {Pids, Msg}} ->
 			routeData(Pids, Msg),

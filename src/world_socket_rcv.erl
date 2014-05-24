@@ -47,8 +47,8 @@ rcv_challenge(_, State = #state{socket=Socket, pair_pid=PairPid}) ->
 	%io:format("received world challenge data~n"),
 	<<493?L, Msg/binary>> = PacketData,
 
-	{_ResponseName, ResponseData, _AccountId, KeyState} = auth_session(Msg),
-	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, KeyState}),
+	{_ResponseName, ResponseData, AccountId, KeyState} = auth_session(Msg),
+	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, AccountId , KeyState}),
 	ResponseOpCode = 494,
 	gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
 	rcv(ok, State#state{key_state=KeyState}).
@@ -114,10 +114,9 @@ auth_session(Rest) ->
     {_, A, _}      = cmsg_auth_session(Rest),
     Data   = smsg_auth_response(),
 		io:format("authorizing session for ~p~n", [A]),
-		AccountId = srp:getUsername(),
     K      = world_crypto:encryption_key(A),
     KTup     = {0, 0, K},
-    {smsg_auth_response, Data, AccountId, KTup}.
+    {smsg_auth_response, Data, A, KTup}.
 
 cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
     {Account, Key} = cmsg_auth_session_extract(Rest, ""),
