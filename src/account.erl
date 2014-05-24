@@ -14,12 +14,13 @@ destroy() ->
 	ok.
 
 lookup(I) ->
+	io:format("looking up ~p~n", [I]),
 	Result = ets:lookup(users, I),
 	Value = case Result of
 		[] -> false;
 		[{_, Record}] -> Record
 	end,
-	io:format("ets lookup result: ~p~n", [Value]),
+	%io:format("ets lookup result: ~p~n", [Value]),
 	Value.
 
 create(Name, Password) when is_list(Name), is_list(Password), length(Name) > 0, length(Password) > 0 ->
@@ -32,6 +33,7 @@ create(Name, Password) when is_list(Name), is_list(Password), length(Name) > 0, 
 	Verifier = srp:getVerifier(Generator, Prime, DerivedKey),
 	Value = #account{name=BinName, salt=Salt, verifier=Verifier},
 	Key = srp:normalize(BinName),
+	%io:format("storing ~p~n", [Key]),
 	Result = ets:insert_new(users, {Key, Value}),
 	if Result -> ok;
 		not Result -> {error, name_taken}

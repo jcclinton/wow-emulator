@@ -44,7 +44,7 @@ handle_cast(connect, State) ->
 	ClientPrivate = srp:generatePrivate(),
 	{noreply, State#state{realm_socket=Socket, client_private=ClientPrivate}};
 handle_cast(challenge, State) ->
-	I = getUsername(),
+	I = getUsername(upper),
 	Msg = buildChallengeMessage(I),
 	gen_tcp:send(State#state.realm_socket, Msg),
 	{noreply, State};

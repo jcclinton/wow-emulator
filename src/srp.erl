@@ -9,7 +9,7 @@ getUsername() -> <<"alice">>.
 
 getPassword() -> <<"password123">>.
 
-getSalt() -> <<16#b3d47dc40109ba25459096abdd0bfbbc3266d5b2dcf52eb586d2d2e612afdd84?QQ>>.
+getTestSalt() -> <<16#b3d47dc40109ba25459096abdd0bfbbc3266d5b2dcf52eb586d2d2e612afdd84?QQ>>.
 
 getGenerator() -> <<7/integer>>.
 
@@ -66,9 +66,8 @@ getClientPublic(Generator, Prime, ClientPrivate) ->
 	Pub.
 
 %% server public key
-getServerPublic(Generator, Prime, ServerPrivate, DerivedKey) ->
+getServerPublic(Generator, Prime, ServerPrivate, Verifier) ->
 	Version = getVersion(),
-	Verifier = getVerifier(Generator, Prime, DerivedKey),
 	{Pub, ServerPrivate} = crypto:generate_key(srp, {host, [Verifier, Generator, Prime, Version]}, ServerPrivate),
 Pub.
 
@@ -91,10 +90,9 @@ computeClientKey(ClientPrivate, ServerPublic, ClientPublic, Generator, Prime, De
 
 
 %% server session key
-computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, DerivedKey) ->
+computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier) ->
 	U = getScrambler(ClientPublic, ServerPublic),
 	Version = getVersion(),
-	Verifier = getVerifier(Generator, Prime, DerivedKey),
 	crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}).
 
 getM1(Prime, Generator, UBin, SaltL, ClientPublic, ServerPublic, Key) ->
@@ -140,7 +138,7 @@ testM() ->
 	Generator = getGenerator(),
 	Prime = getPrime(),
 	I = getUsername(),
-	Salt = getSalt(),
+	Salt = getTestSalt(),
 	Pw = getPassword(),
 	ServerPrivate = <<116,251,24,248,115,211,4,76,142,129,49,189,104,186,81,185,50,182,209,247,131,98,164,163,244,125,158,200,101,214,37,146>>,
 	DerivedKey = getDerivedKey(I, Pw, Salt),
@@ -195,8 +193,9 @@ test() ->
 	P = getPrime(),
 	U = getUsername(),
 	Pw = getPassword(),
-	Salt = getSalt(),
+	Salt = getTestSalt(),
 	DerivedKey = getDerivedKey(U, Pw, Salt),
+	Verifier = getVerifier(G, P, DerivedKey),
 
 	ClientPrivate = generatePrivate(),
 	ServerPrivate = generatePrivate(),
@@ -205,7 +204,7 @@ test() ->
 	ClientPublic = getClientPublic(G, P, ClientPrivate),
 
 	ClientKey = computeClientKey(ClientPrivate, ServerPublic, ClientPublic, G, P, DerivedKey),
-	ServerKey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, G, P, DerivedKey),
+	ServerKey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, P, Verifier),
 
 	io:format("client skey: ~p~n", [ClientKey]),
 	io:format("server skey: ~p~n", [ServerKey]),
@@ -214,7 +213,7 @@ test() ->
 doTest() ->
 	U = getUsername(),
 	Pw = getPassword(),
-	Salt = getSalt(),
+	Salt = getTestSalt(),
 	X = getDerivedKey(U, Pw, Salt),
 	%Xhex = bin_to_hex_list(X),
 	%<<Xint?SHB>> = X,
@@ -250,7 +249,8 @@ doTest() ->
 	io:format("A: ~p~nAhex: ~p~nAint: ~p~n", [ClientPublic, Ahex, Aint]),
 	io:format("M: ~p~nMhex: ~p~nMint: ~p~n", [M1, Mhex, M1num]),
 
-	Skey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, G, P, X),
+	Verifier = getVerifier(G, P, X),
+	Skey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, P, Verifier),
 	%<<Skeyint?QQB>> = Skey,
 	%Skeyhex = bin_to_hex_list(Skey),
 	%io:format("skey: ~p~nskey hex: ~p~nskey int: ~p~n", [Skey, Skeyhex, Skeyint]),
@@ -300,7 +300,7 @@ doTest() ->
 	testU() ->
 		I = getUsername(),
 		Pw = getPassword(),
-		Salt = getSalt(),
+		Salt = getTestSalt(),
 		X = getDerivedKey(I, Pw, Salt),
 
 		P = getPrime(),

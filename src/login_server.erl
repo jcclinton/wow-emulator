@@ -4,7 +4,8 @@
 -record(state, {name, % players name
 								socket, % the current socket
 								identity,
-								derived_key,
+								verifier,
+								salt,
 								server_private,
 								client_public,
 								server_public,
@@ -36,16 +37,11 @@ handle_cast({accept, ListenSocket}, State) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	% start new acceptor
 	login_server_sup:start_socket(),
-	ServerPrivate = srp:generatePrivate(),
-	Username = srp:getUsername(),
-	Pw = srp:getPassword(),
-	Salt = srp:getSalt(),
-	DerivedKey = srp:getDerivedKey(Username, Pw, Salt),
-	{noreply, State#state{socket=AcceptSocket, server_private=ServerPrivate, derived_key=DerivedKey}}.
+	{noreply, State#state{socket=AcceptSocket}}.
 
 
 
-handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket, server_private=ServerPrivate, derived_key=DerivedKey}) ->
+handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
 	I = try extract_username(Msg) of
 		_ -> extract_username(Msg)
@@ -58,35 +54,30 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket, ser
 												<<"">>;
 				_ -> <<"">>
 	end,
-	io:format("SERVER: received challenge~n"),
-	%io:format("SERVER: received: ~p~n", [Msg]),
-	io:format("SERVER: received name: ~p~n", [I]),
+	io:format("SERVER: received challenge with name: ~p~n", [I]),
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
-	Data = account:lookup(I),
-	NewState = if Data == false ->
-			%% send error msg
+	Account = account:lookup(I),
+	NewState = if Account == false ->
+			%% todo send error response
 			State;
 		true ->
-			ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, DerivedKey),
-			Salt = srp:getSalt(),
+			ServerPrivate = srp:generatePrivate(),
+			Verifier = Account#account.verifier,
+			Salt = Account#account.salt,
+			ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, Verifier),
 			MsgOut = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 			%io:format("sending chal resp: ~p~n", [Msg]),
 			gen_tcp:send(Socket, MsgOut),
-			State#state{identity=I, server_public=ServerPublic}
+			State#state{identity=I, server_public=ServerPublic, salt=Salt, verifier=Verifier, server_private=ServerPrivate}
 	end,
 	{noreply, NewState};
-handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, server_public=ServerPublic, server_private=ServerPrivate, derived_key=DerivedKey}) ->
+handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, server_public=ServerPublic, server_private=ServerPrivate, verifier=Verifier, salt=Salt, identity=Name}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
 	io:format("SERVER: received proof~n"),
 	{ClientPublic, M1} = extract_proof(Msg),
-	%% TODO remove this hardcoding
-	NameReg = srp:getUsername(),
-	Name = srp:normalize(NameReg),
-	Salt = srp:getSalt(),
-	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
-	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, DerivedKey),
+	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier),
 	%io:format("server skey: ~p~n", [Skey]),
 	Key = srp:interleaveHash(Skey),
 	%KeySize = size(Key),
@@ -96,6 +87,7 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	KeyL = srp:b_to_l_endian(Key, 320),
 	ets:insert(connected_clients, {StringName, KeyL}),
 	io:format("SERVER: sending proof response~n"),
+	Generator = srp:getGenerator(),
 	MsgOut = build_proof_response(Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	gen_tcp:send(Socket, MsgOut),
 	{noreply, State#state{client_public=ClientPublic, m1=M1}};
