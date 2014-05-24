@@ -1,4 +1,4 @@
--record(account, {id, name, password=""}).
+-record(account, {name, salt, verifier}).
 -record(realm,   {id, name, icon, lock, status, address, population, timezone}).
 -record(char,    {id, account_id, realm_id, name, race, gender, class, power_type,
                   skin, face, hair_style, hair_color, facial_hair, level, 

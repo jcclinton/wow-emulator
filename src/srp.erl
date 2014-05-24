@@ -47,8 +47,8 @@ getDerivedKey(UBin, PwBin, Salt) ->
 	X = crypto:hash(sha, [Salt, PassHash]),
 	l_to_b_endian(X, 160).
 
-normalize(String) ->
-	S1 = binary_to_list(String),
+normalize(BinString) ->
+	S1 = binary_to_list(BinString),
 	S2 = string:to_upper(S1),
 	list_to_binary(S2).
 

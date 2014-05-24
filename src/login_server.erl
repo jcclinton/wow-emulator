@@ -17,6 +17,7 @@
 
 
 -include("include/binary.hrl").
+-include("include/database_records.hrl").
 
 
 start_link(ListenSocket) ->
@@ -59,15 +60,22 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	end,
 	io:format("SERVER: received challenge~n"),
 	%io:format("SERVER: received: ~p~n", [Msg]),
-	%io:format("SERVER: received name: ~p~n", [I]),
+	io:format("SERVER: received name: ~p~n", [I]),
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
-	ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, DerivedKey),
-	Salt = srp:getSalt(),
-	MsgOut = build_challenge_response(ServerPublic, Generator, Prime, Salt),
-	%io:format("sending chal resp: ~p~n", [Msg]),
-	gen_tcp:send(Socket, MsgOut),
-	{noreply, State#state{identity=I, server_public=ServerPublic}};
+	Data = account:lookup(I),
+	NewState = if Data == false ->
+			%% send error msg
+			State;
+		true ->
+			ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, DerivedKey),
+			Salt = srp:getSalt(),
+			MsgOut = build_challenge_response(ServerPublic, Generator, Prime, Salt),
+			%io:format("sending chal resp: ~p~n", [Msg]),
+			gen_tcp:send(Socket, MsgOut),
+			State#state{identity=I, server_public=ServerPublic}
+	end,
+	{noreply, NewState};
 handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, server_public=ServerPublic, server_private=ServerPrivate, derived_key=DerivedKey}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
 	io:format("SERVER: received proof~n"),
@@ -273,7 +281,7 @@ extract_username(Msg) ->
 		if ILen == 0 -> throw(zero_ilen);
 			 true -> ok
 		end,
-		<<Iout:Size, Rest/binary>> = I,
+		<<INum:Size/unsigned-big-integer, Rest/binary>> = I,
 		%io:format("Rest size: ~p~n", [erlang:bit_size(Rest)]),
 		%io:format("Rest: ~p~n", [Rest]),
 		BList = binary_to_list(Rest),
@@ -284,7 +292,8 @@ extract_username(Msg) ->
 		if RestVal =/= 0 -> throw(bad_i_size);
 			 true -> ok
 		end,
-		Iout.
+		<<INum:Size/unsigned-big-integer>>.
+
 
 extract_proof(Msg) ->
 	<<ClientPublic_raw?QQ,
