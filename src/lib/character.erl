@@ -7,7 +7,8 @@
 
 enum(PropList) ->
 	PlayerName = proplists:get_value(account_id, PropList),
-	Chars = ets:match(characters, {'_', PlayerName, '_'}),
+	Chars = ets:match_object(characters, {'_', PlayerName, '_'}),
+	io:format("looking up player name: ~p~n", [PlayerName]),
 	io:format("matched: ~p~n", [Chars]),
 	Pids = [self()],
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_enum),
@@ -23,6 +24,7 @@ create(PropList) ->
 	{Name, NewPayload} = extract_name(Payload),
 	<<Race?B, Class?B, Gender?B, Skin?B, Face?B, HairStyle?B, HairColor?B, FacialHair?B, OutfitId?B>> = NewPayload,
 	Char = #char{name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, outfit_id=OutfitId},
+	io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	ets:insert(characters, {Name, PlayerName, Char}),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_create),
 	Result = 16#2E,
