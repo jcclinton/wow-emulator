@@ -56,26 +56,30 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state
 	%% TODO handle error case
 	%io:format("waiting for client header~n"),
 	Resp = gen_tcp:recv(Socket, HdrLen),
-	{ok, Packet} = Resp,
-	%io:format("received encrypted header: ~p~n", [Resp]),
-	%io:format("received tcp data with socket: ~p and hdrlen: ~p and with resp: ~p~n", [Socket, HdrLen, Resp]),
-	EncryptedHeader = Packet,
-	{Header, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
-	%io:format("decrypted header: ~p~n", [Header]),
+	NewKeyState = case Resp of
+		{ok, Packet} ->
+			%io:format("received encrypted header: ~p~n", [Resp]),
+			%io:format("received tcp data with socket: ~p and hdrlen: ~p and with resp: ~p~n", [Socket, HdrLen, Resp]),
+			EncryptedHeader = Packet,
+			{Header, KeyState2} = world_crypto:decrypt(EncryptedHeader, KeyState),
+			%io:format("decrypted header: ~p~n", [Header]),
 
-	<<LengthRaw?WO, Opcode?L>> = Header,
-	Length = LengthRaw - 4,
-	io:format("rcv: received opcode ~p with length ~p~n", [Opcode, Length]),
-	Rest = if Length > 0 ->
-			{ok, Data} = gen_tcp:recv(Socket, Length),
-			Data;
-		true -> <<"">>
-	end,
-	%io:format("rcv: received payload ~p~n", [Rest]),
-	Payload = <<Opcode?WO, Rest/binary>>,
-	Msg = {tcp_packet_rcvd, Payload},
-	%% sends to a process that handles the operation for this opcode, probaly a 'user' process
-	gen_server:cast(PairPid, Msg),
+			<<LengthRaw?WO, Opcode?L>> = Header,
+			Length = LengthRaw - 4,
+			io:format("rcv: received opcode ~p with length ~p~n", [Opcode, Length]),
+			Rest = if Length > 0 ->
+					{ok, Data} = gen_tcp:recv(Socket, Length),
+					Data;
+				true -> <<"">>
+			end,
+			%io:format("rcv: received payload ~p~n", [Rest]),
+			Payload = <<Opcode?WO, Rest/binary>>,
+			Msg = {tcp_packet_rcvd, Payload},
+			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
+			gen_server:cast(PairPid, Msg),
+			KeyState2;
+		_ -> KeyState
+		end,
 	rcv(ok, State#state{key_state=NewKeyState}).
 
 %% callbacks
