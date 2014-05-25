@@ -4,7 +4,7 @@
 
 -include("binary.hrl").
 
--define(K, 20).
+-define(K, 40).
 
 %% @spec encrypt(binary(), binary()) -> binary().
 encrypt(Header, Key) ->

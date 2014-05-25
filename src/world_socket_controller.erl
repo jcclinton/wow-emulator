@@ -48,7 +48,7 @@ handle_cast(init, State = #state{parent_pid=ParentPid}) ->
 handle_cast({tcp_accept_challenge, Msg}, State) ->
 	routeData(self(), Msg),
 	{noreply, State};
-handle_cast({tcp_packet_rcvd, <<Opcode?WO, Payload/binary>>}, S = #state{user=User, account_id=AccountId}) ->
+handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{user=User, account_id=AccountId}) ->
 	%io:format("looking up opcode ~p~n", [Opcode]),
 	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
 	Args = [{payload, Payload}, {account_id, AccountId}],

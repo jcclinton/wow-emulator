@@ -16,6 +16,7 @@
 
 -define(Q, :64?IL). % quad
 -define(L, :32?IL). % long
+-define(LB, :32?IB). % long
 -define(W, :16?IL). % word
 -define(WO, :16?IB). % word, big endian
 -define(B, :8). %byte

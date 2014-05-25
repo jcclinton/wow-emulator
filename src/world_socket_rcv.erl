@@ -57,10 +57,8 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state
 	%io:format("waiting for client header~n"),
 	Resp = gen_tcp:recv(Socket, HdrLen),
 	NewKeyState = case Resp of
-		{ok, Packet} ->
-			%io:format("received encrypted header: ~p~n", [Resp]),
-			%io:format("received tcp data with socket: ~p and hdrlen: ~p and with resp: ~p~n", [Socket, HdrLen, Resp]),
-			EncryptedHeader = Packet,
+		{ok, EncryptedHeader} ->
+			%io:format("received encrypted header: ~p~n", [EncryptedHeader]),
 			{Header, KeyState2} = world_crypto:decrypt(EncryptedHeader, KeyState),
 			%io:format("decrypted header: ~p~n", [Header]),
 
@@ -73,7 +71,7 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state
 				true -> <<"">>
 			end,
 			%io:format("rcv: received payload ~p~n", [Rest]),
-			Payload = <<Opcode?WO, Rest/binary>>,
+			Payload = <<Opcode?LB, Rest/binary>>,
 			Msg = {tcp_packet_rcvd, Payload},
 			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
 			gen_server:cast(PairPid, Msg),
