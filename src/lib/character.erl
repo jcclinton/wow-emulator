@@ -13,14 +13,20 @@ enum(PropList) ->
 	Pids = [self()],
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_enum),
 	Num = length(Chars),
-	CharDataOut = if Num > 0 ->
+	CharDataOut2 = if Num > 0 ->
 								CharList = lists:map(fun mapCharData/1, Chars),
 								CharData = iolist_to_binary(CharList),
 	%io:format("mapped char data: ~p~n", [CharData]),
 								CharData;
 							true -> <<>>
 						end,
-	Msg = <<Opcode?W, Num?B, CharDataOut/binary>>,
+	%1d 82 38 c9 01 ce
+	Size = 170*8,
+	CharDataOut = <<Opcode?W, 16#01ced314000000000046726f737465656675780005080002060802023c6a020000010000005c49d6450a4b91c57f3a2f440000000000000000000000000000000000000000006f7900000182260000020376000003000000000097730000149c7300000659720000079a730000089d73000009997300000ad65d00000b807b00000b282000000c107400000c2a89000010795c0000110000000000538800001a00000000000000000000:Size/unsigned-big-integer>>,
+	%Msg = <<Opcode?W, CharDataOut/binary>>,
+	Msg = CharDataOut,
+	io:format("chardataout: ~p~n", [CharDataOut]),
+	io:format("msg: ~p~n", [Msg]),
 	{[], {Pids, Msg}}.
 
 
