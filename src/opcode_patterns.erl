@@ -5,6 +5,7 @@
 
 getCallbackByNum(16#0036) -> {character, create};
 getCallbackByNum(16#0037) -> {character, enum};
+getCallbackByNum(16#003D) -> {character, login};
 getCallbackByNum(16#01DC) -> {server, pong};
 getCallbackByNum(Unk) ->
 	io:format("unknown opcode: ~p~n", [Unk]),
@@ -15,6 +16,7 @@ getNumByAtom(msg_null_action) -> 16#000;
 getNumByAtom(smsg_char_enum) -> 16#03B;
 getNumByAtom(smsg_char_create) -> 16#03A;
 getNumByAtom(smsg_pong) -> 16#1DD;
+getNumByAtom(smsg_login_verify_world) -> 16#236;
 getNumByAtom(Unk) ->
 	io:format("unknown opcode: ~p~n", [Unk]),
 	0.

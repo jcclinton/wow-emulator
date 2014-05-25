@@ -46,6 +46,21 @@ create(PropList) ->
 	{[], {Pids, Msg}}.
 
 
+login(PropList) ->
+	Pids = [self()],
+	PlayerName = proplists:get_value(account_id, PropList),
+	Opcode = opcode_patterns:getNumByAtom(smsg_login_verify_world),
+	MapId = 1,
+	X = 1,
+	Y = 1,
+	Z = 1,
+	Orient = 1,
+	Payload = <<MapId?L, X?f, Y?f, Z?f, Orient?f>>,
+	io:format("login payload: ~p~n", [Payload]),
+	Msg = <<Opcode?W, Payload/binary>>,
+	{[], {Pids, Msg}}.
+
+
 
 
 %%%%%%%%%%%%
