@@ -32,12 +32,12 @@ create(PropList) ->
 	<<Race?B, Class?B, Gender?B, Skin?B, Face?B, HairStyle?B, HairColor?B, FacialHair?B, OutfitId?B>> = NewPayload,
 	Guid = world:get_guid(),
 	Level = 1,
-	Zone = 1,
-	Map = 1,
-	X = 6857.169921875,
-	Y = -4649.3798828125,
-	Z = 700.9140014648438,
-	Orientation = 1.0,
+	Zone = 12,
+	Map = 0,
+	X = -8949.95,
+	Y = -132.493,
+	Z = 83.5312,
+	Orientation = 0,
 	Char = #char{guid=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, outfit_id=OutfitId, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, orientation=Orientation},
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	ets:insert(characters, {Name, PlayerName, Guid, Char}),
@@ -59,24 +59,31 @@ login(PropList) ->
 	Orientation = Char#char.orientation,
 	Opcode = opcode_patterns:getNumByAtom(smsg_login_verify_world),
 	Payload = <<MapId?L, X?f, Y?f, Z?f, Orientation?f>>,
-	io:format("login payload: ~p~n", [Payload]),
+	%io:format("login payload: ~p~n", [Payload]),
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 
 
 	%login packets to send before player is added to map
-	account_data_times(PropList),
-	set_rest_start(PropList),
-	bind_point_update(PropList),
-	initial_spells(PropList),
-	send_unlearn_spells(PropList),
-	action_buttons(PropList),
-	initialize_factions(PropList),
-	login_settimespeed(PropList),
+	PropList2 = [{char, Char}|PropList],
+	account_data_times(PropList2),
+	set_rest_start(PropList2),
+	set_tutorial_flags(PropList2),
+
+	%bind_point_update(PropList2),
+
+	initial_spells(PropList2),
+
+	send_unlearn_spells(PropList2),
+	action_buttons(PropList2), % differs
+	initialize_factions(PropList2), % differs
+	login_settimespeed(PropList2),
 
 	%login packets to send after player is added to map
-	init_world_state(PropList),
+	init_world_state(PropList2),
 	%castspell
+	%enchantment
+	%item enchanctment
 	ok.
 
 
@@ -92,19 +99,27 @@ account_data_times(_Proplist) ->
 
 set_rest_start(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_set_rest_start),
-	% send 32 empty 32 bit words
-	Payload = <<0?L>>,
+	GameTime = game_time(),
+	Payload = <<GameTime?L>>,
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
 
-bind_point_update(_Proplist) ->
+set_tutorial_flags(_Proplist) ->
+	Opcode = opcode_patterns:getNumByAtom(smsg_tutorial_flags),
+	Payload = <<0?QQ>>,
+	Msg = <<Opcode?W, Payload/binary>>,
+	world_socket_controller:send(Msg),
+	ok.
+
+bind_point_update(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_bindpointupdate),
-	Zone = 1,
-	Map = 618,
-	X = 6857.169921875,
-	Y = -4649.3798828125,
-	Z = 700.9140014648438,
+	Char = proplists:get_value(char, Proplist),
+	Zone = Char#char.zone_id,
+	Map = Char#char.map_id,
+	X = Char#char.position_x,
+	Y = Char#char.position_y,
+	Z = Char#char.position_z,
 	Payload = <<X?f, Y?f, Z?f, Map?L, Zone?L>>,
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
@@ -145,19 +160,35 @@ initialize_factions(_Proplist) ->
 
 login_settimespeed(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_login_settimespeed),
-	Seconds = 10,
-	GameTime = 0.1666667,
-	Payload = <<Seconds?L, GameTime?f>>,
+	GameTime = game_time(),
+	Speed = 0.01666667,
+	Payload = <<GameTime?L, Speed?f>>,
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
 
-init_world_state(_Proplist) ->
+init_world_state(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_init_world_state),
-	MapId = 618,
-	ZoneId = 1,
+	Char = proplists:get_value(char, Proplist),
+	MapId = Char#char.map_id,
+	ZoneId = Char#char.zone_id,
 	Count = 6,
-	Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
+	%08D4 0000 08D5 0000 08D6 0000 08D7 0000 08D8
+	Payload = <<MapId?L, ZoneId?L, Count?W,
+		16#8?B,
+		16#d4?B,
+		0?L,
+		16#8?B,
+		16#d5?B,
+		0?L,
+		16#8?B,
+		16#d6?B,
+		0?L,
+		16#8?B,
+		16#d7?B,
+		0?L,
+		16#8?B,
+		16#d8?L>>,
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
@@ -215,3 +246,15 @@ mapCharData({_CharName, _AccountName, Guid, #char{guid=Guid, name=Name, race=Rac
 	0:SlotDataSize/unsigned-little-integer,
 	BagDisplayId?L,
 	BagInventoryType?B>>.
+
+game_time() ->
+    {Y, Mo, Dm} = erlang:date(),
+    {H, Mi, _} = erlang:time(),
+    Dw = calendar:day_of_the_week(Y, Mo, Dm),
+    GameTime = (((((Mi band 16#3F) bor 
+                   (H*64 band 16#7C0)) bor 
+                   (Dw*2048 band 16#3800)) bor 
+                   ((Dm - 1)*16384 band 16#FC000)) bor 
+                   ((Mo - 1)*1048576 band 16#F00000)) bor 
+                   ((Y - 2000)*16777216 band 16#1F000000),
+    GameTime.

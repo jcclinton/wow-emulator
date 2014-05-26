@@ -26,6 +26,7 @@ getNumByAtom(smsg_action_buttons) -> 16#129;
 getNumByAtom(smsg_initialize_factions) -> 16#122;
 getNumByAtom(smsg_login_settimespeed) -> 16#042;
 getNumByAtom(smsg_init_world_state) -> 16#2C2;
+getNumByAtom(smsg_tutorial_flags) -> 16#0FD;
 getNumByAtom(Unk) ->
 	io:format("unknown opcode: ~p~n", [Unk]),
 	0.
