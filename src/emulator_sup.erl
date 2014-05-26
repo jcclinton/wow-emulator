@@ -18,6 +18,9 @@ init([]) ->
 					permanent, 10000, supervisor, [login_server_sup]},
 				 {world_server_sup,
 					{world_server_sup, start_link, []},
-					permanent, 10000, supervisor, [world_server_sup]}],
+					permanent, 10000, supervisor, [world_server_sup]},
+				 {world,
+					{world, start_link, []},
+					permanent, 10000, worker, [world_session]}],
 	FinalProcs = if UseDummyClient -> Procs ++ [ClientProc]; true -> Procs end,
 	{ok, {{one_for_one, 60, 3600}, FinalProcs}}.

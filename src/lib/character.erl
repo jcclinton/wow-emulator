@@ -20,12 +20,13 @@ enum(PropList) ->
 								CharData;
 							true -> <<>>
 						end,
-	%1d 82 38 c9 01 ce
-	Size = 170*8,
-	CharDataOut = <<Opcode?W, 16#01ced314000000000046726f737465656675780005080002060802023c6a020000010000005c49d6450a4b91c57f3a2f440000000000000000000000000000000000000000006f7900000182260000020376000003000000000097730000149c7300000659720000079a730000089d73000009997300000ad65d00000b807b00000b282000000c107400000c2a89000010795c0000110000000000538800001a00000000000000000000:Size/unsigned-big-integer>>,
-	%Msg = <<Opcode?W, CharDataOut/binary>>,
-	Msg = CharDataOut,
-	io:format("chardataout: ~p~n", [CharDataOut]),
+
+	%Size = 170*8,
+	%CharDataOut = <<Opcode?W, 16#01ced314000000000046726f737465656675780005080002060802023c6a020000010000005c49d6450a4b91c57f3a2f440000000000000000000000000000000000000000006f7900000182260000020376000003000000000097730000149c7300000659720000079a730000089d73000009997300000ad65d00000b807b00000b282000000c107400000c2a89000010795c0000110000000000538800001a00000000000000000000:Size/unsigned-big-integer>>,
+	%Msg = CharDataOut,
+	%io:format("chardataout: ~p~n", [CharDataOut]),
+
+	Msg = <<Opcode?W, Num?B, CharDataOut2/binary>>,
 	io:format("msg: ~p~n", [Msg]),
 	{[], {Pids, Msg}}.
 
@@ -36,8 +37,14 @@ create(PropList) ->
 	PlayerName = proplists:get_value(account_id, PropList),
 	{Name, NewPayload} = extract_name(Payload),
 	<<Race?B, Class?B, Gender?B, Skin?B, Face?B, HairStyle?B, HairColor?B, FacialHair?B, OutfitId?B>> = NewPayload,
-	Guid = 1,
-	Char = #char{guid=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, outfit_id=OutfitId},
+	Guid = world:get_guid(),
+	Level = 1,
+	Zone = 1,
+	Map = 618,
+	X = 6857.169921875,
+	Y = -4649.3798828125,
+	Z = 700.9140014648438,
+	Char = #char{guid=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, outfit_id=OutfitId, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z},
 	io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	ets:insert(characters, {Name, PlayerName, Char}),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_create),
@@ -48,7 +55,7 @@ create(PropList) ->
 
 login(PropList) ->
 	Pids = [self()],
-	PlayerName = proplists:get_value(account_id, PropList),
+	_PlayerName = proplists:get_value(account_id, PropList),
 	Opcode = opcode_patterns:getNumByAtom(smsg_login_verify_world),
 	MapId = 1,
 	X = 1,
@@ -75,14 +82,8 @@ extract_name(<<Char?B, Rest/binary>>, Name) ->
 	extract_name(Rest, [Char|Name]).
 	
 
-mapCharData({_CharName, _AccountName, #char{guid=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair}}) ->
+mapCharData({_CharName, _AccountName, #char{guid=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z}}) ->
 	NameSize = size(Name) * 8,
-	Level = 10,
-	Zone = 1,
-	Map = 1,
-	X = 1,
-	Y = 1,
-	Z = 1,
 	GuildId = 0,
 	PlayerFlags = 0,
 	AtLoginFlags = 0,
@@ -94,7 +95,7 @@ mapCharData({_CharName, _AccountName, #char{guid=Guid, name=Name, race=Race, cla
 	BagDisplayId = 0,
 	BagInventoryType = 0,
 	<<NameNum:NameSize/unsigned-big-integer>> = Name,
-	<<Guid?L,
+	<<Guid?Q,
 	NameNum:NameSize/unsigned-big-integer,
 	0?B,
 	Race?B,
@@ -105,9 +106,9 @@ mapCharData({_CharName, _AccountName, #char{guid=Guid, name=Name, race=Race, cla
 	HairStyle?B,
 	HairColor?B,
 	FacialHair?B,
-	Level?f,
-	Zone?f,
-	Map?f,
+	Level?B,
+	Zone?L,
+	Map?L,
 	X?f,
 	Y?f,
 	Z?f,
@@ -120,4 +121,3 @@ mapCharData({_CharName, _AccountName, #char{guid=Guid, name=Name, race=Race, cla
 	0:SlotDataSize/unsigned-little-integer,
 	BagDisplayId?L,
 	BagInventoryType?B>>.
-
