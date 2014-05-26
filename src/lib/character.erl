@@ -80,6 +80,7 @@ login(PropList) ->
 	login_settimespeed(PropList2),
 
 	%login packets to send after player is added to map
+	update_object(PropList2),
 	init_world_state(PropList2),
 	%castspell
 	%enchantment
@@ -173,22 +174,17 @@ init_world_state(Proplist) ->
 	MapId = Char#char.map_id,
 	ZoneId = Char#char.zone_id,
 	Count = 6,
-	%08D4 0000 08D5 0000 08D6 0000 08D7 0000 08D8
-	Payload = <<MapId?L, ZoneId?L, Count?W,
-		16#8?B,
-		16#d4?B,
-		0?L,
-		16#8?B,
-		16#d5?B,
-		0?L,
-		16#8?B,
-		16#d6?B,
-		0?L,
-		16#8?B,
-		16#d7?B,
-		0?L,
-		16#8?B,
-		16#d8?L>>,
+	Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
+	Msg = <<Opcode?W, Payload/binary>>,
+	world_socket_controller:send(Msg),
+	ok.
+
+update_object(Proplist) ->
+	Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
+	_Char = proplists:get_value(char, Proplist),
+	BlockCount = 0,
+	HasTransport = 1,
+	Payload = <<BlockCount?L, HasTransport?B>>,
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
