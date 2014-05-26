@@ -15,10 +15,15 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
+-export([send/1]).
 -compile([export_all]).
 
 
 -include("include/binary.hrl").
+
+send(Msg) ->
+	routeData(self(), Msg).
+
 
 
 start_link(ParentPid) ->
@@ -53,8 +58,8 @@ handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{user=Us
 	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
 	Args = [{payload, Payload}, {account_id, AccountId}],
 	NewUser = try M:F(Args) of
-		{Result, {Pids, Msg}} ->
-			routeData(Pids, Msg),
+		ok -> User;
+		{Result} ->
 			proplists:get_value(user, Result, User)
 		catch
 			badarg -> User

@@ -17,6 +17,15 @@ getNumByAtom(smsg_char_enum) -> 16#03B;
 getNumByAtom(smsg_char_create) -> 16#03A;
 getNumByAtom(smsg_pong) -> 16#1DD;
 getNumByAtom(smsg_login_verify_world) -> 16#236;
+getNumByAtom(smsg_account_data_times) -> 16#209;
+getNumByAtom(smsg_set_rest_start) -> 16#21E;
+getNumByAtom(smsg_bindpointupdate) -> 16#155;
+getNumByAtom(smsg_initial_spells) -> 16#12A;
+getNumByAtom(smsg_send_unlearn_spells) -> 16#41D;
+getNumByAtom(smsg_action_buttons) -> 16#129;
+getNumByAtom(smsg_initialize_factions) -> 16#122;
+getNumByAtom(smsg_login_settimespeed) -> 16#042;
+getNumByAtom(smsg_init_world_state) -> 16#2C2;
 getNumByAtom(Unk) ->
 	io:format("unknown opcode: ~p~n", [Unk]),
 	0.
