@@ -25,7 +25,7 @@ getNumByAtom(smsg_send_unlearn_spells) -> 16#41D;
 getNumByAtom(smsg_action_buttons) -> 16#129;
 getNumByAtom(smsg_initialize_factions) -> 16#122;
 getNumByAtom(smsg_login_settimespeed) -> 16#042;
-getNumByAtom(smsg_init_world_state) -> 16#2C2;
+getNumByAtom(smsg_init_world_states) -> 16#2C2;
 getNumByAtom(smsg_tutorial_flags) -> 16#0FD;
 getNumByAtom(smsg_update_object) -> 16#0A9;
 getNumByAtom(Unk) ->

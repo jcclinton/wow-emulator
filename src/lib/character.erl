@@ -137,6 +137,7 @@ login(PropList) ->
 	%login packets to send after player is added to map
 	update_object(PropList2),
 	init_world_state(PropList2),
+	%update_object2(PropList2),
 	%castspell
 	%enchantment
 	%item enchanctment
@@ -224,12 +225,15 @@ login_settimespeed(_Proplist) ->
 	ok.
 
 init_world_state(Proplist) ->
-	Opcode = opcode_patterns:getNumByAtom(smsg_init_world_state),
+	Opcode = opcode_patterns:getNumByAtom(smsg_init_world_states),
 	Char = proplists:get_value(char, Proplist),
 	MapId = Char#char.map_id,
 	ZoneId = Char#char.zone_id,
 	Count = 6,
-	Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
+	%Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
+	Size = 138 * 8,
+	Payload = <<16#82140037030030f105000000db6f9b0fe01700b8030030f1000000006d2887bf560800cb010030f1000000009214aa68510400c5000030f100000000698c44abb6bc00a42e0030f100000000383c907a000000000c0000000600d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:Size/unsigned-big-integer>>,
+	io:format("world init payload: ~p~n", [Payload]),
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
@@ -240,11 +244,15 @@ update_object(Proplist) ->
 	
         Block = update_helper:block(create_object2, Char),
         Packet = update_helper:packet([Block]),
-        Payload = update_helper:message(Packet),
+        %Payload = update_helper:message(Packet),
 
 	%BlockCount = 0,
 	%HasTransport = 1,
 	%Payload = <<BlockCount?L, HasTransport?B>>,
+	Size = 48 * 8,
+	Payload = <<16#db9e10d10230f129920bc6fe7406c3fca7a6420000000000000000004d030000010000008f8b0bc65caf07c374b3a542:Size/unsigned-big-integer>>,
+	io:format("update payload: ~p~n", [Payload]),
+	%Msg = <<Opcode?W, 1?L, 0?B, Payload/binary>>,
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
@@ -262,7 +270,7 @@ update_object2(Proplist) ->
 	%BlockCount = 0,
 	%HasTransport = 1,
 	%Payload = <<BlockCount?L, HasTransport?B>>,
-	Msg = <<Opcode?W, Payload/binary>>,
+	Msg = <<Opcode?W, 1?L, 0?B, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
 
