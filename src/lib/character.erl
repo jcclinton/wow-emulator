@@ -4,6 +4,7 @@
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
+-include("include/update.hrl").
 
 enum(PropList) ->
 	PlayerName = proplists:get_value(account_id, PropList),
@@ -26,26 +27,80 @@ enum(PropList) ->
 
 
 create(PropList) ->
-	Payload = proplists:get_value(payload, PropList),
-	PlayerName = proplists:get_value(account_id, PropList),
-	{Name, NewPayload} = extract_name(Payload),
-	<<Race?B, Class?B, Gender?B, Skin?B, Face?B, HairStyle?B, HairColor?B, FacialHair?B, OutfitId?B>> = NewPayload,
-	Guid = world:get_guid(),
-	Level = 1,
-	Zone = 12,
-	Map = 0,
-	X = -8949.95,
-	Y = -132.493,
-	Z = 83.5312,
-	Orientation = 0,
-	Char = #char{guid=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, outfit_id=OutfitId, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, orientation=Orientation},
+	%Payload = proplists:get_value(payload, PropList),
+	%PlayerName = proplists:get_value(account_id, PropList),
+	%{Name, NewPayload} = extract_name(Payload),
+	%<<Race?B, Class?B, Gender?B, Skin?B, Face?B, HairStyle?B, HairColor?B, FacialHair?B, OutfitId?B>> = NewPayload,
+	%Guid = world:get_guid(),
+	%Level = 1,
+	%Zone = 12,
+	%Map = 0,
+	%X = -8949.95,
+	%Y = -132.493,
+	%Z = 83.5312,
+	%Orientation = 0,
+	%Char = #char{id=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, outfit_id=OutfitId, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, orientation=Orientation},
+	Char = create_char(PropList),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	ets:insert(characters, {Name, PlayerName, Guid, Char}),
+	ets:insert(characters, {Char#char.name, Char#char.account_id, Char#char.id, Char}),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_create),
 	Result = 16#2E,
 	Msg = <<Opcode?W, Result?B>>,
 	world_socket_controller:send(Msg),
 	ok.
+
+create_char(PropList) ->
+	Payload = proplists:get_value(payload, PropList),
+	PlayerName = proplists:get_value(account_id, PropList),
+	{Name, NewPayload} = extract_name(Payload),
+    <<Race?B, Class?B, Gender?B, Skin?B,
+      Face?B, HS?B, HC?B, FH?B, _?B>> = NewPayload,
+    RaceName    = char_helper:to_race(Race),
+    ClassName   = char_helper:to_class(Class),
+    CreateInfo  = content:char_create_info(RaceName, ClassName),
+		Guid = world:get_guid(),
+		Realm = 1,
+    GenderValue = Gender * if Race =:= 10 -> -1; true -> 1 end,
+    Char = #char{id               = Guid,
+                 account_id       = PlayerName,
+                 realm_id         = Realm,
+                 name             = Name,
+                 race             = RaceName, 
+                 gender           = char_helper:to_gender(Gender),
+                 class            = ClassName,
+                 skin             = Skin, 
+                 face             = Face, 
+                 hair_style       = HS, 
+                 hair_color       = HC,
+                 facial_hair      = FH, 
+                 level            = 1,
+                 guild_id         = 0,
+                 general_flags    = 16#10A00040,
+                 at_login_flags   = 0,
+                 faction_template = CreateInfo#char_create_info.faction_template, 
+                 map_id           = CreateInfo#char_create_info.map_id, 
+                 zone_id          = CreateInfo#char_create_info.zone_id, 
+                 position_x       = CreateInfo#char_create_info.position_x, 
+                 position_y       = CreateInfo#char_create_info.position_y, 
+                 position_z       = CreateInfo#char_create_info.position_z, 
+                 orientation      = CreateInfo#char_create_info.orientation, 
+                 display_id       = CreateInfo#char_create_info.display_id + GenderValue, 
+                 strength         = CreateInfo#char_create_info.strength, 
+                 agility          = CreateInfo#char_create_info.agility,
+                 stamina          = CreateInfo#char_create_info.stamina, 
+                 intellect        = CreateInfo#char_create_info.intellect, 
+                 spirit           = CreateInfo#char_create_info.spirit, 
+                 health           = CreateInfo#char_create_info.health, 
+                 mana             = CreateInfo#char_create_info.mana, 
+                 focus            = CreateInfo#char_create_info.focus, 
+                 power            = CreateInfo#char_create_info.power, 
+                 power_type       = CreateInfo#char_create_info.power_type, 
+                 intro            = CreateInfo#char_create_info.intro,
+                 attack_power     = CreateInfo#char_create_info.attack_power, 
+                 min_dmg          = CreateInfo#char_create_info.min_dmg, 
+                 max_dmg          = CreateInfo#char_create_info.max_dmg, 
+                 scale            = CreateInfo#char_create_info.scale},
+		Char.
 
 
 login(PropList) ->
@@ -181,10 +236,32 @@ init_world_state(Proplist) ->
 
 update_object(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
-	_Char = proplists:get_value(char, Proplist),
-	BlockCount = 0,
-	HasTransport = 1,
-	Payload = <<BlockCount?L, HasTransport?B>>,
+	Char = proplists:get_value(char, Proplist),
+	
+        Block = update_helper:block(create_object2, Char),
+        Packet = update_helper:packet([Block]),
+        Payload = update_helper:message(Packet),
+
+	%BlockCount = 0,
+	%HasTransport = 1,
+	%Payload = <<BlockCount?L, HasTransport?B>>,
+	Msg = <<Opcode?W, Payload/binary>>,
+	world_socket_controller:send(Msg),
+	ok.
+
+update_object2(Proplist) ->
+	Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
+	Char = proplists:get_value(char, Proplist),
+	
+        Block = update_helper:block(create_object2, Char),
+        UF = Block#update_block.update_flags,
+        BB = Block#update_block{ update_flags = lists:delete(self, UF) },
+        P = update_helper:packet([BB]),
+        Payload = update_helper:message(P),
+
+	%BlockCount = 0,
+	%HasTransport = 1,
+	%Payload = <<BlockCount?L, HasTransport?B>>,
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
@@ -203,11 +280,10 @@ extract_name(<<Char?B, Rest/binary>>, Name) ->
 	extract_name(Rest, [Char|Name]).
 	
 
-mapCharData({_CharName, _AccountName, Guid, #char{guid=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z}}) ->
-	NameSize = size(Name) * 8,
-	GuildId = 0,
-	PlayerFlags = 0,
-	AtLoginFlags = 0,
+mapCharData({_CharName, _AccountName, _, #char{id=Guid, name=Name, race=RaceName, class=ClassName, gender=GenderName, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, guild_id=GuildId, general_flags=GeneralFlags, at_login_flags=AtLoginFlags}}) ->
+	Race = char_helper:race(RaceName),
+	Class = char_helper:class(ClassName),
+	Gender = char_helper:gender(GenderName),
 	PetDisplayId = 0,
 	PetLevel = 0,
 	PetFamily = 0,
@@ -215,6 +291,7 @@ mapCharData({_CharName, _AccountName, Guid, #char{guid=Guid, name=Name, race=Rac
 	SlotDataSize = EQUIPMENT_SLOT_END * 40,
 	BagDisplayId = 0,
 	BagInventoryType = 0,
+	NameSize = size(Name) * 8,
 	<<NameNum:NameSize/unsigned-big-integer>> = Name,
 	<<Guid?Q,
 	NameNum:NameSize/unsigned-big-integer,
@@ -234,7 +311,7 @@ mapCharData({_CharName, _AccountName, Guid, #char{guid=Guid, name=Name, race=Rac
 	Y?f,
 	Z?f,
 	GuildId?L,
-	PlayerFlags?L,
+	GeneralFlags?L,
 	AtLoginFlags?B,
 	PetDisplayId?L,
 	PetLevel?L,
