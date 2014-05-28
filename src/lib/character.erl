@@ -129,7 +129,7 @@ login(PropList) ->
 
 	initial_spells(PropList2),
 
-	send_unlearn_spells(PropList2),
+	%send_unlearn_spells(PropList2),
 	action_buttons(PropList2), % differs
 	initialize_factions(PropList2), % differs
 	login_settimespeed(PropList2),
@@ -210,7 +210,7 @@ action_buttons(_Proplist) ->
 initialize_factions(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_initialize_factions),
 	Size = 64 * 5 * 8,
-	Payload = <<0?L, 0:Size/unsigned-little-integer>>,
+	Payload = <<16#40?L, 0:Size/unsigned-little-integer>>,
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
@@ -230,9 +230,9 @@ init_world_state(Proplist) ->
 	MapId = Char#char.map_id,
 	ZoneId = Char#char.zone_id,
 	Count = 6,
-	%Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
+	Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
 	Size = 138 * 8,
-	Payload = <<16#82140037030030f105000000db6f9b0fe01700b8030030f1000000006d2887bf560800cb010030f1000000009214aa68510400c5000030f100000000698c44abb6bc00a42e0030f100000000383c907a000000000c0000000600d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:Size/unsigned-big-integer>>,
+	%Payload = <<16#82140037 030030f1 0500 0000db6f 9b0fe017 00b80300 30f10000 00006d28 87bf5608 00cb010030f1000000009214aa68510400c5000030f100000000698c44abb6bc00a42e0030f100000000383c907a000000000c0000000600d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:Size/unsigned-big-integer>>,
 	io:format("world init payload: ~p~n", [Payload]),
 	Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
@@ -244,16 +244,16 @@ update_object(Proplist) ->
 	
         Block = update_helper:block(create_object2, Char),
         Packet = update_helper:packet([Block]),
-        %Payload = update_helper:message(Packet),
+        Payload = update_helper:message(Packet),
 
-	%BlockCount = 0,
-	%HasTransport = 1,
+	BlockCount = 1,
+	HasTransport = 0,
 	%Payload = <<BlockCount?L, HasTransport?B>>,
-	Size = 48 * 8,
-	Payload = <<16#db9e10d10230f129920bc6fe7406c3fca7a6420000000000000000004d030000010000008f8b0bc65caf07c374b3a542:Size/unsigned-big-integer>>,
+	%Size = 48 * 8,
+	%Payload = <<16#db9e10d10230f129920bc6fe7406c3fca7a6420000000000000000004d030000010000008f8b0bc65caf07c374b3a542:Size/unsigned-big-integer>>,
 	io:format("update payload: ~p~n", [Payload]),
-	%Msg = <<Opcode?W, 1?L, 0?B, Payload/binary>>,
-	Msg = <<Opcode?W, Payload/binary>>,
+	Msg = <<Opcode?W, BlockCount?L, HasTransport?B, Payload/binary>>,
+	%Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
 

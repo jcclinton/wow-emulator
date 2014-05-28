@@ -90,16 +90,58 @@ packets([B|Rest], Result) ->
     Binary = <<(B#update_block.update_type)?B,
                (guid(B#update_block.object_guid, 0))/binary,
                (typeid(B#update_block.object_type))?B,
+
                (update_flags(B#update_block.update_flags))?B,
                (movement_flags(B#update_block.movement_flags))?L,
-               (B#update_block.unknown)?W,
+
+							 % *data << uint32(WorldTimer::getMSTime());           // time (in milliseconds)
+							 
+            %*data << float(((WorldObject*)this)->GetPositionX());
+            %*data << float(((WorldObject*)this)->GetPositionY());
+            %*data << float(((WorldObject*)this)->GetPositionZ());
+            %*data << float(((WorldObject*)this)->GetOrientation());
+						
+        %*data << (float)0;
+        %*data << (float)0;
+        %*data << (float)1;
+        %*data << (float)0;
+        %*data << (float)0;
+				
+        %*data << float(unit->GetSpeed(MOVE_WALK));
+        %*data << float(unit->GetSpeed(MOVE_RUN));
+        %*data << float(unit->GetSpeed(MOVE_RUN_BACK));
+        %*data << float(unit->GetSpeed(MOVE_SWIM));
+        %*data << float(unit->GetSpeed(MOVE_SWIM_BACK));
+        %*data << float(unit->GetSpeed(MOVE_TURN_RATE));
+				
+                %*data << (uint32)0x0;
+                %*data << (uint32)0x659;
+                %*data << (uint32)0xB7B;
+                %*data << (uint32)0xFDA0B4;
+                %*data << (uint32)PosCount;
+                    %*data << (float)0;                      // x
+                    %*data << (float)0;                      // y
+                    %*data << (float)0;  
+										
+        %*data << (uint32)0x1
+
+               %(B#update_block.unknown)?W,
                (B#update_block.game_time)?L,
                X?f, Y?f, Z?f, O?f,
-               (B#update_block.fall_time)?L,
-               W?f, R?f, WB?f, S?f, SB?f, F?f, FB?f, T?f, P?f,
-               (size(B#update_block.mask) div 4)?B,
-               (B#update_block.mask)/binary,
-               (B#update_block.fields)/binary>>,
+
+							 0?f,
+
+               %(B#update_block.fall_time)?L,
+               %W?f, R?f, WB?f, S?f, SB?f, F?f, FB?f, T?f, P?f,
+               W?f, R?f, WB?f, S?f, SB?f, T?f,
+							 1?L,
+							 %% end movement part
+               %(size(B#update_block.mask) div 4)?B,
+							 %% start values part
+							 1?B,
+							 1?L>>,
+               %(B#update_block.mask)/binary,
+               %(B#update_block.fields)/binary>>,
     packets(Rest, <<Result/binary, Binary/binary>>).
 
 %% @spec message(binary()) -> {pid(), atom(), binary()}.
@@ -207,4 +249,4 @@ movement_flags([Flag|Rest], Flags) ->
 
 %% guid(int(), int()) -> int().
 guid(HG, LG) ->
-    <<255?B, HG?L, LG?L>>.
+    <<HG?L, LG?L>>.
