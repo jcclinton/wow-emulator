@@ -121,6 +121,7 @@ login(PropList) ->
 
 	%login packets to send before player is added to map
 	PropList2 = [{char, Char}|PropList],
+	send_motd(PropList2),
 	account_data_times(PropList2),
 	set_rest_start(PropList2),
 	set_tutorial_flags(PropList2),
@@ -144,6 +145,20 @@ login(PropList) ->
 	ok.
 
 
+
+send_motd(_Proplist) ->
+	Opcode = opcode_patterns:getNumByAtom(smsg_messagechat),
+	Type = 16#0a,
+	Lang = 0,
+	Guid = 0,
+	ChatMsg = "Hello dude",
+	Len = length(ChatMsg) + 1,
+	ChatTag = 0,
+	MsgBin = list_to_binary(ChatMsg),
+	Payload = <<Type?B, Lang?L, Guid?Q, Len?L, MsgBin/binary, 0?B, ChatTag?B>>,
+	Msg = <<Opcode?W, Payload/binary>>,
+	world_socket_controller:send(Msg),
+	ok.
 
 account_data_times(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_account_data_times),
@@ -231,7 +246,7 @@ init_world_state(Proplist) ->
 	ZoneId = Char#char.zone_id,
 	Count = 6,
 	Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
-	Size = 138 * 8,
+	%Size = 138 * 8,
 	%Payload = <<16#82140037 030030f1 0500 0000db6f 9b0fe017 00b80300 30f10000 00006d28 87bf5608 00cb010030f1000000009214aa68510400c5000030f100000000698c44abb6bc00a42e0030f100000000383c907a000000000c0000000600d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:Size/unsigned-big-integer>>,
 	io:format("world init payload: ~p~n", [Payload]),
 	Msg = <<Opcode?W, Payload/binary>>,
