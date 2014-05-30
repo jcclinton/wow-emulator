@@ -52,8 +52,7 @@ race(undead)    -> 5;
 race(tauren)    -> 6;
 race(gnome)     -> 7;
 race(troll)     -> 8;
-race(blood_elf) -> 10;
-race(draenei)   -> 11.
+race(goblin)     -> 9;
 
 %% @spec to_race(int()) -> race().
 to_race(1)  -> human;
@@ -64,8 +63,7 @@ to_race(5)  -> undead;
 to_race(6)  -> tauren;
 to_race(7)  -> gnome;
 to_race(8)  -> troll;
-to_race(10) -> blood_elf;
-to_race(11) -> draenei.
+to_race(9)  -> goblin;
 
 %% @type class() = warrior | paladin | hunter | rogue |
 %%                 priest | death_knight | shaman |
@@ -76,7 +74,6 @@ class(paladin)      -> 2;
 class(hunter)       -> 3;
 class(rogue)        -> 4;
 class(priest)       -> 5;
-class(death_knight) -> 6;
 class(shaman)       -> 7;
 class(mage)         -> 8;
 class(warlock)      -> 9;
@@ -88,7 +85,6 @@ to_class(2)  -> paladin;
 to_class(3)  -> hunter;
 to_class(4)  -> rogue;
 to_class(5)  -> priest;
-to_class(6)  -> death_knight;
 to_class(7)  -> shaman;
 to_class(8)  -> mage;
 to_class(9)  -> warlock;
@@ -111,8 +107,8 @@ reputation(exalted)    -> 7.
 %% @type money() = copper | silver | gold.
 %% @spec money(money()) -> int().
 money(copper) -> 1;
-money(silver) -> 100;
-money(gold)   -> 10000.
+money(silver) -> 100 * money(copper);
+money(gold)   -> 100 * money(silver).
 
 %% @type stat() = strength | agility | stamina | intellect | spirit.
 %% @spec stat(stat()) -> int().
@@ -130,6 +126,4 @@ power(rage)        -> 1;
 power(focus)       -> 2;
 power(energy)      -> 3;
 power(happiness)   -> 4;
-power(rune)        -> 5;
-power(runic_power) -> 6;
-power(health)      -> -2.
+power(health)      -> 0xFFFFFFFE.
