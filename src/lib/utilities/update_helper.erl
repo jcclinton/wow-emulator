@@ -1,5 +1,6 @@
 -module(update_helper).
 -export([block/2, packet/1, message/1, guid/2]).
+-compile(export_all).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
@@ -78,8 +79,7 @@ block(Type, Char) ->
 
 %% @spec packet([tuple()]) -> binary().
 packet(Blocks) ->
-    L = length(Blocks),
-    packets(Blocks, <<L?L>>).
+    packets(Blocks, <<>>).
 
 %% @spec packets(list(), binary()) -> binary().
 packets([], Result) ->
@@ -87,9 +87,12 @@ packets([], Result) ->
 packets([B|Rest], Result) ->
     {X, Y, Z, O} = B#update_block.position,
     {W, R, WB, S, SB, F, FB, T, P} = B#update_block.speeds,
+		ValuesCount = 16#6 + 16#b6 + 16#446,
     Binary = <<(B#update_block.update_type)?B,
                (guid(B#update_block.object_guid, 0))/binary,
                (typeid(B#update_block.object_type))?B,
+
+							 % start build movement update
 
                (update_flags(B#update_block.update_flags))?B,
                (movement_flags(B#update_block.movement_flags))?L,
@@ -134,14 +137,18 @@ packets([B|Rest], Result) ->
                %(B#update_block.fall_time)?L,
                %W?f, R?f, WB?f, S?f, SB?f, F?f, FB?f, T?f, P?f,
                W?f, R?f, WB?f, S?f, SB?f, T?f,
-							 1?L,
+
+							 %1?L,
 							 %% end movement part
-               %(size(B#update_block.mask) div 4)?B,
+
+
 							 %% start values part
-							 1?B,
-							 1?L>>,
-               %(B#update_block.mask)/binary,
-               %(B#update_block.fields)/binary>>,
+
+               (size(B#update_block.mask) div 4)?B,
+							 %1?B,
+							 %1?L>>,
+               (B#update_block.mask)/binary,
+               (B#update_block.fields)/binary>>,
     packets(Rest, <<Result/binary, Binary/binary>>).
 
 %% @spec message(binary()) -> {pid(), atom(), binary()}.
