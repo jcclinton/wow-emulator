@@ -8,7 +8,7 @@
 									at_login, zone, online, death_expire_time, taxi_path, honor_highest_rank,
 									honor_standing, stored_honor_rating, stored_dishonorablekills,
 									stored_honorable_kills, watchedFaction, drunk, health, power1, power2,
-									power3, power4, power5, exploredZones, equipmentCache, ammoId, actionBars}),
+									power3, power4, power5, exploredZones, equipmentCache, ammoId, actionBars}).
 -record(char_old,    {id, account_id, realm_id, name, race, gender, class, power_type,
                   skin, face, hair_style, hair_color, facial_hair, outfit_id, level, 
                   guild_id, general_flags, at_login_flags, faction_template, 

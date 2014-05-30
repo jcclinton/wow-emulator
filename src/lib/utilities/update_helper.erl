@@ -49,7 +49,7 @@ block(Type, Char) ->
                                    {player, player_bytes_2}]),
     #update_block{
         update_type    = Target,
-        object_guid    = Char#char.id,
+        object_guid    = Char#char.guid,
         object_type    = player,
         update_flags   = [self, living, has_position],
         movement_flags = [],
@@ -63,15 +63,15 @@ block(Type, Char) ->
                           7, 4.5, 3.141593, 1.0},
         mask           = BitMask,
         fields         = <<
-            (Char#char.id)?L, 0?L,    % player guid
+            (Char#char.guid)?L, 0?L,    % player guid
             25?L,                     % player type
-            (Char#char.scale)?f,
+            %(Char#char.scale)?f,
             UB?L,                     % race, class, gender, power
             (Char#char.health)?L,
             (Char#char.health)?L,     % max health
             (Char#char.level)?L,
-            (Char#char.faction_template)?L,
-            (Char#char.display_id)?L,
+            %(Char#char.faction_template)?L,
+            %(Char#char.display_id)?L,
             0?L,                      % dynamic flag (0 = alive)
             PB1?L,                    % skin, face, hair style, hair color
             PB2?L                     % facial hair, unknown

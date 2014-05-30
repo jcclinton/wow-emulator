@@ -7,7 +7,7 @@
 
 %% @spec find(int()) -> tuple().
 find(Id) ->
-    [Char] = do(qlc:q([X || X <- mnesia:table(char), X#char.id =:= Id])),
+    [Char] = do(qlc:q([X || X <- mnesia:table(char), X#char.guid =:= Id])),
     Char.
 
 %% @spec equipment(any()) -> list().
@@ -15,17 +15,26 @@ equipment(_) ->
     lists:seq(1,20).
 
 %% @spec unit_bytes_0(tuple()) -> binary().
-unit_bytes_0(#char{race = R, class = C, gender = G, power_type = P}) ->
+unit_bytes_0(#char{}) ->
+		R = human,
+		C = warrior,
+		G = male,
+		P = mana,
     <<UB:32/integer-little>> = <<(race(R)):8, (class(C)):8, (gender(G)):8, (power(P)):8>>,
     UB.
 
 %% @spec player_bytes(tuple()) -> binary().
-player_bytes(#char{skin = S, face = F, hair_style = Hs, hair_color = Hc}) ->
+player_bytes(#char{}) ->
+		S = 1,
+		F = 1,
+		Hs = 1,
+		Hc = 1,
     <<PB:32/integer-little>> = <<S:8, F:8, Hs:8, Hc:8>>,
     PB.
 
 %% @spec player_bytes_2(tuple()) -> binary().
-player_bytes_2(#char{facial_hair = F}) ->
+player_bytes_2(#char{}) ->
+		F = 1,
     <<PB:32/integer-little>> = <<F:8, 238:8, 0:8, 2:8>>,
     PB.
 
@@ -52,7 +61,7 @@ race(undead)    -> 5;
 race(tauren)    -> 6;
 race(gnome)     -> 7;
 race(troll)     -> 8;
-race(goblin)     -> 9;
+race(goblin)     -> 9.
 
 %% @spec to_race(int()) -> race().
 to_race(1)  -> human;
@@ -63,7 +72,7 @@ to_race(5)  -> undead;
 to_race(6)  -> tauren;
 to_race(7)  -> gnome;
 to_race(8)  -> troll;
-to_race(9)  -> goblin;
+to_race(9)  -> goblin.
 
 %% @type class() = warrior | paladin | hunter | rogue |
 %%                 priest | death_knight | shaman |
@@ -126,4 +135,4 @@ power(rage)        -> 1;
 power(focus)       -> 2;
 power(energy)      -> 3;
 power(happiness)   -> 4;
-power(health)      -> 0xFFFFFFFE.
+power(health)      -> 16#FFFFFFFE.

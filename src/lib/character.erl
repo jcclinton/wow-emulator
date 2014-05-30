@@ -42,7 +42,7 @@ create(PropList) ->
 	%Char = #char{id=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, outfit_id=OutfitId, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, orientation=Orientation},
 	Char = create_char(PropList),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	ets:insert(characters, {Char#char.name, Char#char.account_id, Char#char.id, Char}),
+	ets:insert(characters, {Char#char.name, Char#char.account_id, Char#char.guid, Char}),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_create),
 	Result = 16#2E,
 	Msg = <<Opcode?W, Result?B>>,
@@ -60,6 +60,9 @@ create_char(PropList) ->
     CreateInfo  = content:char_create_info(RaceName, ClassName),
 		Power = char_helper:power(CreateInfo#char_create_info.power_type),
 		Guid = world:get_guid(),
+		PlayerBytes = 0,
+		PlayerBytes2 = 0,
+		PlayerFlags = 0,
     Char = #char{guid             = Guid,
                 account_id       = PlayerName,
                 name             = Name,
@@ -80,7 +83,6 @@ create_char(PropList) ->
 								cinematic = 0,
 								totaltime = 0,
 								leveltime = 0,
-								rest_bonus = 0,
 								rest_bonus = 0,
 								logout_time = 0,
 								is_logout_resting = 0,
@@ -156,11 +158,8 @@ login(PropList) ->
 	login_settimespeed(PropList2),
 
 	world_player:set_guid_value(PlayerPid, Guid),
-	world_player:set_byte_value(PlayerPid, unit_field_bytes_0, 0, Char#char.race),
-	world_player:set_byte_value(PlayerPid, unit_field_bytes_0, 1, Char#char.class),
-	world_player:set_byte_value(PlayerPid, unit_field_bytes_0, 2, Char#char.gender),
 
-	world_player:set_byte_value(PlayerPid, unit_field_bytes_2, 1, 16#08 bor 16#20),
+	%world_player:set_byte_value(PlayerPid, unit_field_bytes_2, 1, 16#08 bor 16#20),
 
 	world_player:set_uint32_value(PlayerPid, unit_field_level, Char#char.level),
 
@@ -212,8 +211,8 @@ set_tutorial_flags(_Proplist) ->
 bind_point_update(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_bindpointupdate),
 	Char = proplists:get_value(char, Proplist),
-	Zone = Char#char.zone_id,
-	Map = Char#char.map_id,
+	Zone = Char#char.zone,
+	Map = Char#char.map,
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
@@ -267,8 +266,8 @@ login_settimespeed(_Proplist) ->
 init_world_state(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_init_world_states),
 	Char = proplists:get_value(char, Proplist),
-	MapId = Char#char.map_id,
-	ZoneId = Char#char.zone_id,
+	MapId = Char#char.map,
+	ZoneId = Char#char.zone,
 	Count = 6,
 	%Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
 	Rest = <<16#d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:384/unsigned-big-integer>>,
@@ -332,7 +331,17 @@ extract_name(<<Char?B, Rest/binary>>, Name) ->
 	extract_name(Rest, [Char|Name]).
 	
 
-mapCharData({_CharName, _AccountName, _, #char{id=Guid, name=Name, race=RaceName, class=ClassName, gender=GenderName, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, guild_id=GuildId, general_flags=GeneralFlags, at_login_flags=AtLoginFlags}}) ->
+mapCharData({_CharName, _AccountName, _, #char{guid=Guid, name=Name, level=Level, zone=Zone, map=Map, position_x=X, position_y=Y, position_z=Z}}) ->
+	Skin = 1,
+	Face = 1,
+	HairStyle = 1,
+	HairColor = 1,
+	FacialHair = 1,
+	GeneralFlags = 0,
+	GuildId = 0,
+	RaceName = human,
+	ClassName = warlock,
+	GenderName = male,
 	Race = char_helper:race(RaceName),
 	Class = char_helper:class(ClassName),
 	Gender = char_helper:gender(GenderName),
@@ -344,6 +353,7 @@ mapCharData({_CharName, _AccountName, _, #char{id=Guid, name=Name, race=RaceName
 	BagDisplayId = 0,
 	BagInventoryType = 0,
 	NameSize = size(Name) * 8,
+	AtLoginFlags = 0,
 	<<NameNum:NameSize/unsigned-big-integer>> = Name,
 	<<Guid?Q,
 	NameNum:NameSize/unsigned-big-integer,
