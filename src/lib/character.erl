@@ -125,6 +125,7 @@ login(PropList) ->
 	_PlayerName = proplists:get_value(account_id, PropList),
 	<<Guid?Q>> = proplists:get_value(payload, PropList),
 	[{_,_,Guid,Char}] = ets:match_object(characters, {'_', '_', Guid, '_'}),
+	PlayerPid = world_socket_controller:get_player_pid(),
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
@@ -153,6 +154,15 @@ login(PropList) ->
 	initialize_factions(PropList2), % differs
 	init_world_state(PropList2),
 	login_settimespeed(PropList2),
+
+	world_player:set_guid_value(PlayerPid, Guid),
+	world_player:set_byte_value(PlayerPid, unit_field_bytes_0, 0, Char#char.race),
+	world_player:set_byte_value(PlayerPid, unit_field_bytes_0, 1, Char#char.class),
+	world_player:set_byte_value(PlayerPid, unit_field_bytes_0, 2, Char#char.gender),
+
+	world_player:set_byte_value(PlayerPid, unit_field_bytes_2, 1, 16#08 bor 16#20),
+
+	world_player:set_uint32_value(PlayerPid, unit_field_level, Char#char.level),
 
 	%login packets to send after player is added to map
 	update_object(PropList2),

@@ -15,7 +15,7 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([send/1]).
+-export([send/1, get_player_pid/0]).
 -compile([export_all]).
 
 
@@ -23,6 +23,9 @@
 
 send(Msg) ->
 	routeData(self(), Msg).
+
+get_player_pid() ->
+	gen_server:call(self(), {get_player_pid}).
 
 
 
@@ -37,6 +40,9 @@ init({ParentPid}) ->
 
 %% receiver has accepted connection
 %% start send process
+handle_call({get_player_pid}, _From, State = #state{parent_pid=ParentPid}) ->
+	PlayerPid = get_sibling_pid(ParentPid, world_player),
+	{reply, PlayerPid, State};
 handle_call({tcp_accept_socket, Socket, AccountId, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
 	SendSupPid = get_sibling_pid(ParentPid, world_socket_send_sup),
 	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, KeyState]),
@@ -56,7 +62,7 @@ handle_cast({tcp_accept_challenge, Msg}, State) ->
 handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{user=User, account_id=AccountId}) ->
 	%io:format("looking up opcode ~p~n", [Opcode]),
 	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
-	Args = [{payload, Payload}, {account_id, AccountId}],
+	Args = [{payload, Payload}, {account_id, AccountId}, {controller_pid, self()}],
 	NewUser = try M:F(Args) of
 		ok -> User;
 		{Result} ->
