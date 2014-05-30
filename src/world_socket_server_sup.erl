@@ -19,9 +19,6 @@ getChildSpecs(ListenSocket) ->[
 				{world_socket_send_sup,
 					{world_socket_send_sup, start_link, []},
 					transient, 1000, supervisor, [world_socket_send_sup]},
-				{world_player,
-					{world_player, start_link, []},
-					transient, 1000, worker, [world_player]},
 				{world_socket_controller,
 					{world_socket_controller, start_link, [self()]},
 					transient, 1000, worker, [world_socket_controller]}

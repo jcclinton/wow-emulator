@@ -399,3 +399,38 @@ getPayload() ->
 	Size = size(Payload),
 	io:format("payload func val: ~p~n size: ~p~n", [Payload, Size]),
 	Payload.
+
+
+
+get_byte_value(IndexName, Values, Offset) ->
+	get_value(IndexName, Values, 1, Offset).
+
+get_uint32_value(IndexName, Values) ->
+	get_value(IndexName, Values, 4, 0).
+
+get_uint64_value(IndexName, Values) ->
+	get_value(IndexName, Values, 8, 0).
+
+get_value(IndexName, Values, Size, Offset) ->
+	% each Index is a 4 byte long word
+	Index = (update_fields:fields(IndexName) * 4) + Offset,
+	BitSize = Size*8,
+	<<Head:Index/binary, Value:BitSize/unsigned-little-integer, Tail/binary>> = Values,
+	Value.
+
+
+set_byte_value(IndexName, Value, Values, Offset) ->
+	set_value(IndexName, Value, Values, 1, Offset).
+
+set_uint32_value(IndexName, Value, Values) ->
+	set_value(IndexName, Value, Values, 4, 0).
+
+set_uint64_value(IndexName, Value, Values) ->
+	set_value(IndexName, Value, Values, 8, 0).
+
+set_value(IndexName, Value, Values, Size, Offset) ->
+	% each Index is a 4 byte long word
+	Index = (update_fields:fields(IndexName) * 4) + Offset,
+	BitSize = Size * 8,
+	<<Head:Index/binary, _OldValue:Size/binary, Tail/binary>> = Values,
+	<<Head:Index/binary, Value:BitSize/unsigned-little-integer, Tail/binary>>.

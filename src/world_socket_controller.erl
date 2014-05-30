@@ -2,20 +2,17 @@
 -behavior(gen_server).
 
 -record(state, {
-  user,
 	account_id,
   sess_key,
   parent_pid,
-  send_pid
-							 }).
--record(user, {
-  pos
+  send_pid,
+	values
 							 }).
 
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([send/1, get_player_pid/0]).
+-export([send/1]).
 -compile([export_all]).
 
 
@@ -23,9 +20,6 @@
 
 send(Msg) ->
 	routeData(self(), Msg).
-
-get_player_pid() ->
-	gen_server:call(self(), {get_player_pid}).
 
 
 
@@ -35,14 +29,11 @@ start_link(ParentPid) ->
 init({ParentPid}) ->
 	io:format("controller SERVER: started~n"),
 	gen_server:cast(self(), init),
-	{ok, #state{user=#user{}, parent_pid=ParentPid}}.
+	{ok, #state{parent_pid=ParentPid}}.
 
 
 %% receiver has accepted connection
 %% start send process
-handle_call({get_player_pid}, _From, State = #state{parent_pid=ParentPid}) ->
-	PlayerPid = get_sibling_pid(ParentPid, world_player),
-	{reply, PlayerPid, State};
 handle_call({tcp_accept_socket, Socket, AccountId, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
 	SendSupPid = get_sibling_pid(ParentPid, world_socket_send_sup),
 	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, KeyState]),
@@ -55,22 +46,24 @@ handle_call(_E, _From, State) ->
 handle_cast(init, State = #state{parent_pid=ParentPid}) ->
 	RcvSupPid = get_sibling_pid(ParentPid, world_socket_rcv_sup),
 	supervisor:start_child(RcvSupPid, [self()]),
-	{noreply, State};
+	TotalCount = update_fields:fields('PLAYER_END'),
+	Values = binary:copy(<<0?L>>, TotalCount),
+	{noreply, State#state{values=Values}};
 handle_cast({tcp_accept_challenge, Msg}, State) ->
 	routeData(self(), Msg),
 	{noreply, State};
-handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{user=User, account_id=AccountId}) ->
+handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{account_id=AccountId, values=Values}) ->
 	%io:format("looking up opcode ~p~n", [Opcode]),
 	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
-	Args = [{payload, Payload}, {account_id, AccountId}, {controller_pid, self()}],
-	NewUser = try M:F(Args) of
-		ok -> User;
+	Args = [{payload, Payload}, {account_id, AccountId}, {controller_pid, self()}, {values, Values}],
+	NewValues = try M:F(Args) of
+		ok -> Values;
 		{Result} ->
-			proplists:get_value(user, Result, User)
+			proplists:get_value(values, Result, Values)
 		catch
-			badarg -> User
+			badarg -> Values
 		end,
-	{noreply, S#state{user=NewUser}};
+	{noreply, S#state{values=NewValues}};
 handle_cast({send_to_client, Msg}, S=#state{send_pid = SendPid}) ->
 	gen_fsm:send_event(SendPid, {send, Msg}),
 	{noreply, S};
