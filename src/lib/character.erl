@@ -230,7 +230,7 @@ create_char_record(PropList) ->
 login(PropList) ->
 	_PlayerName = proplists:get_value(account_id, PropList),
 	<<Guid?Q>> = proplists:get_value(payload, PropList),
-	[{_,_,Guid,Char, _Values}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
+	[{_,_,Guid,Char, Values}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
@@ -245,6 +245,7 @@ login(PropList) ->
 
 	%login packets to send before player is added to map
 	PropList2 = [{char, Char}|PropList],
+	PropList3 = [{values, Values}|PropList2],
 	account_data_times(PropList2),
 	send_motd(PropList2),
 	set_rest_start(PropList2),
@@ -262,7 +263,7 @@ login(PropList) ->
 
 
 	%login packets to send after player is added to map
-	update_object(PropList2),
+	update_object(PropList3),
 	ok.
 
 
@@ -380,16 +381,15 @@ init_world_state(Proplist) ->
 update_object(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
 	Char = proplists:get_value(char, Proplist),
+	Values = proplists:get_value(values, Proplist),
 	
-        Block = update_helper:block(create_object2, Char),
-        Packet = update_helper:packet([Block]),
-        Payload = update_helper:message(Packet),
+        %Block = update_helper:block(create_object2, Char),
+        %Packet = update_helper:packet([Block]),
+        %Payload = update_helper:message(Packet),
+	Payload = block(Char, Values),
 
 	BlockCount = 1,
 	HasTransport = 0,
-	%Payload = <<BlockCount?L, HasTransport?B>>,
-	%Size = 48 * 8,
-	%Payload = <<16#db9e10d10230f129920bc6fe7406c3fca7a6420000000000000000004d030000010000008f8b0bc65caf07c374b3a542:Size/unsigned-big-integer>>,
 	%io:format("update payload: ~p~n", [Payload]),
 	Msg = <<Opcode?W, BlockCount?L, HasTransport?B, Payload/binary>>,
 	%Payload = getPayload(),
@@ -397,6 +397,80 @@ update_object(Proplist) ->
 	%Msg = <<Opcode?W, Payload/binary>>,
 	world_socket_controller:send(Msg),
 	ok.
+
+	block(Char, Values) ->
+		UpdateType = 3, %char_create2
+		Guid = Char#char.id,
+		TypeId = 4, %type player
+		MovementData = getMovementData(Char),
+		ValuesCount = (byte_size(Values) div 4) - 1,
+		EmptyMaskBits = create_mask(ValuesCount),
+		MaskBits = set_create_bits(ValuesCount, EmptyMaskBits, Values),
+		ValuesData = build_values_update(MaskBits, Values, ValuesCount),
+
+		<<UpdateType?B, Guid?Q, TypeId?B, MovementData/binary, ValuesData/binary>>.
+
+
+	build_values_update(MaskBits, Values, Count) ->
+		Blocks = (Count + 31) div 32,
+		ValuesData = lists:foldl(fun(Index, Bin) ->
+		BitFlag = getBit(MaskBits, Index),
+			Value = if BitFlag ->
+								get_value(Index, Values);
+							true -> 0
+						end,
+			<<Bin/binary, Value?L>>
+		end, <<>>, lists:seq(1, Count)),
+		<<Blocks?B, MaskBits/binary, ValuesData/binary>>.
+
+	get_value(Index, Values) ->
+		get_uint32_value(Index, Values).
+
+	getBit(Mask, Index) ->
+				MaskIndex = Index bsr 3,
+				LowIndex = Index band 16#7,
+				Value = 1 bsl LowIndex,
+				ByteSize = MaskIndex,
+				<<_Head:ByteSize/binary, OldValue?B, _Tail/binary>> = Mask,
+				NewValue = OldValue band Value,
+				NewValue == 1.
+
+
+	create_mask(Count) ->
+		Blocks = (Count + 31) div 32,
+		binary:copy(<<0?L>>, Blocks).
+
+	set_create_bits(Count, EmptyMask, Values) ->
+		lists:foldl(fun(Index, Mask) ->
+			Value = get_value(Index, Values),
+				if Value > 0 ->
+						MaskIndex = Index bsr 3,
+						LowIndex = Index band 16#7,
+						BitValue = 1 bsl LowIndex,
+						ByteSize = MaskIndex,
+						<<Head:ByteSize/binary, OldValue?B, Tail/binary>> = Mask,
+						NewValue = OldValue bor BitValue,
+						<<Head/binary, NewValue?B, Tail/binary>>;
+					true -> Mask
+				end
+			end, EmptyMask, lists:seq(1, Count)).
+
+	getMovementData(Char) ->
+		All = 16#10,
+		Self = 16#01,
+		Living = 16#20,
+		HasPosition = 16#40,
+		UpdateFlags = All bor Self bor Living bor HasPosition,
+		MoveFlags = 0,
+		WorldTime = 1000,
+        Speeds         = {2.5, 7, 4.5, 4.72, 2.5,
+                          7, 4.5, 3.141593, 1.0},
+    {W, R, WB, S, SB, _F, _FB, T, _P} = Speeds,
+		X = Char#char.position_x,
+		Y = Char#char.position_y,
+		Z = Char#char.position_z,
+		O = Char#char.orientation,
+		<<UpdateFlags?B, MoveFlags?L, WorldTime?L, X?f, Y?f, Z?f, O?f, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f, 1?L>>.
 
 update_object2(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
@@ -509,9 +583,12 @@ get_value(IndexName, Values, float) ->
 	Index = update_fields:fields(IndexName) * 4,
 	<<_Head:Index/binary, Value?f, _Tail/binary>> = Values,
 	Value.
-get_value(IndexName, Values, Size, Offset) ->
+get_value(IndexName, Values, Size, Offset) when is_atom(IndexName) ->
 	% each Index is a 4 byte long word
-	Index = (update_fields:fields(IndexName) * 4) + Offset,
+	Index = update_fields:fields(IndexName),
+	get_value(Index, Values, Size, Offset);
+get_value(Index1, Values, Size, Offset) ->
+	Index = (Index1 * 4) + Offset,
 	BitSize = Size*8,
 	<<_Head:Index/binary, Value:BitSize/unsigned-little-integer, _Tail/binary>> = Values,
 	Value.
