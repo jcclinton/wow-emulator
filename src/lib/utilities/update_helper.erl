@@ -49,7 +49,7 @@ block(Type, Char) ->
                                    {player, player_bytes_2}]),
     #update_block{
         update_type    = Target,
-        object_guid    = Char#char.guid,
+        object_guid    = Char#char.id,
         object_type    = player,
         update_flags   = [self, living, has_position],
         movement_flags = [],
@@ -63,7 +63,7 @@ block(Type, Char) ->
                           7, 4.5, 3.141593, 1.0},
         mask           = BitMask,
         fields         = <<
-            (Char#char.guid)?L, 0?L,    % player guid
+            (Char#char.id)?L, 0?L,    % player guid
             25?L,                     % player type
             %(Char#char.scale)?f,
             UB?L,                     % race, class, gender, power

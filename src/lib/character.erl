@@ -8,7 +8,7 @@
 
 enum(PropList) ->
 	PlayerName = proplists:get_value(account_id, PropList),
-	Chars = ets:match_object(characters, {'_', PlayerName, '_', '_'}),
+	Chars = ets:match_object(characters, {'_', PlayerName, '_', '_', '_'}),
 	%io:format("looking up player name: ~p~n", [PlayerName]),
 	%io:format("matched: ~p~n", [Chars]),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_enum),
@@ -40,84 +40,188 @@ create(PropList) ->
 	%Z = 83.5312,
 	%Orientation = 0,
 	%Char = #char{id=Guid, name=Name, race=Race, class=Class, gender=Gender, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, outfit_id=OutfitId, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, orientation=Orientation},
-	Char = create_char(PropList),
+	Guid = world:get_guid(),
+	PropList2 = [{guid, Guid} | PropList],
+	Char = create_char_record(PropList2),
+	Values = create_char_values(PropList2),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	ets:insert(characters, {Char#char.name, Char#char.account_id, Char#char.guid, Char}),
+	ets:insert(characters, {Char#char.name, Char#char.account_id, Char#char.id, Char, Values}),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_create),
 	Result = 16#2E,
 	Msg = <<Opcode?W, Result?B>>,
 	world_socket_controller:send(Msg),
 	ok.
 
-create_char(PropList) ->
+create_char_values(PropList) ->
+	Payload = proplists:get_value(payload, PropList),
+	Values = proplists:get_value(values, PropList),
+	Guid = proplists:get_value(guid, PropList),
+	{_Name, NamelessPayload} = extract_name(Payload),
+	<<Race?B, Class?B, Gender?B, Skin?B,
+		Face?B, HairStyle?B, HairColor?B, FacialHair?B, _?B>> = NamelessPayload,
+	Unk3 = 16#08,
+	Unk5 = 16#20,
+	ModelId = 1, %not sure what this should be
+	NativeModelId = 1, %not sure what this should be
+	KeyValues = [
+		{'OBJECT_FIELD_GUID', Guid, uint64},
+		{'OBJECT_FIELD_TYPE', 3, uint32},
+		{'UNIT_FIELD_BYTES_0', Race, byte_0},
+		{'UNIT_FIELD_BYTES_0', Class, byte_1},
+		{'UNIT_FIELD_BYTES_0', Gender, byte_2},
+    {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, byte_1},
+    {'UNIT_FIELD_LEVEL', 0, uint32},
+    {'PLAYER_EXPLORED_ZONES_1', 0, uint64},
+    {'OBJECT_FIELD_SCALE_X', 1, float},
+    {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
+    {'UNIT_FIELD_NATIVEDISPLAYID', NativeModelId, uint32},
+    {'PLAYER_FIELD_COINAGE', 0, uint32},
+    {'PLAYER_BYTES', Skin, byte_0},
+    {'PLAYER_BYTES', Face, byte_1},
+    {'PLAYER_BYTES', HairStyle, byte_2},
+    {'PLAYER_BYTES', HairColor, byte_3},
+    {'PLAYER_BYTES_2', FacialHair, byte_0},
+    {'PLAYER_BYTES_2', 2, byte_3}, %rest state
+    {'PLAYER_BYTES_3', 0, uint16_0}, %drunk
+    {'PLAYER_FLAGS', 0, uint32},
+    {'PLAYER_FIELD_WATCHED_FACTION_INDEX', 16#ffff, uint32},
+    {'PLAYER_FIELD_BYTES', 0, byte_2},
+    {'UNIT_FIELD_FACTIONTEMPLATE', 35, uint32}, %not sure what this should be
+    {'UNIT_FIELD_CHARM', 0, uint64}, %not sure what this should be
+    {'PLAYER_CHARACTER_POINTS2', 10, uint32}, %num primary trade professions
+    {'UNIT_FIELD_CHANNEL_OBJECT', Guid, uint64},
+    {'UNIT_CHANNEL_SPELL', 0, uint32},
+    {'UNIT_FIELD_SUMMON', 0, uint64}, %pet
+    {'UNIT_FIELD_TARGET', Guid, uint64},
+    {'UNIT_FIELD_CHARMEDBY', Guid, uint64},
+    {'UNIT_FIELD_SUMMONEDBY', Guid, uint64},
+    {'UNIT_FIELD_CREATEDBY', Guid, uint64},
+    {'PLAYER_FARSIGHT', Guid, uint64},
+    {'PLAYER_TRACK_CREATURES', 0, uint32},
+    {'PLAYER_TRACK_RESOURCES', 0, uint32},
+    {'PLAYER_DUEL_ARBITER', Guid, uint64},
+    {'PLAYER_DUEL_TEAM', 0, uint32},
+    {'PLAYER_NEXT_LEVEL_XP', 10, uint32}, %dont know what this value is supposed to be
+    {'UNIT_FIELD_AURASTATE', 0, uint32},
+    {'UNIT_FIELD_STAT0', 10, uint32}, %fill in later
+    {'UNIT_FIELD_STAT1', 10, uint32}, %fill in later
+    {'UNIT_FIELD_STAT2', 10, uint32}, %fill in later
+    {'UNIT_FIELD_STAT3', 10, uint32}, %fill in later
+    {'UNIT_FIELD_STAT4', 10, uint32}, %fill in later
+    {'UNIT_FIELD_BASE_HEALTH', 10, uint32}, %fill in later
+    {'UNIT_FIELD_BASE_MANA', 10, uint32}, %fill in later
+    {'UNIT_FIELD_RESISTANCES', 10, uint32}, %fill in later
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, float},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 1}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 2}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 3}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 4}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 5}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 6}},
+    {'UNIT_FIELD_BASEATTACKTIME', 2000.0, float},
+    {'UNIT_FIELD_BASEATTACKTIME', 2000.0, {float, 1}},
+    {'UNIT_FIELD_RANGEDATTACKTIME', 2000.0, float},
+    {'UNIT_FIELD_MAXPOWER1', 100, uint32}, %fill in later
+    {'UNIT_FIELD_MAXPOWER2', 100, uint32}, %fill in later
+    {'UNIT_FIELD_MAXPOWER3', 100, uint32}, %fill in later
+    {'UNIT_FIELD_MAXPOWER4', 0, uint32}, %fill in later
+    {'UNIT_FIELD_MAXPOWER5', 0, uint32}, %fill in later
+    {'UNIT_FIELD_POWER1', 100, uint32}, %fill in later
+    {'UNIT_FIELD_POWER2', 100, uint32}, %fill in later
+    {'UNIT_FIELD_POWER3', 0, uint32}, %fill in later
+    {'UNIT_FIELD_POWER4', 0, uint32}, %fill in later
+    {'UNIT_FIELD_POWER5', 100, uint32}, %fill in later
+    {'UNIT_FIELD_MAXHEALTH', 120, uint32}, %fill in later
+    {'UNIT_FIELD_FLAGS', 16#0008, uint32},
+    {'UNIT_FIELD_HEALTH', 120, uint32}, %fill in later
+    {'UNIT_FIELD_BYTES_1', 16#EE, byte_1}
+		%% ignore skills for now
+		%% ignore spells
+		%% ignore bags
+	],
+	NewValues = lists:foldl(fun setKeyValues/2, Values, KeyValues),
+	NewValues.
+
+setKeyValues({IndexName, Value, Type}, Values) ->
+	case Type of
+		uint32 ->
+			set_uint32_value(IndexName, Value, Values);
+		uint64 ->
+			set_uint64_value(IndexName, Value, Values);
+		uint16_0 ->
+			set_uint16_value(IndexName, Value, Values, 0);
+		byte_0 ->
+			set_byte_value(IndexName, Value, Values, 0);
+		byte_1 ->
+			set_byte_value(IndexName, Value, Values, 1);
+		byte_2 ->
+			set_byte_value(IndexName, Value, Values, 2);
+		byte_3 ->
+			set_byte_value(IndexName, Value, Values, 3);
+		float ->
+			set_float_value(IndexName, Value, Values);
+		{float, Offset} ->
+			set_float_value(IndexName, Value, Values, Offset)
+	end.
+
+
+
+
+		
+
+
+create_char_record(PropList) ->
 	Payload = proplists:get_value(payload, PropList),
 	PlayerName = proplists:get_value(account_id, PropList),
-	{Name, NamelessPayload} = extract_name(Payload),
+	Guid = proplists:get_value(guid, PropList),
+	{Name, NewPayload} = extract_name(Payload),
     <<Race?B, Class?B, Gender?B, Skin?B,
-      Face?B, HairStyle?B, HairColor?B, FacialHair?B, _?B>> = NamelessPayload,
+      Face?B, HS?B, HC?B, FH?B, _?B>> = NewPayload,
     RaceName    = char_helper:to_race(Race),
     ClassName   = char_helper:to_class(Class),
     CreateInfo  = content:char_create_info(RaceName, ClassName),
-		Power = char_helper:power(CreateInfo#char_create_info.power_type),
-		Guid = world:get_guid(),
-		PlayerBytes = 0,
-		PlayerBytes2 = 0,
-		PlayerFlags = 0,
-    Char = #char{guid             = Guid,
-                account_id       = PlayerName,
-                name             = Name,
-                race             = Race,
-                gender           = Gender,
-                level            = 1,
-								xp								= 0,
-								money						= 0,
-								playerBytes			= PlayerBytes,
-								playerBytes2			= PlayerBytes2,
-								playerFlags			= PlayerFlags,
-                position_x       = CreateInfo#char_create_info.position_x, 
-                position_y       = CreateInfo#char_create_info.position_y, 
-                position_z       = CreateInfo#char_create_info.position_z, 
-								map		          = CreateInfo#char_create_info.map_id, 
-                orientation      = CreateInfo#char_create_info.orientation, 
-								taximask = 0,
-								cinematic = 0,
-								totaltime = 0,
-								leveltime = 0,
-								rest_bonus = 0,
-								logout_time = 0,
-								is_logout_resting = 0,
-								resettalents_cost = 0,
-								resettalents_time = 0,
-								trans_x = 0,
-								trans_y = 0,
-								trans_z = 0,
-								trans_o = 0,
-								transguid = 0,
-								extra_flags = 0,
-								stable_slots = 0,
-								at_login = 0,
-                zone      = CreateInfo#char_create_info.zone_id, 
-								online = 0,
-								death_expire_time = 0,
-								taxi_path = 0,
-								honor_highest_rank = 0,
-								honor_standing = 0,
-								stored_honor_rating = 0,
-								stored_dishonorablekills = 0,
-								stored_honorable_kills = 0,
-								watchedFaction = 0,
-								drunk = 0,
-								health = 10,
-								power1 = 10,
-								power2 = 0,
-								power3 = 0,
-								power4 = 0,
-								power5 = 0,
-								exploredZones = 0,
-								equipmentCache = 0,
-								ammoId = 0,
-								actionBars = 0},
-				Char.
+		Realm = 1,
+    GenderValue = Gender * if Race =:= 10 -> -1; true -> 1 end,
+    Char = #char{id               = Guid,
+                 account_id       = PlayerName,
+                 realm_id         = Realm,
+                 name             = Name,
+                 race             = RaceName, 
+                 gender           = char_helper:to_gender(Gender),
+                 class            = ClassName,
+                 skin             = Skin, 
+                 face             = Face, 
+                 hair_style       = HS, 
+                 hair_color       = HC,
+                 facial_hair      = FH, 
+                 level            = 1,
+                 guild_id         = 0,
+                 general_flags    = 16#10A00040,
+                 at_login_flags   = 0,
+                 faction_template = CreateInfo#char_create_info.faction_template, 
+                 map_id           = CreateInfo#char_create_info.map_id, 
+                 zone_id          = CreateInfo#char_create_info.zone_id, 
+                 position_x       = CreateInfo#char_create_info.position_x, 
+                 position_y       = CreateInfo#char_create_info.position_y, 
+                 position_z       = CreateInfo#char_create_info.position_z, 
+                 orientation      = CreateInfo#char_create_info.orientation, 
+                 display_id       = CreateInfo#char_create_info.display_id + GenderValue, 
+                 strength         = CreateInfo#char_create_info.strength, 
+                 agility          = CreateInfo#char_create_info.agility,
+                 stamina          = CreateInfo#char_create_info.stamina, 
+                 intellect        = CreateInfo#char_create_info.intellect, 
+                 spirit           = CreateInfo#char_create_info.spirit, 
+                 health           = CreateInfo#char_create_info.health, 
+                 mana             = CreateInfo#char_create_info.mana, 
+                 focus            = CreateInfo#char_create_info.focus, 
+                 power            = CreateInfo#char_create_info.power, 
+                 power_type       = CreateInfo#char_create_info.power_type, 
+                 intro            = CreateInfo#char_create_info.intro,
+                 attack_power     = CreateInfo#char_create_info.attack_power, 
+                 min_dmg          = CreateInfo#char_create_info.min_dmg, 
+                 max_dmg          = CreateInfo#char_create_info.max_dmg, 
+                 scale            = CreateInfo#char_create_info.scale},
+		Char.
 
 
                  %general_flags    = 16#10A00040,
@@ -126,12 +230,11 @@ create_char(PropList) ->
 login(PropList) ->
 	_PlayerName = proplists:get_value(account_id, PropList),
 	<<Guid?Q>> = proplists:get_value(payload, PropList),
-	[{_,_,Guid,Char}] = ets:match_object(characters, {'_', '_', Guid, '_'}),
-	PlayerPid = world_socket_controller:get_player_pid(),
+	[{_,_,Guid,Char, _Values}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
-	MapId = Char#char.map,
+	MapId = Char#char.map_id,
 	Orientation = Char#char.orientation,
 	Opcode = opcode_patterns:getNumByAtom(smsg_login_verify_world),
 	Payload = <<MapId?L, X?f, Y?f, Z?f, Orientation?f>>,
@@ -157,11 +260,6 @@ login(PropList) ->
 	init_world_state(PropList2),
 	login_settimespeed(PropList2),
 
-	world_player:set_guid_value(PlayerPid, Guid),
-
-	%world_player:set_byte_value(PlayerPid, unit_field_bytes_2, 1, 16#08 bor 16#20),
-
-	world_player:set_uint32_value(PlayerPid, unit_field_level, Char#char.level),
 
 	%login packets to send after player is added to map
 	update_object(PropList2),
@@ -211,8 +309,8 @@ set_tutorial_flags(_Proplist) ->
 bind_point_update(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_bindpointupdate),
 	Char = proplists:get_value(char, Proplist),
-	Zone = Char#char.zone,
-	Map = Char#char.map,
+	Zone = Char#char.zone_id,
+	Map = Char#char.map_id,
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
@@ -266,8 +364,8 @@ login_settimespeed(_Proplist) ->
 init_world_state(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_init_world_states),
 	Char = proplists:get_value(char, Proplist),
-	MapId = Char#char.map,
-	ZoneId = Char#char.zone,
+	MapId = Char#char.map_id,
+	ZoneId = Char#char.zone_id,
 	Count = 6,
 	%Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
 	Rest = <<16#d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:384/unsigned-big-integer>>,
@@ -331,17 +429,7 @@ extract_name(<<Char?B, Rest/binary>>, Name) ->
 	extract_name(Rest, [Char|Name]).
 	
 
-mapCharData({_CharName, _AccountName, _, #char{guid=Guid, name=Name, level=Level, zone=Zone, map=Map, position_x=X, position_y=Y, position_z=Z}}) ->
-	Skin = 1,
-	Face = 1,
-	HairStyle = 1,
-	HairColor = 1,
-	FacialHair = 1,
-	GeneralFlags = 0,
-	GuildId = 0,
-	RaceName = human,
-	ClassName = warlock,
-	GenderName = male,
+mapCharData({_CharName, _AccountName, _, #char{id=Guid, name=Name, race=RaceName, class=ClassName, gender=GenderName, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, guild_id=GuildId, general_flags=GeneralFlags, at_login_flags=AtLoginFlags}, _Values}) ->
 	Race = char_helper:race(RaceName),
 	Class = char_helper:class(ClassName),
 	Gender = char_helper:gender(GenderName),
@@ -353,7 +441,6 @@ mapCharData({_CharName, _AccountName, _, #char{guid=Guid, name=Name, level=Level
 	BagDisplayId = 0,
 	BagInventoryType = 0,
 	NameSize = size(Name) * 8,
-	AtLoginFlags = 0,
 	<<NameNum:NameSize/unsigned-big-integer>> = Name,
 	<<Guid?Q,
 	NameNum:NameSize/unsigned-big-integer,
@@ -405,17 +492,28 @@ getPayload() ->
 get_byte_value(IndexName, Values, Offset) ->
 	get_value(IndexName, Values, 1, Offset).
 
+get_uint16_value(IndexName, Values, Offset) ->
+	get_value(IndexName, Values, 2, Offset).
+
 get_uint32_value(IndexName, Values) ->
 	get_value(IndexName, Values, 4, 0).
 
 get_uint64_value(IndexName, Values) ->
 	get_value(IndexName, Values, 8, 0).
 
+get_float_value(IndexName, Values) ->
+	get_value(IndexName, Values, float).
+
+get_value(IndexName, Values, float) ->
+	% each Index is a 4 byte long word
+	Index = update_fields:fields(IndexName) * 4,
+	<<_Head:Index/binary, Value?f, _Tail/binary>> = Values,
+	Value.
 get_value(IndexName, Values, Size, Offset) ->
 	% each Index is a 4 byte long word
 	Index = (update_fields:fields(IndexName) * 4) + Offset,
 	BitSize = Size*8,
-	<<Head:Index/binary, Value:BitSize/unsigned-little-integer, Tail/binary>> = Values,
+	<<_Head:Index/binary, Value:BitSize/unsigned-little-integer, _Tail/binary>> = Values,
 	Value.
 
 
@@ -425,9 +523,26 @@ set_byte_value(IndexName, Value, Values, Offset) ->
 set_uint32_value(IndexName, Value, Values) ->
 	set_value(IndexName, Value, Values, 4, 0).
 
+set_uint16_value(IndexName, Value, Values, Offset) ->
+	set_value(IndexName, Value, Values, 2, Offset).
+
+set_float_value(IndexName, Value, Values, Offset) ->
+	set_value(IndexName, Value, Values, float, Offset).
+
+set_float_value(IndexName, Value, Values) ->
+	set_value(IndexName, Value, Values, float).
+
 set_uint64_value(IndexName, Value, Values) ->
 	set_value(IndexName, Value, Values, 8, 0).
 
+set_value(IndexName, Value, Values, float) ->
+	set_value(IndexName, Value, Values, float, 0).
+
+set_value(IndexName, Value, Values, float, Offset) ->
+	% each Index is a 4 byte long word
+	Index = (update_fields:fields(IndexName) + Offset) * 4,
+	<<Head:Index/binary, _OldValue:4/binary, Tail/binary>> = Values,
+	<<Head:Index/binary, Value?f, Tail/binary>>;
 set_value(IndexName, Value, Values, Size, Offset) ->
 	% each Index is a 4 byte long word
 	Index = (update_fields:fields(IndexName) * 4) + Offset,

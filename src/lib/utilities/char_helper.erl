@@ -7,7 +7,7 @@
 
 %% @spec find(int()) -> tuple().
 find(Id) ->
-    [Char] = do(qlc:q([X || X <- mnesia:table(char), X#char.guid =:= Id])),
+    [Char] = do(qlc:q([X || X <- mnesia:table(char), X#char.id =:= Id])),
     Char.
 
 %% @spec equipment(any()) -> list().
