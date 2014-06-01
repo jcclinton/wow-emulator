@@ -28,6 +28,7 @@ getNumByAtom(smsg_login_settimespeed) -> 16#042;
 getNumByAtom(smsg_init_world_states) -> 16#2C2;
 getNumByAtom(smsg_tutorial_flags) -> 16#0FD;
 getNumByAtom(smsg_update_object) -> 16#0A9;
+getNumByAtom(smsg_compressed_update_object) -> 16#1F6;
 getNumByAtom(smsg_messagechat) -> 16#096;
 getNumByAtom(Unk) ->
 	io:format("unknown opcode: ~p~n", [Unk]),

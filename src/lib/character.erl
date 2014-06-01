@@ -43,7 +43,7 @@ create(PropList) ->
 	Guid = world:get_guid(),
 	PropList2 = [{guid, Guid} | PropList],
 	Char = create_char_record(PropList2),
-	Values = create_char_values(PropList2),
+	Values = create_char_values(PropList2, Char),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	ets:insert(characters, {Char#char.name, Char#char.account_id, Char#char.id, Char, Values}),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_create),
@@ -52,13 +52,22 @@ create(PropList) ->
 	world_socket_controller:send(Msg),
 	ok.
 
-create_char_values(PropList) ->
-	Payload = proplists:get_value(payload, PropList),
-	Values = proplists:get_value(values, PropList),
-	Guid = proplists:get_value(guid, PropList),
-	{_Name, NamelessPayload} = extract_name(Payload),
-	<<Race?B, Class?B, Gender?B, Skin?B,
-		Face?B, HairStyle?B, HairColor?B, FacialHair?B, _?B>> = NamelessPayload,
+create_char_values(Proplist, Char) ->
+	Values = proplists:get_value(values, Proplist),
+	Guid = Char#char.id,
+	RaceName = Char#char.race,
+	ClassName = Char#char.class,
+	GenderName = Char#char.gender,
+	Race = char_helper:race(RaceName),
+	Class = char_helper:class(ClassName),
+	Gender = char_helper:gender(GenderName),
+
+	Skin = Char#char.skin,
+	Face = Char#char.face,
+	HairStyle = Char#char.hair_style,
+	HairColor = Char#char.hair_color,
+	FacialHair = Char#char.facial_hair,
+	
 	Unk3 = 16#08,
 	Unk5 = 16#20,
 	ModelId = 1, %not sure what this should be
@@ -143,6 +152,7 @@ create_char_values(PropList) ->
 	NewValues.
 
 setKeyValues({IndexName, Value, Type}, Values) ->
+	%io:format("indexname: ~p~nvalue: ~p~n", [IndexName, Value]),
 	case Type of
 		uint32 ->
 			set_uint32_value(IndexName, Value, Values);
@@ -380,23 +390,35 @@ init_world_state(Proplist) ->
 
 update_object(Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
+	CompressedOpcode = opcode_patterns:getNumByAtom(smsg_compressed_update_object),
 	Char = proplists:get_value(char, Proplist),
 	Values = proplists:get_value(values, Proplist),
 	
         %Block = update_helper:block(create_object2, Char),
         %Packet = update_helper:packet([Block]),
         %Payload = update_helper:message(Packet),
-	Payload = block(Char, Values),
+	Block = block(Char, Values),
 
 	BlockCount = 1,
 	HasTransport = 0,
-	%io:format("update payload: ~p~n", [Payload]),
-	Msg = <<Opcode?W, BlockCount?L, HasTransport?B, Payload/binary>>,
-	%Payload = getPayload(),
-	%io:format("payload: ~p~n", [Payload]),
-	%Msg = <<Opcode?W, Payload/binary>>,
+	Payload = <<BlockCount?L, HasTransport?B, Block/binary>>,
+	Msg = if byte_size(Payload) > 100 ->
+			CompressedPayload = compress(Payload),
+			<<CompressedOpcode?W, CompressedPayload/binary>>;
+		true ->
+			<<Opcode?W, Payload/binary>>
+		end,
 	world_socket_controller:send(Msg),
 	ok.
+
+compress(Packet) ->
+    Z  = zlib:open(),
+    ok = zlib:deflateInit(Z, best_speed),
+    P  = zlib:deflate(Z, Packet),
+    L  = zlib:deflate(Z, [], finish),
+    ok = zlib:deflateEnd(Z),
+    zlib:close(Z),
+    list_to_binary([P|L]).
 
 	block(Char, Values) ->
 		UpdateType = 3, %char_create2
