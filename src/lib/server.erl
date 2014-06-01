@@ -17,7 +17,7 @@ pong(PropList) ->
 
 
 null(_PropList) ->
-	Opcode = opcode_patterns:getNumByAtom(msg_null_action),
-	Msg = <<Opcode?W>>,
-	world_socket_controller:send(Msg),
+	%Opcode = opcode_patterns:getNumByAtom(msg_null_action),
+	%Msg = <<Opcode?W>>,
+	%world_socket_controller:send(Msg),
 	ok.
