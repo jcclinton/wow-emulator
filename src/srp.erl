@@ -261,6 +261,10 @@ doTest() ->
 	%io:format("skey: ~p~nskey hex: ~p~nskey int: ~p~n", [Skey, Skeyhex, Skeyint]),
 
 	%Skeyl = <<Skeyint?QQ>>,
+	if byte_size(Skey) == 31 ->
+		io:format("skey is only 31 bits: ~p~nserver priv: ~p~nserver pub: ~p~nclient pub: ~p~n", [Skey, ServerPrivate, ServerPublic, ClientPublic]);
+		true -> ok
+	end,
 	Key = srp:interleaveHash(Skey),
 	<<Keyint?SLB>> = Key,
 	%Keyl = <<Keyint?SL>>,
