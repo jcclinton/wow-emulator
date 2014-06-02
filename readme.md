@@ -1,5 +1,6 @@
-This is a bare bones implementation of an authentication server based on MaNGOS. Currently it can authenticate one single user whose credentials are hardcoded. Once the user is authenticated, the authenticator does nothing more since there is no game server for it to hand the user off to.
+### Overview
+This is a functional WoW emulator written in Erlang. Currently it supports authentication, character creation and world login.
 
-This is a simple implementation, it has minimal error testing, it does nothing upon successful authentication and the code is not organized very well. It is simply a test to see how easily the MaNGOS authentication process could be replicated in Erlang. It turns out to be very simple and adding additional features and a production level of robustness should not be too difficult.
 
-Flow: user connects via port 3724. Authentication is done via SRP6a. If authentication fails, an error will occur on the server. If authentication is successful, the server just sits there. (I told you it was simple...)
+### Usage
+Start Erlang application using `Application:start(emulator).`. A testing account is created with username and password: `Alice` `password123`. Create your character and login. Characters are only stored in memory so will not show up if you stop the application. You can create new accounts in the shell by using `account:create("username", "password").`. Stop the application with `Application:stop(emulator).`. Currently the application uses port 3784 to run the login server and port 8899 for the world server.
