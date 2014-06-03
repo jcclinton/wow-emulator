@@ -55,10 +55,26 @@ create_char_values(Proplist, Char) ->
 	HairColor = Char#char.hair_color,
 	FacialHair = Char#char.facial_hair,
 	
+	ObjectType = 25,
 	Unk3 = 16#08,
 	Unk5 = 16#20,
 	ModelId = Char#char.model_id + Gender,
 	NativeModelId = Char#char.model_id + Gender,
+
+	Strength = erlang:round(Char#char.strength),
+	Agility = erlang:round(Char#char.agility),
+	Stamina = erlang:round(Char#char.stamina),
+	Intellect = erlang:round(Char#char.intellect),
+	Spirit = erlang:round(Char#char.spirit),
+
+	Health = Char#char.health,
+	Power = Char#char.power,
+	{Mana, Rage, Energy} = case Char#char.power_type of
+		rage -> {0, Power, 0};
+		energy -> {0, 0, Power};
+		_ -> {Power, 0, 0}
+	end,
+
 	%Guid = <<7,41,179,24>>,
 	%PackedGuidBin = <<7, 41,179,24>>,
 	%<<PackedGuid?LB>> = PackedGuidBin,
@@ -66,14 +82,14 @@ create_char_values(Proplist, Char) ->
 	<<PackedGuid?L>> = PackedGuidBin,
 	KeyValues = [
 		{'OBJECT_FIELD_GUID', PackedGuid, uint64},
-		{'OBJECT_FIELD_TYPE', 25, uint32},
+		{'OBJECT_FIELD_TYPE', ObjectType, uint32},
 		{'UNIT_FIELD_BYTES_0', Race, byte_0},
 		{'UNIT_FIELD_BYTES_0', Class, byte_1},
 		{'UNIT_FIELD_BYTES_0', Gender, byte_2},
     {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, byte_1},
     {'UNIT_FIELD_LEVEL', 1, uint32},
     {'PLAYER_EXPLORED_ZONES_1', 0, uint64},
-    {'OBJECT_FIELD_SCALE_X', 1, float},
+    {'OBJECT_FIELD_SCALE_X', Char#char.scale, float},
     {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
     {'UNIT_FIELD_NATIVEDISPLAYID', NativeModelId, uint32},
     {'PLAYER_FIELD_COINAGE', 0, uint32},
@@ -89,7 +105,7 @@ create_char_values(Proplist, Char) ->
     {'PLAYER_FIELD_BYTES', 0, byte_2},
     {'UNIT_FIELD_FACTIONTEMPLATE', 35, uint32}, %not sure what this should be
     {'UNIT_FIELD_CHARM', 0, uint64}, %not sure what this should be
-    {'PLAYER_CHARACTER_POINTS2', 10, uint32}, %num primary trade professions
+    {'PLAYER_CHARACTER_POINTS2', 2, uint32}, %num primary trade professions
     {'UNIT_FIELD_CHANNEL_OBJECT', Guid, uint64},
     {'UNIT_CHANNEL_SPELL', 0, uint32},
     {'UNIT_FIELD_SUMMON', 0, uint64}, %pet
@@ -104,14 +120,14 @@ create_char_values(Proplist, Char) ->
     {'PLAYER_DUEL_TEAM', 0, uint32},
     {'PLAYER_NEXT_LEVEL_XP', 10, uint32}, %dont know what this value is supposed to be
     {'UNIT_FIELD_AURASTATE', 0, uint32},
-    {'UNIT_FIELD_STAT0', 10, uint32}, %fill in later
-    {'UNIT_FIELD_STAT1', 10, uint32}, %fill in later
-    {'UNIT_FIELD_STAT2', 10, uint32}, %fill in later
-    {'UNIT_FIELD_STAT3', 10, uint32}, %fill in later
-    {'UNIT_FIELD_STAT4', 10, uint32}, %fill in later
-    {'UNIT_FIELD_BASE_HEALTH', 10, uint32}, %fill in later
-    {'UNIT_FIELD_BASE_MANA', 10, uint32}, %fill in later
-    {'UNIT_FIELD_RESISTANCES', 10, uint32}, %fill in later
+    {'UNIT_FIELD_STAT0', Strength, uint32},
+    {'UNIT_FIELD_STAT1', Agility, uint32},
+    {'UNIT_FIELD_STAT2', Stamina, uint32},
+    {'UNIT_FIELD_STAT3', Intellect, uint32},
+    {'UNIT_FIELD_STAT4', Spirit, uint32},
+    {'UNIT_FIELD_BASE_HEALTH', Health, uint32},
+    {'UNIT_FIELD_BASE_MANA', Power, uint32},
+    {'UNIT_FIELD_RESISTANCES', 0, uint32},
     {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, float},
     {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 1}},
     {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 2}},
@@ -122,19 +138,19 @@ create_char_values(Proplist, Char) ->
     {'UNIT_FIELD_BASEATTACKTIME', 2000.0, float},
     {'UNIT_FIELD_BASEATTACKTIME', 2000.0, {float, 1}},
     {'UNIT_FIELD_RANGEDATTACKTIME', 2000.0, float},
-    {'UNIT_FIELD_MAXPOWER1', 100, uint32}, %fill in later
-    {'UNIT_FIELD_MAXPOWER2', 100, uint32}, %fill in later
-    {'UNIT_FIELD_MAXPOWER3', 100, uint32}, %fill in later
-    {'UNIT_FIELD_MAXPOWER4', 0, uint32}, %fill in later
-    {'UNIT_FIELD_MAXPOWER5', 0, uint32}, %fill in later
-    {'UNIT_FIELD_POWER1', 100, uint32}, %fill in later
-    {'UNIT_FIELD_POWER2', 100, uint32}, %fill in later
-    {'UNIT_FIELD_POWER3', 0, uint32}, %fill in later
-    {'UNIT_FIELD_POWER4', 0, uint32}, %fill in later
-    {'UNIT_FIELD_POWER5', 100, uint32}, %fill in later
-    {'UNIT_FIELD_MAXHEALTH', 120, uint32}, %fill in later
+    {'UNIT_FIELD_MAXPOWER1', Mana, uint32},
+    {'UNIT_FIELD_MAXPOWER2', Rage, uint32},
+    {'UNIT_FIELD_MAXPOWER3', 0, uint32},
+    {'UNIT_FIELD_MAXPOWER4', Energy, uint32},
+    {'UNIT_FIELD_MAXPOWER5', 0, uint32},
+    {'UNIT_FIELD_POWER1', Mana, uint32},
+    {'UNIT_FIELD_POWER2', Rage, uint32},
+    {'UNIT_FIELD_POWER3', 0, uint32},
+    {'UNIT_FIELD_POWER4', Energy, uint32},
+    {'UNIT_FIELD_POWER5', 0, uint32},
+    {'UNIT_FIELD_MAXHEALTH', Health, uint32},
     {'UNIT_FIELD_FLAGS', 16#0008, uint32},
-    {'UNIT_FIELD_HEALTH', 120, uint32}, %fill in later
+    {'UNIT_FIELD_HEALTH', Health, uint32},
     {'UNIT_FIELD_BYTES_1', 16#EE, byte_1}
 		%% ignore skills for now
 		%% ignore spells
