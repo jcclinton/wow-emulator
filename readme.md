@@ -1,5 +1,5 @@
 ### Overview
-This is a functional WoW emulator written in Erlang. Currently it supports authentication, character creation and world login.
+This is a functional WoW emulator written in Erlang. Currently it supports authentication, character creation and world login. It has been tested on vanilla WoW; may work with TBC but won't work with newer versions.
 
 
 ### Usage
