@@ -10,7 +10,7 @@
 							 }).
 
 
--export([start_link/1]).
+-export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([send/1]).
 -compile([export_all]).
@@ -23,34 +23,40 @@ send(Msg) ->
 
 
 
-start_link(ParentPid) ->
-	gen_server:start_link(?MODULE, {ParentPid}, []).
+start_link(ParentPid, ListenSocket) ->
+	gen_server:start_link(?MODULE, {ParentPid, ListenSocket}, []).
 
-init({ParentPid}) ->
+init({ParentPid, ListenSocket}) ->
 	io:format("controller SERVER: started~n"),
-	gen_server:cast(self(), init),
+	gen_server:cast(self(), {init, ListenSocket}),
 	{ok, #state{parent_pid=ParentPid}}.
 
 
 %% receiver has accepted connection
 %% start send process
 handle_call({tcp_accept_socket, Socket, AccountId, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
-	SendSupPid = get_sibling_pid(ParentPid, world_socket_send_sup),
-	{ok, SendPid} = supervisor:start_child(SendSupPid, [Socket, KeyState]),
+	Name = world_socket_send,
+	ChildSpec = {Name,
+		{Name, start_link, [Socket, KeyState]},
+		transient, 10000, worker, [Name]},
+	{ok, SendPid} = supervisor:start_child(ParentPid, ChildSpec),
 	{reply, ok, S#state{send_pid=SendPid, account_id=AccountId}};
 handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
 %% initialize controller
 %% start rcv process
-handle_cast(init, State = #state{parent_pid=ParentPid}) ->
-	RcvSupPid = get_sibling_pid(ParentPid, world_socket_rcv_sup),
-	supervisor:start_child(RcvSupPid, [self()]),
+handle_cast({init, ListenSocket}, State = #state{parent_pid=ParentPid}) ->
+	Name = world_socket_rcv,
+	ChildSpec = {Name,
+		{Name, start_link, [ListenSocket, self()]},
+		transient, 10000, worker, [Name]},
+	supervisor:start_child(ParentPid, ChildSpec),
 	TotalCount = update_fields:fields('PLAYER_END'),
 	Values = binary:copy(<<0?L>>, TotalCount),
 	{noreply, State#state{values=Values}};
 handle_cast({tcp_accept_challenge, Msg}, State) ->
-	routeData(self(), Msg),
+	send(Msg),
 	{noreply, State};
 handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{account_id=AccountId, values=Values}) ->
 	%io:format("looking up opcode ~p~n", [Opcode]),
@@ -91,15 +97,6 @@ terminate(_Reason, _State) ->
 
 
 %% private
-
-get_sibling_pid(ParentPid, SiblingId) ->
-	ChildList = supervisor:which_children(ParentPid),
-	[{_, Pid, _, _}] = lists:filter(fun({Id, _Child, _Type, _Modules}) ->
-		Id == SiblingId
-	end, ChildList),
-	Pid.
-
-
 
 %% takes a list of pids and a formatted message
 %% routes the message to the pids
