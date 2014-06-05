@@ -16,7 +16,8 @@ start_link(Socket, KeyState) ->
     gen_fsm:start_link(?MODULE, {Socket, KeyState}, []).
 
 init({Socket, KeyState}) ->
-	io:format("starting send~n"),
+	io:format("WORLD: starting send~n"),
+	process_flag(trap_exit, true),
     {ok, send, #state{socket=Socket, key_state=KeyState}}.
 
 
@@ -41,7 +42,9 @@ handle_event(_Event, State, Data) ->
 handle_sync_event(_Event, _From, State, Data) ->
 	{next_state, State, Data}.
 
-terminate(_Reason, _State, _Data) ->
+terminate(_Reason, State, _Data) ->
+	io:format("WORLD SEND: closing connected realm_socket~n"),
+	catch gen_tcp:close(State#state.socket),
 	ok.
 
 code_change(_OldVsn, State, Data, _Extra) ->

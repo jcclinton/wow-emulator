@@ -19,15 +19,16 @@ start_link(ListenSocket, PairPid) ->
     gen_fsm:start_link(?MODULE, {ListenSocket, PairPid}, []).
 
 init({ListenSocket, PairPid}) ->
-	io:format("starting rcv~n"),
+	io:format("WORLD starting rcv~n"),
     gen_fsm:send_event(self(), {accept, ListenSocket}),
     {ok, accept, #state{hdr_len=6, pair_pid=PairPid}}.
 
 accept({accept, ListenSocket}, State = #state{}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
+	process_flag(trap_exit, true),
 	%% start another acceptor
 	world_socket_sup:start_socket(),
-	%io:format("received accept socket~n"),
+	io:format("WORLD received accept socket: ~p~n", [AcceptSocket]),
 	challenge(ok, State#state{socket=AcceptSocket}).
 challenge(_, State = #state{socket=Socket}) ->
 	Msg = buildAuthChallenge(),
@@ -55,11 +56,10 @@ rcv_challenge(_, State = #state{socket=Socket, pair_pid=PairPid}) ->
 rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
 	%% TODO handle error case
 	%io:format("waiting for client header~n"),
-	Resp = gen_tcp:recv(Socket, HdrLen),
-	NewKeyState = case Resp of
+	case gen_tcp:recv(Socket, HdrLen) of
 		{ok, EncryptedHeader} ->
 			%io:format("received encrypted header: ~p~n", [EncryptedHeader]),
-			{Header, KeyState2} = world_crypto:decrypt(EncryptedHeader, KeyState),
+			{Header, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
 			%io:format("decrypted header: ~p~n", [Header]),
 
 			<<LengthRaw?WO, Opcode?L>> = Header,
@@ -75,10 +75,9 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state
 			Msg = {tcp_packet_rcvd, Payload},
 			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
 			gen_server:cast(PairPid, Msg),
-			KeyState2;
-		_ -> KeyState
-		end,
-	rcv(ok, State#state{key_state=NewKeyState}).
+			rcv(ok, State#state{key_state=NewKeyState});
+		_ -> {stop, socket_closed, State}
+		end.
 
 %% callbacks
 handle_info(_Info, State, Data) ->

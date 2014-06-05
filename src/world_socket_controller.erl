@@ -28,6 +28,7 @@ start_link(ParentPid, ListenSocket) ->
 
 init({ParentPid, ListenSocket}) ->
 	io:format("controller SERVER: started~n"),
+	process_flag(trap_exit, true),
 	gen_server:cast(self(), {init, ListenSocket}),
 	{ok, #state{parent_pid=ParentPid}}.
 
@@ -90,9 +91,8 @@ code_change(_OldVsn, State, _Extra) ->
 	io:format("code change~n"),
 	{ok, State}.
 
-terminate(normal, _State) ->
-	ok;
 terminate(_Reason, _State) ->
+	io:format("WORLD: shutting down controller~n"),
 	ok.
 
 

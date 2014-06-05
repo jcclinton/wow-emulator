@@ -20,7 +20,7 @@ init([]) ->
 	{ok, {{simple_one_for_one, 60, 3600},
 				[{world_socket_server_sup,
 					{world_socket_server_sup, start_link, [ListenSocket]},
-					transient, 1000, supervisor, [world_socket_server_sup]}
+					temporary, 1000, supervisor, [world_socket_server_sup]}
 				]}}.
 
 start_socket() ->

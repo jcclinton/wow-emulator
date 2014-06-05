@@ -10,10 +10,10 @@ start_link(ListenSocket) ->
 
 init(ListenSocket) ->
 	Procs = getChildSpecs(ListenSocket),
-	{ok, {{one_for_one, 3, 5},Procs}}.
+	{ok, {{one_for_all, 0, 5}, Procs}}.
 
 getChildSpecs(ListenSocket) ->[
 				{world_socket_controller,
 					{world_socket_controller, start_link, [self(), ListenSocket]},
-					transient, 1000, worker, [world_socket_controller]}
+					transient, 10000, worker, [world_socket_controller]}
 					].

@@ -25,7 +25,7 @@ start_link(ListenSocket) ->
 	gen_server:start_link(?MODULE, ListenSocket, []).
 
 init(ListenSocket) ->
-	io:format("login SERVER: started~n"),
+	io:format("LOGIN SERVER: started~n"),
 	gen_server:cast(self(), {accept, ListenSocket}),
 	{ok, #state{}}.
 
@@ -54,7 +54,7 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 												<<"">>;
 				_ -> <<"">>
 	end,
-	io:format("SERVER: received challenge with name: ~p~n", [I]),
+	io:format("LOGIN SERVER: received challenge with name: ~p~n", [I]),
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
 	Account = account:lookup(I),
@@ -65,8 +65,8 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 			ServerPrivate = srp:generatePrivate(),
 			Verifier = Account#account.verifier,
 			Salt = Account#account.salt,
-			%io:format("SERVER verifier: ~p~n", [Verifier]),
-			%io:format("SERVER priv: ~p~n", [ServerPrivate]),
+			%io:format("LOGIN SERVER verifier: ~p~n", [Verifier]),
+			%io:format("LOGIN SERVER priv: ~p~n", [ServerPrivate]),
 			ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, Verifier),
 			MsgOut = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 			%io:format("sending chal resp: ~p~n", [Msg]),
@@ -76,38 +76,41 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 	{noreply, NewState};
 handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, server_public=ServerPublic, server_private=ServerPrivate, verifier=Verifier, salt=Salt, identity=Name}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
-	io:format("SERVER: received proof~n"),
+	io:format("LOGIN SERVER: received proof~n"),
 	{ClientPublic, M1} = extract_proof(Msg),
 	Prime = srp:getPrime(),
 	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier),
 	%io:format("server skey: ~p~n", [Skey]),
 	Key = srp:interleaveHash(Skey),
 	%KeySize = size(Key),
-	%io:format("SERVER sess key: ~p~n", [Skey]),
+	%io:format("LOGIN SERVER sess key: ~p~n", [Skey]),
 	%Key = srp:hash([Skey]),
 	StringName = binary_to_list(Name),
 	KeyL = srp:b_to_l_endian(Key, 320),
 	ets:insert(connected_clients, {StringName, KeyL}),
-	%io:format("SERVER: sending proof response~n"),
+	%io:format("LOGIN SERVER: sending proof response~n"),
 	Generator = srp:getGenerator(),
 	MsgOut = build_proof_response(Name, Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	gen_tcp:send(Socket, MsgOut),
 	{noreply, State#state{client_public=ClientPublic, m1=M1}};
 handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State=#state{socket=Socket}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
-	io:format("SERVER: received realmlist req~n"),
+	io:format("LOGIN SERVER: received realmlist req~n"),
 	MsgOut = build_realmlist_response(),
 	gen_tcp:send(Socket, MsgOut),
 	{noreply, State};
 handle_info({tcp, _Socket, Msg}, State=#state{socket=Socket}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
-	io:format("SERVER: received unknown tcp message: ~p~n", [Msg]),
+	io:format("LOGIN SERVER: received unknown tcp message: ~p~n", [Msg]),
 	{noreply, State};
 handle_info(upgrade, State) ->
 	%% loads latest code
 	?MODULE:handle_info(do_upgrade, State),
 	{noreply, State};
-handle_info(_Msg, State) ->
+handle_info({tcp_closed, _Socket}, State) ->
+	{stop, normal, State};
+handle_info(Msg, State) ->
+	io:format("LOGIN SERVER: received unknown message: ~p~n", [Msg]),
 	{noreply, State}.
 
 
@@ -116,7 +119,7 @@ code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
 terminate(_Reason, State) ->
-	io:format("REALMD: closing connected realm_socket~n"),
+	io:format("LOGIN SERVER: closing connected realm_socket~n"),
 	catch gen_tcp:close(State#state.socket),
 	ok.
 
