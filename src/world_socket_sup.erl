@@ -1,4 +1,4 @@
--module(world_server_sup).
+-module(world_socket_sup).
 -behavior(supervisor).
 
 -export([start_link/0, start_socket/0, get_count/0]).
