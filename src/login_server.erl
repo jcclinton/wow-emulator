@@ -190,41 +190,19 @@ build_proof_response(I, Prime, Generator, Salt, ClientM1, ClientPublic, ServerPu
 
 build_realmlist_response() ->
 	{ok, Port} = application:get_env(world_port),
+	{ok, Ip} = application:get_env(world_ip),
 	PortBin = binary_list_from_integer(Port),
-	Ip = [<<$1?B>>,
-				<<$2?B>>,
-				<<$7?B>>,
-				<<$.>>,
-				<<$0?B>>,
-				<<$.>>,
-				<<$0?B>>,
-				<<$.>>,
-				<<$1?B>>,
-				<<$:>>,
-				PortBin,
-				<<$\0>>
-			 ],
+	IpBin = [list_to_binary(Ip) | [<<$:>>, PortBin, <<$\0>>]],
 	Realms = [
 						_Icon = <<1?L>>,
 						_Lock = <<0?B>>,
-						%_Status = <<1?B>>,
-						%_RealmId = <<1?L>>,
 						_RealmName = [<<"cool realm">>, <<$\0>>],
-						Ip,
+						IpBin,
 						_Pop = <<1?L>>,
 						_Chars = <<2?B>>,
 						_TZ = <<1?B>>,
 						_Unk = <<16#0?B>>
 					 ],
-					 
-                %pkt << uint32(i->second.icon);              // realm type
-                %pkt << uint8(realmflags);                   // realmflags
-                %pkt << name;                                // name
-                %pkt << i->second.address;                   // address
-                %pkt << float(i->second.populationLevel);
-                %pkt << uint8(AmountOfCharacters);
-                %pkt << uint8(i->second.timezone);           // realm category
-                %pkt << uint8(0x00);  
 
 	Payload = [_Start = <<0?L>>,
 				 _realms = <<1?B>>,

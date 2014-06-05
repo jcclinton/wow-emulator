@@ -6,6 +6,7 @@
 {mod, {emulator_app, []}},
 {env,
  [{realm_port, 3724},
- {world_port, 8899}
+ {world_port, 8899},
+ {world_ip, "127.0.0.1"}
  ]}
 ]}.
