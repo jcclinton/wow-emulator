@@ -15,6 +15,7 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
+-compile([export_all]).
 
 
 -include("include/binary.hrl").
@@ -188,9 +189,8 @@ build_proof_response(I, Prime, Generator, Salt, ClientM1, ClientPublic, ServerPu
 	Msg.
 
 build_realmlist_response() ->
-	%{ok, Port} = application:get_env(world_port),
-	%PortBin = binary_list_from_integer(Port),
-	PortBin = [<<$8>>, <<$8>>, <<$9>>, <<$9>>],
+	{ok, Port} = application:get_env(world_port),
+	PortBin = binary_list_from_integer(Port),
 	Ip = [<<$1?B>>,
 				<<$2?B>>,
 				<<$7?B>>,
@@ -243,14 +243,16 @@ getSize([Hd|Tail]) ->
 	getSize(Hd) + getSize(Tail).
 
 
-%% example 1234 -> [<<1>>, <<2>>, <<3>>, <<4>>]
+%% example 1234 -> [<<"1">>, <<"2">>, <<"3">>, <<"4">>]
 binary_list_from_integer(Int) ->
 	binary_list_from_integer(Int, [], 10).
 
 binary_list_from_integer(Int, List, Digit) ->
 	TotalRem = Int rem Digit,
 	Rem = TotalRem div (Digit div 10),
-	List2 = [<<Rem?B>> | List],
+	% convert the digit to its ascii code
+	AsciiNum = 48 + Rem,
+	List2 = [ <<AsciiNum?B>> | List],
 	if TotalRem == Int -> List2;
 		 TotalRem /= Int -> binary_list_from_integer(Int, List2, Digit * 10)
 	end.
