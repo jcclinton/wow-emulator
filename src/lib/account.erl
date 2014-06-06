@@ -6,8 +6,11 @@
 
 init() ->
 	ets:new(users, [named_table, set, public]),
-	account:create("alice", "password123"),
+	create_dummy_account(),
 	ok.
+
+create_dummy_account() ->
+	account:create("alice", "password123").
 
 destroy() ->
 	ets:delete(users),

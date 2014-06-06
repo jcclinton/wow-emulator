@@ -5,7 +5,7 @@
 
 
 start(normal, _Args) ->
-	application:start(mnesia),
+	%application:start(mnesia),
 	%mnesia:wait_for_tables([account, realm, character], 1000),
 	ets:new(connected_clients, [named_table, set, public]),
 	ets:new(characters, [named_table, set, public]),

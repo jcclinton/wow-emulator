@@ -42,9 +42,11 @@ handle_cast({accept, ListenSocket}, State) ->
 
 
 
+% recive challenge
 handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
-	I = try extract_username(Msg) of
+	% probably a better way to catch the exception
+	Username = try extract_username(Msg) of
 		_ -> extract_username(Msg)
 	catch
 		throw:zero_ilen -> gen_tcp:send(Socket, <<100>>),
@@ -55,10 +57,10 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 												<<"">>;
 				_ -> <<"">>
 	end,
-	io:format("LOGIN SERVER: received challenge with name: ~p~n", [I]),
+	io:format("LOGIN SERVER: received challenge with name: ~p~n", [Username]),
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
-	Account = account:lookup(I),
+	Account = account:lookup(Username),
 	NewState = if Account == false ->
 			%% todo send error response
 			State;
@@ -72,9 +74,10 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 			MsgOut = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 			%io:format("sending chal resp: ~p~n", [Msg]),
 			gen_tcp:send(Socket, MsgOut),
-			State#state{identity=I, server_public=ServerPublic, salt=Salt, verifier=Verifier, server_private=ServerPrivate}
+			State#state{identity=Username, server_public=ServerPublic, salt=Salt, verifier=Verifier, server_private=ServerPrivate}
 	end,
 	{noreply, NewState};
+%receive proof
 handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, server_public=ServerPublic, server_private=ServerPrivate, verifier=Verifier, salt=Salt, identity=Name}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
 	io:format("LOGIN SERVER: received proof~n"),
@@ -85,7 +88,6 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	Key = srp:interleaveHash(Skey),
 	%KeySize = size(Key),
 	%io:format("LOGIN SERVER sess key: ~p~n", [Skey]),
-	%Key = srp:hash([Skey]),
 	StringName = binary_to_list(Name),
 	KeyL = srp:b_to_l_endian(Key, 320),
 	ets:insert(connected_clients, {StringName, KeyL}),
@@ -94,6 +96,7 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	MsgOut = build_proof_response(Name, Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	gen_tcp:send(Socket, MsgOut),
 	{noreply, State#state{client_public=ClientPublic, m1=M1}};
+% receive realmlist request
 handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State=#state{socket=Socket}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
 	io:format("LOGIN SERVER: received realmlist req~n"),
@@ -130,46 +133,40 @@ terminate(_Reason, State) ->
 build_challenge_response(ServerPublic, G, N, Salt) ->
 	GLen = erlang:byte_size(G),
 	NLen = erlang:byte_size(N),
-	%io:format("bsize: ~p~n", [erlang:byte_size(B)]),
-	%io:format("gsize: ~p~n", [erlang:byte_size(G)]),
-	%io:format("nsize: ~p~n", [erlang:byte_size(N)]),
-	%io:format("ssize: ~p~n", [erlang:byte_size(S)]),
 	Unk3 = <<16#0123456789ABCDEF?QH>>,
 
 	%% convert from big endian to little endian
-	<<ServerPubNum?QQB>> = ServerPublic,
-	ServerPubLittle = <<ServerPubNum?QQ>>,
+	ServerPubLittle = srp:b_to_l_endian(ServerPublic, 256),
+	%<<ServerPubNum?QQB>> = ServerPublic,
+	%ServerPubLittle = <<ServerPubNum?QQ>>,
 
-	<<Nnum?QQB>> = N,
-	NLittle = <<Nnum?QQ>>,
+	%<<Nnum?QQB>> = N,
+	%NLittle = <<Nnum?QQ>>,
+	NLittle = srp:b_to_l_endian(N, 256),
 
 	%<<SaltNum:256>> = Salt,
 	%SaltLittle = <<SaltNum?QQ>>,
 	%% salt is already little endian
 	SaltLittle = Salt,
 
-	Msg = [_Cmd = <<0?B>>,
-					_Err = <<0?B>>,
-					_Unk2 = <<0?B>>,
-					ServerPubLittle,
-					<<GLen?B>>,
-					G,
-					<<NLen?B>>,
-					NLittle,
-					SaltLittle,
-					Unk3,
-					_Unk4 = <<0?B>>
-				],
+	[_Cmd = <<0?B>>,
+		_Err = <<0?B>>,
+		_Unk2 = <<0?B>>,
+		ServerPubLittle,
+		<<GLen?B>>,
+		G,
+		<<NLen?B>>,
+		NLittle,
+		SaltLittle,
+		Unk3,
+		_Unk4 = <<0?B>>
+	].
 
-	%Size = lists:foldl(fun(Elem, Acc) -> Acc + size(Elem) end, 0, Msg),
-	%io:format("response size: ~p~n", [Size]),
-	Msg.
-
-build_proof_response(I, Prime, Generator, Salt, ClientM1, ClientPublic, ServerPublic, Key) ->
+build_proof_response(Username, Prime, Generator, Salt, ClientM1, ClientPublic, ServerPublic, Key) ->
 	%io:format("S: client pub: ~p~n~nserver pub: ~p~n~n", [ClientPublic, ServerPublic]),
-	%io:format("S: I: ~p~n~nPrime: ~p~n~nGen: ~p~n~nSalt: ~p~n~n", [I, Prime, Generator, Salt]),
+	%io:format("S: I: ~p~n~nPrime: ~p~n~nGen: ~p~n~nSalt: ~p~n~n", [Username, Prime, Generator, Salt]),
 
-	ServerM1 = srp:getM1(Prime, Generator, I, Salt, ClientPublic, ServerPublic, Key),
+	ServerM1 = srp:getM1(Prime, Generator, Username, Salt, ClientPublic, ServerPublic, Key),
 	%io:format("m1 server: ~p~n~nm1 client: ~p~n~n", [ServerM1, ClientM1]),
 	if ClientM1 == ServerM1 -> ok;
 		true -> io:format("CLIENTM1 and SERVERM1 do not match!~n")
@@ -187,6 +184,7 @@ build_proof_response(I, Prime, Generator, Salt, ClientM1, ClientPublic, ServerPu
 				 <<0?B>>,
 				 <<0?B>>],
 	Msg.
+
 
 build_realmlist_response() ->
 	{ok, Port} = application:get_env(world_port),
@@ -249,15 +247,15 @@ extract_username(Msg) ->
 		_Country?L,
 		_TzBias?L,
 		_Ip?L,
-		ILen?B,
-		I/binary>> = Msg,
-		%io:format("ilen: ~p~n", [ILen]),
-		%io:format("i size: ~p~n", [erlang:bit_size(I)]),
-		Size = ILen * 8,
-		if ILen == 0 -> throw(zero_ilen);
+		UsernameLen?B,
+		Username/binary>> = Msg,
+		%io:format("ilen: ~p~n", [UsernameLen]),
+		%io:format("i size: ~p~n", [erlang:bit_size(Username)]),
+		Size = UsernameLen * 8,
+		if UsernameLen == 0 -> throw(zero_ilen);
 			 true -> ok
 		end,
-		<<INum:Size/unsigned-big-integer, Rest/binary>> = I,
+		<<UsernameNum:Size/unsigned-big-integer, Rest/binary>> = Username,
 		%io:format("Rest size: ~p~n", [erlang:bit_size(Rest)]),
 		%io:format("Rest: ~p~n", [Rest]),
 		BList = binary_to_list(Rest),
@@ -268,7 +266,7 @@ extract_username(Msg) ->
 		if RestVal =/= 0 -> throw(bad_i_size);
 			 true -> ok
 		end,
-		<<INum:Size/unsigned-big-integer>>.
+		<<UsernameNum:Size/unsigned-big-integer>>.
 
 
 extract_proof(Msg) ->
