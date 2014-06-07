@@ -13,7 +13,7 @@ start_link() ->
 
 init([]) ->
 	{ok, Port} = application:get_env(world_port),
-	{ok, ListenSocket} = gen_tcp:listen(Port, [{active,false}, binary]),
+	{ok, ListenSocket} = gen_tcp:listen(Port, [{active,false}, binary, {reuseaddr, true}]),
 	spawn_link(fun() ->
 		empty_listeners()
 	end),
