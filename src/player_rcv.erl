@@ -11,19 +11,20 @@
 -record(state, {socket,
 				hdr_len,
 				pair_pid,
+				parent_pid,
 				sess_key,
 				key_state
 				}).
 
-start_link(ListenSocket, PairPid) ->
-    gen_fsm:start_link(?MODULE, {ListenSocket, PairPid}, []).
+start_link(ListenSocket, ParentPid) ->
+    gen_fsm:start_link(?MODULE, {ListenSocket, ParentPid}, []).
 
-init({ListenSocket, PairPid}) ->
-	io:format("WORLD starting rcv~n"),
+init({ListenSocket, ParentPid}) ->
+		io:format("WORLD starting rcv~n"),
     gen_fsm:send_event(self(), {accept, ListenSocket}),
-    {ok, accept, #state{hdr_len=6, pair_pid=PairPid}}.
+    {ok, accept, #state{hdr_len=6, parent_pid=ParentPid}}.
 
-accept({accept, ListenSocket}, State = #state{}) ->
+accept({accept, ListenSocket}, State) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	process_flag(trap_exit, true),
 	%% start another acceptor
@@ -35,24 +36,35 @@ challenge(_, State = #state{socket=Socket}) ->
 	%io:format("sending auth challenge~n"),
 	gen_tcp:send(Socket, Msg),
 	rcv_challenge(ok, State).
-rcv_challenge(_, State = #state{socket=Socket, pair_pid=PairPid}) ->
-	%{ok, Packet} = gen_tcp:recv(Socket, 0),
-
-	%<<Length?WO, 493?L, Msg/binary>> = Packet,
-	%io:format("received world challenge with length ~p and msg: ~p~n", [Length, Msg]),
-
+rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid}) ->
 	{ok, Packet} = gen_tcp:recv(Socket, 2),
 	<<Length?WO>> = Packet,
 	%io:format("received world challenge with length ~p~n", [Length]),
 	{ok, PacketData} = gen_tcp:recv(Socket, Length),
 	%io:format("received world challenge data~n"),
-	<<493?L, Msg/binary>> = PacketData,
+	Opcode = opcode_patterns:getNumByAtom(cmsg_challenge_accept),
+	<<Opcode?L, Msg/binary>> = PacketData,
 
 	{_ResponseName, ResponseData, AccountId, KeyState} = auth_session(Msg),
-	ok = gen_server:call(PairPid, {tcp_accept_socket, Socket, AccountId , KeyState}),
-	ResponseOpCode = 494,
-	gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
-	rcv(ok, State#state{key_state=KeyState}).
+	%% now authorized
+
+	%start siblings
+	SendName = player_send,
+	SendSpec = {SendName,
+		{SendName, start_link, [Socket, KeyState]},
+		transient, 5000, worker, [SendName]},
+	{ok, SendPid} = supervisor:start_child(ParentPid, SendSpec),
+
+	ControllerName = player_controller,
+	ControlSpec = {ControllerName,
+		{ControllerName, start_link, [AccountId, SendPid]},
+		transient, 5000, worker, [ControllerName]},
+	{ok, PairPid} = supervisor:start_child(ParentPid, ControlSpec),
+
+	%gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
+	Payload = <<Opcode?LB, ResponseData/binary>>,
+	gen_server:cast(PairPid, {tcp_packet_rcvd, Payload}),
+	rcv(ok, State#state{key_state=KeyState, pair_pid=PairPid}).
 rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
 	%% TODO handle error case
 	%io:format("waiting for client header~n"),
@@ -101,7 +113,7 @@ code_change(_OldVsn, State, Data, _Extra) ->
 
 %% private
 buildAuthChallenge() ->
-	Opcode = 492,
+	Opcode = opcode_patterns:getNumByAtom(smsg_auth_challenge),
 	Seed   = random:uniform(16#FFFFFFFF),
 	Msg = [
 	 O = <<Opcode?W>>,

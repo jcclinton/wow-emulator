@@ -3,8 +3,6 @@
 
 -record(state, {
 	account_id,
-  sess_key,
-  parent_pid,
   send_pid,
 	values
 							 }).
@@ -19,46 +17,25 @@
 -include("include/binary.hrl").
 
 send(Msg) ->
-	routeData(self(), Msg).
+	gen_server:cast(self(), {send_to_client, Msg}).
 
 
 
-start_link(ParentPid, ListenSocket) ->
-	gen_server:start_link(?MODULE, {ParentPid, ListenSocket}, []).
+start_link(AccountId, SendPid) ->
+	gen_server:start_link(?MODULE, {AccountId, SendPid}, []).
 
-init({ParentPid, ListenSocket}) ->
+init({AccountId, SendPid}) ->
 	io:format("controller SERVER: started~n"),
 	process_flag(trap_exit, true),
-	gen_server:cast(self(), {init, ListenSocket}),
-	{ok, #state{parent_pid=ParentPid}}.
+
+	TotalCount = update_fields:fields('PLAYER_END'),
+	Values = binary:copy(<<0?L>>, TotalCount),
+	{ok, #state{values=Values, send_pid=SendPid, account_id=AccountId}}.
 
 
-%% receiver has accepted connection
-%% start send process
-handle_call({tcp_accept_socket, Socket, AccountId, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
-	Name = player_send,
-	ChildSpec = {Name,
-		{Name, start_link, [Socket, KeyState]},
-		transient, 10000, worker, [Name]},
-	{ok, SendPid} = supervisor:start_child(ParentPid, ChildSpec),
-	{reply, ok, S#state{send_pid=SendPid, account_id=AccountId}};
 handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
-%% initialize controller
-%% start rcv process
-handle_cast({init, ListenSocket}, State = #state{parent_pid=ParentPid}) ->
-	Name = player_rcv,
-	ChildSpec = {Name,
-		{Name, start_link, [ListenSocket, self()]},
-		transient, 10000, worker, [Name]},
-	supervisor:start_child(ParentPid, ChildSpec),
-	TotalCount = update_fields:fields('PLAYER_END'),
-	Values = binary:copy(<<0?L>>, TotalCount),
-	{noreply, State#state{values=Values}};
-handle_cast({tcp_accept_challenge, Msg}, State) ->
-	send(Msg),
-	{noreply, State};
 handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{account_id=AccountId, values=Values}) ->
 	%io:format("looking up opcode ~p~n", [Opcode]),
 	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
@@ -94,16 +71,3 @@ code_change(_OldVsn, State, _Extra) ->
 terminate(_Reason, _State) ->
 	io:format("WORLD: shutting down controller~n"),
 	ok.
-
-
-%% private
-
-%% takes a list of pids and a formatted message
-%% routes the message to the pids
-routeData([], _) -> ok;
-routeData([Pid|Rest], Msg) ->
-	routeData(Pid, Msg),
-	routeData(Rest, Msg);
-routeData(Pid, Msg) when erlang:is_pid(Pid) ->
-	gen_server:cast(Pid, {send_to_client, Msg}).
-

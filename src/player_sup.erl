@@ -18,7 +18,7 @@ init(ListenSocket) ->
 	{ok, {{one_for_all, 0, 1}, Procs}}.
 
 getChildSpecs(ListenSocket) ->[
-				{player_controller,
-					{player_controller, start_link, [self(), ListenSocket]},
-					transient, 10000, worker, [player_controller]}
+				{player_rcv,
+					{player_rcv, start_link, [ListenSocket, self()]},
+					transient, 10000, worker, [player_rcv]}
 					].

@@ -1,5 +1,5 @@
 -module(server).
--export([pong/1, null/1]).
+-export([pong/1, null/1, accept_challenge/1]).
 
 -include("include/binary.hrl").
 
@@ -20,4 +20,12 @@ null(_PropList) ->
 	%Opcode = opcode_patterns:getNumByAtom(msg_null_action),
 	%Msg = <<Opcode?W>>,
 	%player_controller:send(Msg),
+	ok.
+
+accept_challenge(PropList) ->
+	Payload = proplists:get_value(payload, PropList),
+	Opcode = opcode_patterns:getNumByAtom(smsg_challenge_accept),
+	% payload is created in rcv process and is passed straight through
+	Msg = <<Opcode?W, Payload/binary>>,
+	player_controller:send(Msg),
 	ok.

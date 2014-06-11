@@ -7,6 +7,7 @@ getCallbackByNum(16#0036) -> {character, create};
 getCallbackByNum(16#0037) -> {character, enum};
 getCallbackByNum(16#003D) -> {character, login};
 getCallbackByNum(16#01DC) -> {server, pong};
+getCallbackByNum(16#01ED) -> {server, accept_challenge};
 getCallbackByNum(Unk) ->
 	io:format("unknown opcode: ~p~n", [Unk]),
 	{server, null}.
@@ -30,6 +31,9 @@ getNumByAtom(smsg_tutorial_flags) -> 16#0FD;
 getNumByAtom(smsg_update_object) -> 16#0A9;
 getNumByAtom(smsg_compressed_update_object) -> 16#1F6;
 getNumByAtom(smsg_messagechat) -> 16#096;
+getNumByAtom(smsg_auth_challenge) -> 16#1EC;
+getNumByAtom(cmsg_challenge_accept) -> 16#1ED;
+getNumByAtom(smsg_challenge_accept) -> 16#1EE;
 getNumByAtom(Unk) ->
 	io:format("unknown opcode: ~p~n", [Unk]),
 	0.
