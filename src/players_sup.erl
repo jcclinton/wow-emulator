@@ -1,4 +1,4 @@
--module(world_socket_sup).
+-module(players_sup).
 -behavior(supervisor).
 
 -export([start_link/0, start_socket/0, get_count/0]).
@@ -18,9 +18,9 @@ init([]) ->
 		empty_listeners()
 	end),
 	{ok, {{simple_one_for_one, 60, 3600},
-				[{world_socket_server_sup,
-					{world_socket_server_sup, start_link, [ListenSocket]},
-					temporary, 1000, supervisor, [world_socket_server_sup]}
+				[{player_sup,
+					{player_sup, start_link, [ListenSocket]},
+					temporary, 10000, supervisor, [player_sup]}
 				]}}.
 
 start_socket() ->

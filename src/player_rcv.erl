@@ -1,4 +1,4 @@
--module(world_socket_rcv).
+-module(player_rcv).
 -behaviour(gen_fsm).
 
 -export([start_link/2]).
@@ -27,7 +27,7 @@ accept({accept, ListenSocket}, State = #state{}) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
 	process_flag(trap_exit, true),
 	%% start another acceptor
-	world_socket_sup:start_socket(),
+	players_sup:start_socket(),
 	io:format("WORLD received accept socket: ~p~n", [AcceptSocket]),
 	challenge(ok, State#state{socket=AcceptSocket}).
 challenge(_, State = #state{socket=Socket}) ->

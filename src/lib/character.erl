@@ -21,7 +21,7 @@ enum(PropList) ->
 						end,
 	Msg = <<Opcode?W, Num?B, CharDataOut2/binary>>,
 	%io:format("msg: ~p~n", [Msg]),
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 
@@ -35,7 +35,7 @@ create(PropList) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_create),
 	Result = 16#2E, % success
 	Msg = <<Opcode?W, Result?B>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 
@@ -51,7 +51,7 @@ login(PropList) ->
 	Payload = <<MapId?L, X?f, Y?f, Z?f, Orientation?f>>,
 	%io:format("login payload: ~p~n", [Payload]),
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 
 
 	%login packets to send before player is added to map
@@ -90,7 +90,7 @@ send_motd(_Proplist) ->
 	MsgBin = list_to_binary(ChatMsg),
 	Payload = <<Type?B, Lang?L, Guid?Q, Len?L, MsgBin/binary, 0?B, ChatTag?B>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 account_data_times(_Proplist) ->
@@ -99,7 +99,7 @@ account_data_times(_Proplist) ->
 	Size = 32 * 32,
 	Payload = <<0:Size/unsigned-little-integer>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 set_rest_start(_Proplist) ->
@@ -108,14 +108,14 @@ set_rest_start(_Proplist) ->
 	GameTime = 0,
 	Payload = <<GameTime?L>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 set_tutorial_flags(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_tutorial_flags),
 	Payload = <<0?QQ>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 bind_point_update(Proplist) ->
@@ -128,7 +128,7 @@ bind_point_update(Proplist) ->
 	Z = Char#char.position_z,
 	Payload = <<X?f, Y?f, Z?f, Map?L, Zone?L>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 initial_spells(_Proplist) ->
@@ -138,14 +138,14 @@ initial_spells(_Proplist) ->
 	NumSpellsOnCooldown = 0,
 	Payload = <<Unk?B, NumSpells?W, NumSpellsOnCooldown?W>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 send_unlearn_spells(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_send_unlearn_spells),
 	Payload = <<0?L>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 action_buttons(_Proplist) ->
@@ -153,7 +153,7 @@ action_buttons(_Proplist) ->
 	Size = 120 * 32,
 	Payload = <<0:Size/unsigned-little-integer>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 initialize_factions(_Proplist) ->
@@ -161,7 +161,7 @@ initialize_factions(_Proplist) ->
 	Size = 64 * 5 * 8,
 	Payload = <<16#40?L, 0:Size/unsigned-little-integer>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 login_settimespeed(_Proplist) ->
@@ -170,7 +170,7 @@ login_settimespeed(_Proplist) ->
 	Speed = util:game_speed(),
 	Payload = <<GameTime?L, Speed?f>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 init_world_state(Proplist) ->
@@ -183,7 +183,7 @@ init_world_state(Proplist) ->
 	Rest = <<16#d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:384/unsigned-big-integer>>,
 	Payload = <<MapId?L, ZoneId?L, Count?W, Rest/binary>>,
 	Msg = <<Opcode?W, Payload/binary>>,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 			
@@ -206,7 +206,7 @@ update_object(Proplist) ->
 			Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
 			<<Opcode?W, Payload/binary>>
 		end,
-	world_socket_controller:send(Msg),
+	player_controller:send(Msg),
 	ok.
 
 

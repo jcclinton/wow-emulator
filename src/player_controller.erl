@@ -1,4 +1,4 @@
--module(world_socket_controller).
+-module(player_controller).
 -behavior(gen_server).
 
 -record(state, {
@@ -36,7 +36,7 @@ init({ParentPid, ListenSocket}) ->
 %% receiver has accepted connection
 %% start send process
 handle_call({tcp_accept_socket, Socket, AccountId, KeyState}, _From, S = #state{parent_pid=ParentPid}) ->
-	Name = world_socket_send,
+	Name = player_send,
 	ChildSpec = {Name,
 		{Name, start_link, [Socket, KeyState]},
 		transient, 10000, worker, [Name]},
@@ -48,7 +48,7 @@ handle_call(_E, _From, State) ->
 %% initialize controller
 %% start rcv process
 handle_cast({init, ListenSocket}, State = #state{parent_pid=ParentPid}) ->
-	Name = world_socket_rcv,
+	Name = player_rcv,
 	ChildSpec = {Name,
 		{Name, start_link, [ListenSocket, self()]},
 		transient, 10000, worker, [Name]},
