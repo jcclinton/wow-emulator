@@ -22,12 +22,15 @@ send(Msg) ->
 
 
 start_link(AccountId, SendPid) ->
-	gen_server:start_link(?MODULE, {AccountId, SendPid}, []).
+	% only atoms can be used as names locally
+	% so this is global so we dont have to dynamically generate atoms
+	gen_server:start_link({global, AccountId}, ?MODULE, {AccountId, SendPid}, []).
 
 init({AccountId, SendPid}) ->
 	io:format("controller SERVER: started~n"),
 	process_flag(trap_exit, true),
 
+	%TODO this is char data, not player data, should be put somewhere else
 	TotalCount = update_fields:fields('PLAYER_END'),
 	Values = binary:copy(<<0?L>>, TotalCount),
 	{ok, #state{values=Values, send_pid=SendPid, account_id=AccountId}}.

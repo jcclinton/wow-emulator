@@ -13,7 +13,8 @@
 				pair_pid,
 				parent_pid,
 				sess_key,
-				key_state
+				key_state,
+				account_id
 				}).
 
 start_link(ListenSocket, ParentPid) ->
@@ -55,17 +56,16 @@ rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid}) ->
 		transient, 5000, worker, [SendName]},
 	{ok, SendPid} = supervisor:start_child(ParentPid, SendSpec),
 
-	ControllerName = player_controller,
+	ControllerName = player_controller_sup,
 	ControlSpec = {ControllerName,
 		{ControllerName, start_link, [AccountId, SendPid]},
 		transient, 5000, worker, [ControllerName]},
-	{ok, PairPid} = supervisor:start_child(ParentPid, ControlSpec),
+	{ok, _} = supervisor:start_child(ParentPid, ControlSpec),
 
-	%gen_server:cast(PairPid, {tcp_accept_challenge, <<ResponseOpCode?W, ResponseData/binary>>}),
 	Payload = <<Opcode?LB, ResponseData/binary>>,
-	gen_server:cast(PairPid, {tcp_packet_rcvd, Payload}),
-	rcv(ok, State#state{key_state=KeyState, pair_pid=PairPid}).
-rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state=KeyState}) ->
+	gen_server:cast({global, AccountId}, {tcp_packet_rcvd, Payload}),
+	rcv(ok, State#state{key_state=KeyState, account_id=AccountId}).
+rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account_id=AccountId}) ->
 	%% TODO handle error case
 	%io:format("waiting for client header~n"),
 	case gen_tcp:recv(Socket, HdrLen) of
@@ -86,7 +86,7 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, pair_pid=PairPid, key_state
 			Payload = <<Opcode?LB, Rest/binary>>,
 			Msg = {tcp_packet_rcvd, Payload},
 			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
-			gen_server:cast(PairPid, Msg),
+			gen_server:cast({global, AccountId}, Msg),
 			rcv(ok, State#state{key_state=NewKeyState});
 		_ -> {stop, socket_closed, State}
 		end.
