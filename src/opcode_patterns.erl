@@ -6,14 +6,16 @@
 getCallbackByNum(16#0036) -> {character, create};
 getCallbackByNum(16#0037) -> {character, enum};
 getCallbackByNum(16#003D) -> {character, login};
+getCallbackByNum(16#00B5) -> {movement, start_forward};
 getCallbackByNum(16#01DC) -> {server, pong};
 getCallbackByNum(16#01ED) -> {server, accept_challenge};
 getCallbackByNum(Unk) ->
-	io:format("unknown opcode: ~p~n", [Unk]),
+	io:format("unknown opcode by num: ~p~n", [Unk]),
 	{server, null}.
 
 
 getNumByAtom(msg_null_action) -> 16#000;
+getNumByAtom(msg_move_start_forward) -> 16#0B5;
 getNumByAtom(smsg_char_enum) -> 16#03B;
 getNumByAtom(smsg_char_create) -> 16#03A;
 getNumByAtom(smsg_pong) -> 16#1DD;
@@ -35,5 +37,5 @@ getNumByAtom(smsg_auth_challenge) -> 16#1EC;
 getNumByAtom(cmsg_challenge_accept) -> 16#1ED;
 getNumByAtom(smsg_challenge_accept) -> 16#1EE;
 getNumByAtom(Unk) ->
-	io:format("unknown opcode: ~p~n", [Unk]),
+	io:format("unknown opcode by atom: ~p~n", [Unk]),
 	0.
