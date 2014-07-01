@@ -5,6 +5,7 @@
 -export([init/1, handle_sync_event/4, handle_event/3,
 				 handle_info/3, terminate/3, code_change/4]).
 -export([accept/2, rcv/2, challenge/2, rcv_challenge/2]).
+-export([upgrade/0]).
 
 -include("include/binary.hrl").
 
@@ -76,7 +77,7 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account
 
 			<<LengthRaw?WO, Opcode?L>> = Header,
 			Length = LengthRaw - 4,
-			io:format("rcv: received opcode ~p with length ~p~n", [Opcode, Length]),
+			%io:format("rcv: received opcode ~p with length ~p~n", [Opcode, Length]),
 			Rest = if Length > 0 ->
 					{ok, Data} = gen_tcp:recv(Socket, Length),
 					Data;
@@ -108,6 +109,9 @@ terminate(_Reason, State, _Data) ->
 
 code_change(_OldVsn, State, Data, _Extra) ->
 	{ok, State, Data}.
+
+
+upgrade() -> ok.
 
 
 

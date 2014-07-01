@@ -5,6 +5,7 @@
 -export([init/1, handle_sync_event/4, handle_event/3,
 				 handle_info/3, terminate/3, code_change/4]).
 -export([send/2]).
+-export([upgrade/0]).
 
 -include("include/binary.hrl").
 
@@ -25,12 +26,14 @@ send({send, <<ResponseOpcode?W, ResponseData/binary>>}, State = #state{socket=So
 	%% TODO store socket in ets
 	Length = size(ResponseData) + 2,
 	Header = <<Length?WO, ResponseOpcode?W>>,
-	io:format("sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),
+	%io:format("sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),
 	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
 	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
 	%io:format("sending packet: ~p~n", [Packet]),
 	gen_tcp:send(Socket, Packet),
 	{next_state, send, State#state{key_state=NewKeyState}}.
+
+upgrade() -> ok.
 
 %% callbacks
 handle_info(_Info, State, Data) ->
