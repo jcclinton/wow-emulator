@@ -7,7 +7,12 @@ getCallbackByNum(16#0036) -> {character, create};
 getCallbackByNum(16#0037) -> {character, enum};
 getCallbackByNum(16#003D) -> {character, login};
 getCallbackByNum(16#00B5) -> {movement, handle_movement};
+getCallbackByNum(16#00B6) -> {movement, handle_movement};
 getCallbackByNum(16#00B7) -> {movement, handle_movement};
+getCallbackByNum(16#00BC) -> {movement, handle_movement};
+getCallbackByNum(16#00BD) -> {movement, handle_movement};
+getCallbackByNum(16#00BE) -> {movement, handle_movement};
+getCallbackByNum(16#00EE) -> {movement, handle_movement};
 getCallbackByNum(16#01DC) -> {server, pong};
 getCallbackByNum(16#01ED) -> {server, accept_challenge};
 getCallbackByNum(Unk) ->

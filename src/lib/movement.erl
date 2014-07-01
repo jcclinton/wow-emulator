@@ -10,9 +10,9 @@ handle_movement(PropList) ->
 	Payload = proplists:get_value(payload, PropList),
 	<<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>> = Payload,
 	%Msg = <<Opcode?W, Payload/binary>>,
-	io:format("moveflags: ~p~ntime: ~p~nopcode: ~p~npayload: ~p~n", [MoveFlags, Time, Opcode, Payload]),
-	io:format("pos: {~p,~p,~p,~p}~n", [X, Y, Z, O]),
-	io:format("opcode: ~p rest: {~p}~n", [Opcode, Unk1]),
+	%io:format("moveflags: ~p~ntime: ~p~nopcode: ~p~npayload: ~p~n", [MoveFlags, Time, Opcode, Payload]),
+	io:format("moveflags: ~p pos: {~p,~p,~p,~p}~n", [MoveFlags, X, Y, Z, O]),
+	%io:format("opcode: ~p rest: {~p}~n", [Opcode, Unk1]),
 	ok.
 
 null() -> ok.
