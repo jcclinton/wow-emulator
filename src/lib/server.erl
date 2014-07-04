@@ -1,8 +1,12 @@
 -module(server).
--export([pong/1, null/1, accept_challenge/1]).
+-export([pong/1, null/1, accept_challenge/1, query_time/1]).
 
 -include("include/binary.hrl").
 
+
+query_time(PropList) ->
+	io:format("received req for raid info~n"),
+	ok.
 
 pong(PropList) ->
 	Value = proplists:get_value(payload, PropList),

@@ -1,9 +1,14 @@
 -module(character).
--export([enum/1, create/1, login/1]).
--compile([export_all]).
+-export([enum/1, create/1, login/1, update_account_data/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
+
+
+
+update_account_data(PropList) ->
+	io:format("received req to update account~n"),
+	ok.
 
 enum(PropList) ->
 	PlayerName = proplists:get_value(account_id, PropList),
