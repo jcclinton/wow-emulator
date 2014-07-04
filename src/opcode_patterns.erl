@@ -7,20 +7,31 @@ getCallbackByNum(16#0036) -> {character, create};
 getCallbackByNum(16#0037) -> {character, enum};
 getCallbackByNum(16#003D) -> {character, login};
 getCallbackByNum(16#0050) -> {char_misc, name_query};
+getCallbackByNum(16#0095) -> {chat, message_chat};
+getCallbackByNum(16#0097) -> {chat, join_channel};
 getCallbackByNum(16#00B5) -> {movement, handle_movement};
 getCallbackByNum(16#00B6) -> {movement, handle_movement};
 getCallbackByNum(16#00B7) -> {movement, handle_movement};
 getCallbackByNum(16#00BC) -> {movement, handle_movement};
 getCallbackByNum(16#00BD) -> {movement, handle_movement};
 getCallbackByNum(16#00BE) -> {movement, handle_movement};
+getCallbackByNum(16#00C9) -> {movement, move_fall_land};
 getCallbackByNum(16#00EE) -> {movement, handle_movement};
+getCallbackByNum(16#00FE) -> {char_misc, tutorial_flag};
 getCallbackByNum(16#0101) -> {movement, stand_state_change};
+getCallbackByNum(16#011C) -> {char_misc, cancel_trade};
 getCallbackByNum(16#01CE) -> {server, query_time};
+getCallbackByNum(16#01F4) -> {char_misc, zone_update};
 getCallbackByNum(16#01DC) -> {server, pong};
 getCallbackByNum(16#01ED) -> {server, accept_challenge};
 getCallbackByNum(16#020B) -> {character, update_account_data};
+getCallbackByNum(16#0211) -> {char_misc, gmticket_getticket};
 getCallbackByNum(16#026A) -> {movement, set_active_mover};
+getCallbackByNum(16#0284) -> {char_misc, query_next_mail_time};
+getCallbackByNum(16#0296) -> {char_misc, meetingstone_info};
+getCallbackByNum(16#02CE) -> {movement, move_time_skipped};
 getCallbackByNum(16#02CD) -> {char_misc, request_raid_info};
+getCallbackByNum(16#02D3) -> {char_misc, battlefield_status};
 getCallbackByNum(Unk) ->
 	io:format("unknown opcode by num: ~p~n", [Unk]),
 	{server, null}.

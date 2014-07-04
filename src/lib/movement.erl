@@ -1,9 +1,20 @@
 -module(movement).
--export([handle_movement/1, set_active_mover/1, stand_state_change/1]).
+-export([handle_movement/1, set_active_mover/1, stand_state_change/1, move_time_skipped/1]).
+-export([move_fall_land/1]).
 -export([null/0]).
 
 -include("include/binary.hrl").
 
+
+
+move_fall_land(PropList) ->
+	io:format("received req to move time land~n"),
+	ok.
+
+
+move_time_skipped(PropList) ->
+	io:format("received req to move time skipped~n"),
+	ok.
 
 stand_state_change(PropList) ->
 	io:format("received req to set stand state change~n"),
