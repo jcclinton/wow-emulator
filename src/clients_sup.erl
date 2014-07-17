@@ -17,8 +17,8 @@ start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-	{ok, {{simple_one_for_one, 2, 5},
+	{ok, {{simple_one_for_one, 0, 5},
 				[{client,
 					{client, start_link, []},
-					transient, 10000, worker, [client]}
+					temporary, 10000, worker, [client]}
 				]}}.

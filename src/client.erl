@@ -59,12 +59,13 @@ handle_info({tcp, _Socket, <<_?WO, 16#1EC?W, _/binary>>}, State = #state{account
 	Packet = <<Length?WO, Opcode?L, Payload/binary>>,
 	gen_tcp:send(Socket, Packet),
 	{noreply, State#state{authed=true}};
-handle_info({tcp, _Socket, <<EncryptedHeader?L, Payload/binary>>}, State = #state{socket=Socket, rcv_key=RcvKeyState}) when State#state.authed ->
+handle_info({tcp, _Socket, <<EncryptedHeader?L, Payload/binary>>}, State = #state{socket=Socket, rcv_key=RcvKeyState, send_key=SendKeyState}) when State#state.authed ->
 		EncryptedHeaderBin = <<EncryptedHeader?L>>,
 		{Header, NewRcvKeyState} = world_crypto:decrypt(EncryptedHeaderBin, RcvKeyState),
 		<<_Length?WO, Opcode?W>> = Header,
 		io:format("client received opcode: ~p~n", [Opcode]),
-	{noreply, State#state{rcv_key=NewRcvKeyState}};
+		NewSendKeyState = handle_response(Header, Payload, SendKeyState, Socket),
+	{noreply, State#state{rcv_key=NewRcvKeyState, send_key=NewSendKeyState}};
 handle_info(Msg, State) ->
 	io:format("CLIENT: received unexpected response: ~p~n", [Msg]),
 	{noreply, State}.
@@ -78,6 +79,74 @@ terminate(_Reason, _State) ->
 
 
 %% private
+handle_response(<<_?WO, Opcode?W>>, Payload, KeyState, Socket) ->
+		io:format("client looking up opcode: ~p~n", [Opcode]),
+	Fun = lookup_opcode(Opcode),
+	if Fun /= false ->
+			case Fun(Payload) of
+				false -> KeyState;
+				{OutOpcode, Response} ->
+					io:format("client sending opcode: ~p~n", [OutOpcode]),
+					Length = byte_size(Response),
+					Header = <<Length?WO, OutOpcode?L>>,
+					{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
+					Msg = <<EncryptedHeader/binary, Response/binary>>,
+					gen_tcp:send(Socket, Msg),
+					NewKeyState
+			end;
+		true ->
+			KeyState
+	end.
+
+lookup_opcode(16#03B) -> fun player_login/1;
+lookup_opcode(16#1EE) -> fun send_char_enum/1;
+lookup_opcode(_) -> false.
+
+
+player_login(Payload) ->
+	EQUIPMENT_SLOT_END = 19,
+	SlotDataSize = EQUIPMENT_SLOT_END * 40,
+	<<Num?B, CharData/binary>> = Payload,
+	<<Guid?Q,
+	NameNum1?B,
+	NameNum2?B,
+	NameNum3?B,
+	NameNum4?B,
+	0?B,
+	Race?B,
+	Class?B,
+	Gender?B,
+	Skin?B,
+	Face?B,
+	HairStyle?B,
+	HairColor?B,
+	FacialHair?B,
+	Level?B,
+	Zone?L,
+	Map?L,
+	X?f,
+	Y?f,
+	Z?f,
+	GuildId?L,
+	GeneralFlags?L,
+	AtLoginFlags?B,
+	PetDisplayId?L,
+	PetLevel?L,
+	PetFamily?L,
+	0:SlotDataSize/unsigned-little-integer,
+	BagDisplayId?L,
+	BagInventoryType?B>> = CharData,
+	Name = [NameNum1, NameNum2, NameNum3, NameNum4],
+	io:format("received enum with ~p chars. name: ~p~n", [Num, Name]),
+	false.
+
+
+send_char_enum(_) ->
+	Opcode = 16#0037,
+	{Opcode, <<0?L>>}.
+		
+
+
 store_dummy_session_key(Account) ->
 	Prime = srp:getPrime(),
 	Generator = srp:getGenerator(),

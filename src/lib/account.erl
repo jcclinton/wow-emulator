@@ -10,7 +10,8 @@ init() ->
 	ok.
 
 create_dummy_account() ->
-	account:create("alice", "password123").
+	account:create("alice", "password123"),
+	account:create("alice2", "password123").
 
 destroy() ->
 	ets:delete(users),
