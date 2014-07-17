@@ -10,7 +10,8 @@ get_count() ->
 	supervisor:count_children(?MODULE).
 
 start_child() ->
-	supervisor:start_child(?MODULE, []).
+	{ok, Pid} = supervisor:start_child(?MODULE, []),
+	Pid.
 
 start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
