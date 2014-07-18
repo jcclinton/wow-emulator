@@ -5,6 +5,8 @@
 
 
 start(normal, _Args) ->
+	%application:load(sasl),
+	%application:start(sasl),
 	%application:start(mnesia),
 	%mnesia:wait_for_tables([account, realm, character], 1000),
 	ets:new(connected_clients, [named_table, set, public]),

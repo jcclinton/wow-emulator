@@ -1,6 +1,6 @@
 -module(update_data).
 
--export([compress/1, decompress/1, block/2]).
+-export([compress/1, decompress/1, block/3]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
@@ -22,12 +22,21 @@ compress(Packet) ->
 
 
 
-	block(Char, Values) ->
-		UpdateType = 3, %char_create2
+	block(Char, Values, IsSelf) ->
+		UpdateType = if IsSelf ->
+				3; %char_create2
+			not IsSelf ->
+				2 %char_create
+		end,
 		GuidInt = Char#char.id,
+		% 7 tells you the size of the guid
+		% eg for a 3 byte guid,
+		% 7 = (1 << 0) bor (1 << 1) bor (1 << 2)
+		% players are always 3 bytes
+		% objects can be a maximum up to 8 bytes
 		Guid = <<7, GuidInt?G>>,
 		TypeId = 4, %type player
-		MovementData = getMovementData(Char),
+		MovementData = getMovementData(Char, IsSelf),
 		ValuesCount = (byte_size(Values) div 4) - 1,
 		Blocks = (ValuesCount + 31) div 32,
 		EmptyMaskBits = update_mask:empty(ValuesCount),
@@ -55,12 +64,15 @@ compress(Packet) ->
 
 
 
-	getMovementData(Char) ->
+	getMovementData(Char, IsSelf) ->
 		All = 16#10,
 		Self = 16#01,
 		Living = 16#20,
 		HasPosition = 16#40,
-		UpdateFlags = All bor Self bor Living bor HasPosition,
+		Flags = All bor Living bor HasPosition,
+		UpdateFlags = if IsSelf -> Flags bor Self;
+			not IsSelf -> Flags
+		end,
 		MoveFlags = 0,
 		WorldTime = 1000,
         Speeds         = {2.5, 7, 4.5, 4.72, 2.5,

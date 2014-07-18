@@ -197,7 +197,7 @@ update_object(Proplist) ->
 	Char = proplists:get_value(char, Proplist),
 	Values = proplists:get_value(values, Proplist),
 	
-	Block = update_data:block(Char, Values),
+	Block = update_data:block(Char, Values, true),
 
 	BlockCount = 1,
 	HasTransport = 0,
