@@ -1,5 +1,5 @@
 -module(character).
--export([enum/1, create/1, login/1, update_account_data/1]).
+-export([enum/1, create/1, logout/1, login/1, update_account_data/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -41,6 +41,17 @@ create(PropList) ->
 	Result = 16#2E, % success
 	Msg = <<Opcode?W, Result?B>>,
 	player_controller:send(Msg),
+	ok.
+
+logout(PropList) ->
+	Opcode = opcode_patterns:getNumByAtom(smsg_logout_response),
+	Reason = 0, %0 means is ok to logout
+	Wait = 16777216, % set to 0 to set wait time on logout
+	Msg = <<Opcode?W, Reason?B, Wait?L>>,
+	player_controller:send(Msg),
+	CompleteOpcode = opcode_patterns:getNumByAtom(smsg_logout_complete),
+	Msg2 = <<CompleteOpcode?W>>,
+	player_controller:send(Msg2),
 	ok.
 
 

@@ -6,6 +6,7 @@
 getCallbackByNum(16#0036) -> {character, create};
 getCallbackByNum(16#0037) -> {character, enum};
 getCallbackByNum(16#003D) -> {character, login};
+getCallbackByNum(16#004B) -> {character, logout};
 getCallbackByNum(16#0050) -> {char_misc, name_query};
 getCallbackByNum(16#0095) -> {chat, message_chat};
 getCallbackByNum(16#0097) -> {chat, join_channel};
@@ -38,6 +39,8 @@ getCallbackByNum(Unk) ->
 
 
 getNumByAtom(msg_null_action) -> 16#000;
+getNumByAtom(smsg_logout_response) -> 16#04C;
+getNumByAtom(smsg_logout_complete) -> 16#04D;
 getNumByAtom(msg_move_start_forward) -> 16#0B5;
 getNumByAtom(smsg_char_enum) -> 16#03B;
 getNumByAtom(smsg_char_create) -> 16#03A;
