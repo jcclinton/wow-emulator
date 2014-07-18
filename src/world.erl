@@ -10,7 +10,7 @@
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([get_guid/0]).
--export([add_to_map/1, remove_from_map/1, get_map_players/0]).
+-export([add_to_map/2, remove_from_map/1, get_map_players/0]).
 
 
 -include("include/binary.hrl").
@@ -20,8 +20,8 @@
 get_guid() ->
 	gen_server:call(?MODULE, new_guid).
 
-add_to_map(Name) ->
-	gen_server:cast(?MODULE, {add_to_map, Name}).
+add_to_map(Name, Msg) ->
+	gen_server:cast(?MODULE, {add_to_map, Name, Msg}).
 
 remove_from_map(Name) ->
 	gen_server:cast(?MODULE, {remove_from_map, Name}).
@@ -45,11 +45,23 @@ handle_call(new_guid, _From, State = #state{current_guid=Guid}) ->
 handle_call(_E, _From, State) ->
 	{noreply, State}.
 
-handle_cast({add_to_map, Name}, State = #state{players=Players}) ->
+handle_cast({add_to_map, Name, Msg}, State = #state{players=Players}) ->
 	InList = lists:any(fun(Player) -> Player == Name end, Players),
+
+	% inform other players in list
+	lists:foreach(fun(Player) ->
+		if Player /= Name ->
+				player_controller:send(Player, Msg);
+			Player == Name -> ok
+		end
+	end, Players),
+
+	%add player to list
 	NewPlayers = if InList -> Players;
-		not InList -> [Name|Players]
+		not InList ->
+			[Name|Players]
 	end,
+
 	{noreply, State#state{players=NewPlayers}};
 handle_cast({remove_from_map, Name}, State = #state{players=Players}) ->
 	NewPlayers = lists:delete(Name, Players),

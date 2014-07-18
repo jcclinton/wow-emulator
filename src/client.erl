@@ -44,14 +44,15 @@ handle_cast(connect, State = #state{account=Account}) ->
 	{ok, Port} = application:get_env(world_port),
 	{ok, Socket} = gen_tcp:connect({127,0,0,1}, Port, [binary, {active, true}]),
 	{noreply, State#state{socket=Socket, rcv_key=KTup, send_key=KTup}};
-handle_cast(close, State) ->
+handle_cast(close, State = #state{account=Account}) ->
+	world:remove_from_map(Account),
 	catch gen_tcp:close(State#state.socket),
 	{stop, normal, State};
 handle_cast(_Msg, State) ->
 	{noreply, State}.
 
 handle_info({tcp, _Socket, <<_?WO, 16#1EC?W, _/binary>>}, State = #state{account=Account, socket=Socket}) when not State#state.authed ->
-	io:format("CLIENT: received auth challenge~n"),
+	%io:format("CLIENT: received auth challenge~n"),
 	Opcode = opcode_patterns:getNumByAtom(cmsg_challenge_accept),
 	Name = list_to_binary(Account),
 	Payload = <<1?L, 1?L, Name/binary, 0?B, 0?B>>,
@@ -80,14 +81,13 @@ terminate(_Reason, _State) ->
 
 %% private
 handle_response(<<_?WO, Opcode?W>>, Payload, KeyState, Socket) ->
-		io:format("client looking up opcode: ~p~n", [Opcode]),
+		%io:format("client looking up opcode: ~p~n", [Opcode]),
 	Fun = lookup_opcode(Opcode),
 	if Fun /= false ->
 			case Fun(Payload) of
 				false -> KeyState;
 				{OutOpcode, Response} ->
-					io:format("client sending opcode: ~p~n", [OutOpcode]),
-					Length = byte_size(Response),
+					Length = byte_size(Response) + 4,
 					Header = <<Length?WO, OutOpcode?L>>,
 					{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
 					Msg = <<EncryptedHeader/binary, Response/binary>>,
@@ -138,7 +138,9 @@ player_login(Payload) ->
 	BagInventoryType?B>> = CharData,
 	Name = [NameNum1, NameNum2, NameNum3, NameNum4],
 	io:format("received enum with ~p chars. name: ~p guid: ~p~n", [Num, Name, Guid]),
-	false.
+	% send login
+	Opcode = 16#003D,
+	{Opcode, <<Guid?Q>>}.
 
 
 send_char_enum(_) ->

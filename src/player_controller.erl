@@ -10,14 +10,17 @@
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([send/1]).
+-export([send/1, send/2]).
 -compile([export_all]).
 
 
 -include("include/binary.hrl").
 
+%send message to self
 send(Msg) ->
 	gen_server:cast(self(), {send_to_client, Msg}).
+send(Name, Msg) ->
+	gen_server:cast({global, Name}, {send_to_client, Msg}).
 
 
 
@@ -40,7 +43,7 @@ handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
 handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{account_id=AccountId, values=Values}) ->
-	%io:format("looking up opcode ~p~n", [Opcode]),
+	%io:format("looking up opcode ~p for ~p~n", [Opcode, AccountId]),
 	{M, F} = opcode_patterns:getCallbackByNum(Opcode),
 	Args = [{payload, Payload}, {account_id, AccountId}, {controller_pid, self()}, {values, Values}],
 	NewValues = try M:F(Args) of

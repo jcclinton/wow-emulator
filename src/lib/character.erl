@@ -73,7 +73,8 @@ logout(PropList) ->
 
 login(PropList) ->
 	<<Guid?Q>> = proplists:get_value(payload, PropList),
-	[{_,_,Guid,Char, Values}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
+	[{CharName,_,Guid,Char, Values}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
+	%io:format("logging in ~p~n", [CharName]),
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
@@ -88,7 +89,7 @@ login(PropList) ->
 
 	%login packets to send before player is added to map
 	PropList2 = [{char, Char}|PropList],
-	PropList3 = [{values, Values}|PropList2],
+	%PropList3 = [{values, Values}|PropList2],
 	account_data_times(PropList2),
 	send_motd(PropList2),
 	set_rest_start(PropList2),
@@ -106,9 +107,11 @@ login(PropList) ->
 
 
 	%login packets to send after player is added to map
-	update_object(PropList3),
+	Update = update_object(Char, Values, true),
+	player_controller:send(Update),
 	AccountId = proplists:get_value(account_id, PropList),
-	world:add_to_map(AccountId),
+	Update2 = update_object(Char, Values, true),
+	world:add_to_map(AccountId, Update2),
 	ok.
 
 
@@ -222,26 +225,21 @@ init_world_state(Proplist) ->
 
 			
 
-update_object(Proplist) ->
-	Char = proplists:get_value(char, Proplist),
-	Values = proplists:get_value(values, Proplist),
-	
-	Block = update_data:block(Char, Values, true),
+update_object(Char, Values, IsSelf) ->
+	Block = update_data:block(Char, Values, IsSelf),
 
 	BlockCount = 1,
 	HasTransport = 0,
 	Payload = <<BlockCount?L, HasTransport?B, Block/binary>>,
 	PayloadSize = byte_size(Payload),
-	Msg = if PayloadSize > 100 ->
+	if PayloadSize > 100 ->
 			CompressedOpcode = opcode_patterns:getNumByAtom(smsg_compressed_update_object),
 			CompressedPayload = update_data:compress(Payload),
 			<<CompressedOpcode?W, PayloadSize?L, CompressedPayload/binary>>;
 		true ->
 			Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
 			<<Opcode?W, Payload/binary>>
-		end,
-	player_controller:send(Msg),
-	ok.
+	end.
 
 
 

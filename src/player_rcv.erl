@@ -77,7 +77,7 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account
 
 			<<LengthRaw?WO, Opcode?L>> = Header,
 			Length = LengthRaw - 4,
-			%io:format("rcv: received opcode ~p with length ~p~n", [Opcode, Length]),
+			%io:format("rcv: received opcode ~p with length ~p on account ~p~n", [Opcode, Length, AccountId]),
 			Rest = if Length > 0 ->
 					{ok, Data} = gen_tcp:recv(Socket, Length),
 					Data;
