@@ -6,7 +6,7 @@
 
 
 
-update_account_data(PropList) ->
+update_account_data(_PropList) ->
 	io:format("received req to update account~n"),
 	ok.
 
@@ -65,6 +65,9 @@ logout(PropList) ->
 	CompleteOpcode = opcode_patterns:getNumByAtom(smsg_logout_complete),
 	Msg2 = <<CompleteOpcode?W>>,
 	player_controller:send(Msg2),
+
+	AccountId = proplists:get_value(account_id, PropList),
+	world:remove_from_map(AccountId),
 	ok.
 
 
@@ -104,6 +107,8 @@ login(PropList) ->
 
 	%login packets to send after player is added to map
 	update_object(PropList3),
+	AccountId = proplists:get_value(account_id, PropList),
+	world:add_to_map(AccountId),
 	ok.
 
 

@@ -28,4 +28,4 @@ init([]) ->
 					{world, start_link, []},
 					permanent, 10000, worker, [world]}],
 	FinalProcs = if UseDummyClient -> Procs ++ [ClientProc]; true -> Procs end,
-	{ok, {{one_for_one, 3, 5}, FinalProcs}}.
+	{ok, {{one_for_one, 60, 3600}, FinalProcs}}.
