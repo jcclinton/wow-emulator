@@ -20,14 +20,14 @@
 send(Msg) ->
 	gen_server:cast(self(), {send_to_client, Msg}).
 send(Name, Msg) ->
-	gen_server:cast({global, Name}, {send_to_client, Msg}).
+	Pid = world:get_pid(Name),
+	gen_server:cast(Pid, {send_to_client, Msg}).
 
 
 
 start_link(AccountId, SendPid) ->
-	% only atoms can be used as names locally
-	% so this is global so we dont have to dynamically generate atoms
-	gen_server:start_link({global, AccountId}, ?MODULE, {AccountId, SendPid}, []).
+	Pid = world:get_pid(AccountId),
+	gen_server:start_link(Pid, ?MODULE, {AccountId, SendPid}, []).
 
 init({AccountId, SendPid}) ->
 	io:format("controller SERVER: started~n"),

@@ -6,13 +6,15 @@
 	account="ALICE",
 	authed=false,
 	rcv_key,
-	send_key
+	send_key,
+	char
 }).
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 %% api
 -export([close/1]).
+-export([move/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -20,6 +22,10 @@
 
 close(Pid) ->
 	gen_server:cast(Pid, close).
+
+
+move(Pid) ->
+	gen_server:cast(Pid, move).
 	
 
 
@@ -48,6 +54,24 @@ handle_cast(close, State = #state{account=Account}) ->
 	world:remove_from_map(Account),
 	catch gen_tcp:close(State#state.socket),
 	{stop, normal, State};
+handle_cast(move, State = #state{send_key=KeyState, char=Char, socket=Socket}) ->
+	Opcode = 16#0B5,
+	X = Char#char.position_x,
+	Y = Char#char.position_y,
+	Z = Char#char.position_z,
+	O = Char#char.orientation,
+	Time = 1,
+	Unk1 = 1,
+	MoveFlags = 1,
+	Payload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>>,
+	Length = byte_size(Payload) + 4,
+	Header = <<Length?WO, Opcode?L>>,
+	{EncryptedHeader, NewSendKeyState} = world_crypto:encrypt(Header, KeyState),
+	Msg = <<EncryptedHeader/binary, Payload/binary>>,
+	gen_tcp:send(Socket, Msg),
+	{noreply, State#state{send_key=NewSendKeyState}};
+handle_cast({store_char, Char}, State) ->
+	{noreply, State#state{char=Char}};
 handle_cast(_Msg, State) ->
 	{noreply, State}.
 
@@ -113,29 +137,30 @@ player_login(Payload) ->
 	NameNum3?B,
 	NameNum4?B,
 	0?B,
-	Race?B,
-	Class?B,
-	Gender?B,
-	Skin?B,
-	Face?B,
-	HairStyle?B,
-	HairColor?B,
-	FacialHair?B,
-	Level?B,
-	Zone?L,
-	Map?L,
-	X?f,
-	Y?f,
-	Z?f,
-	GuildId?L,
-	GeneralFlags?L,
-	AtLoginFlags?B,
-	PetDisplayId?L,
-	PetLevel?L,
-	PetFamily?L,
+	_Race?B,
+	_Class?B,
+	_Gender?B,
+	_Skin?B,
+	_Face?B,
+	_HairStyle?B,
+	_HairColor?B,
+	_FacialHair?B,
+	_Level?B,
+	_Zone?L,
+	_Map?L,
+	_X?f,
+	_Y?f,
+	_Z?f,
+	_GuildId?L,
+	_GeneralFlags?L,
+	_AtLoginFlags?B,
+	_PetDisplayId?L,
+	_PetLevel?L,
+	_PetFamily?L,
 	0:SlotDataSize/unsigned-little-integer,
-	BagDisplayId?L,
-	BagInventoryType?B>> = CharData,
+	_BagDisplayId?L,
+	_BagInventoryType?B>> = CharData,
+	gen_server:cast(self(), {store_char,CharData}),
 	Name = [NameNum1, NameNum2, NameNum3, NameNum4],
 	io:format("received enum with ~p chars. name: ~p guid: ~p~n", [Num, Name, Guid]),
 	% send login

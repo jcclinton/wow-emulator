@@ -64,7 +64,8 @@ rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid}) ->
 	{ok, _} = supervisor:start_child(ParentPid, ControlSpec),
 
 	Payload = <<Opcode?LB, ResponseData/binary>>,
-	gen_server:cast({global, AccountId}, {tcp_packet_rcvd, Payload}),
+	Pid = world:get_pid(AccountId),
+	gen_server:cast(Pid, {tcp_packet_rcvd, Payload}),
 	rcv(ok, State#state{key_state=KeyState, account_id=AccountId}).
 rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account_id=AccountId}) ->
 	%% TODO handle error case
@@ -87,7 +88,8 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account
 			Payload = <<Opcode?LB, Rest/binary>>,
 			Msg = {tcp_packet_rcvd, Payload},
 			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
-			gen_server:cast({global, AccountId}, Msg),
+			Pid = world:get_pid(AccountId),
+			gen_server:cast(Pid, Msg),
 			rcv(ok, State#state{key_state=NewKeyState});
 		_ -> {stop, socket_closed, State}
 		end.

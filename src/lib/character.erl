@@ -73,7 +73,7 @@ logout(PropList) ->
 
 login(PropList) ->
 	<<Guid?Q>> = proplists:get_value(payload, PropList),
-	[{CharName,_,Guid,Char, Values}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
+	[{_,_,Guid,Char, Values}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
 	%io:format("logging in ~p~n", [CharName]),
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
@@ -111,7 +111,8 @@ login(PropList) ->
 	player_controller:send(Update),
 	AccountId = proplists:get_value(account_id, PropList),
 	Update2 = update_object(Char, Values, true),
-	world:add_to_map(AccountId, Update2),
+	world:add_to_map(AccountId),
+	world:send_to_all_but_player(Update2, AccountId),
 	ok.
 
 
@@ -178,12 +179,12 @@ initial_spells(_Proplist) ->
 	player_controller:send(Msg),
 	ok.
 
-send_unlearn_spells(_Proplist) ->
-	Opcode = opcode_patterns:getNumByAtom(smsg_send_unlearn_spells),
-	Payload = <<0?L>>,
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
-	ok.
+%send_unlearn_spells(_Proplist) ->
+	%Opcode = opcode_patterns:getNumByAtom(smsg_send_unlearn_spells),
+	%Payload = <<0?L>>,
+	%Msg = <<Opcode?W, Payload/binary>>,
+	%player_controller:send(Msg),
+	%ok.
 
 action_buttons(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_action_buttons),
@@ -409,6 +410,7 @@ create_char_values(Proplist, Char) ->
     {'UNIT_FIELD_FLAGS', 16#0008, uint32},
     {'UNIT_FIELD_HEALTH', Health, uint32},
     {'UNIT_FIELD_BYTES_1', 16#EE, byte_1}
+
 		%% ignore skills for now
 		%% ignore spells
 		%% ignore bags
