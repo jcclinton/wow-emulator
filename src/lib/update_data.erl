@@ -24,31 +24,30 @@ compress(Packet) ->
 
 	block(Char, Values) ->
 		UpdateType = 3, %char_create2
-		%Guid = Char#char.id,
-		Guid = <<7,41,179,24>>,
+		GuidInt = Char#char.id,
+		Guid = <<7, GuidInt?G>>,
 		TypeId = 4, %type player
 		MovementData = getMovementData(Char),
 		ValuesCount = (byte_size(Values) div 4) - 1,
+		Blocks = (ValuesCount + 31) div 32,
 		EmptyMaskBits = update_mask:empty(ValuesCount),
 		MaskBits = update_mask:set_bits(ValuesCount, EmptyMaskBits, Values),
 		%io:format("maskbits: ~p~n", [MaskBits]),
 		ValuesData = build_values_update(MaskBits, Values, ValuesCount),
 		%io:format("value bits: ~p~n", [ValuesData]),
 
-		<<UpdateType?B, Guid/binary, TypeId?B, MovementData/binary, ValuesData/binary>>.
+		<<UpdateType?B, Guid/binary, TypeId?B, MovementData/binary, Blocks?B, MaskBits/binary, ValuesData/binary>>.
 
 
 	build_values_update(MaskBits, Values, Count) ->
-		Blocks = (Count + 31) div 32,
-		ValuesData = lists:foldl(fun(Index, Bin) ->
+		lists:foldl(fun(Index, Bin) ->
 			BitFlag = update_mask:get_bit(MaskBits, Index),
 			if BitFlag ->
 								Value = object_values:get_value(Index, Values),
 								<<Bin/binary, Value?L>>;
 							true -> Bin
 						end
-		end, <<>>, lists:seq(0, Count)),
-		<<Blocks?B, MaskBits/binary, ValuesData/binary>>.
+		end, <<>>, lists:seq(0, Count)).
 
 
 

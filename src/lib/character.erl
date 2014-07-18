@@ -202,11 +202,11 @@ update_object(Proplist) ->
 	BlockCount = 1,
 	HasTransport = 0,
 	Payload = <<BlockCount?L, HasTransport?B, Block/binary>>,
-	Msg = if byte_size(Payload) > 100 ->
+	PayloadSize = byte_size(Payload),
+	Msg = if PayloadSize > 100 ->
 			CompressedOpcode = opcode_patterns:getNumByAtom(smsg_compressed_update_object),
 			CompressedPayload = update_data:compress(Payload),
-			Size = byte_size(Payload),
-			<<CompressedOpcode?W, Size?L, CompressedPayload/binary>>;
+			<<CompressedOpcode?W, PayloadSize?L, CompressedPayload/binary>>;
 		true ->
 			Opcode = opcode_patterns:getNumByAtom(smsg_update_object),
 			<<Opcode?W, Payload/binary>>
@@ -308,10 +308,7 @@ create_char_values(Proplist, Char) ->
 		_ -> {Power, 0, 0}
 	end,
 
-	%Guid = <<7,41,179,24>>,
-	%PackedGuidBin = <<7, 41,179,24>>,
-	%<<PackedGuid?LB>> = PackedGuidBin,
-		PackedGuidBin = <<41,179,24, 0>>,
+		PackedGuidBin = <<Guid?G, 0>>,
 	<<PackedGuid?L>> = PackedGuidBin,
 	KeyValues = [
 		{'OBJECT_FIELD_GUID', PackedGuid, uint64},

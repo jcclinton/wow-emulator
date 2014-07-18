@@ -137,7 +137,7 @@ player_login(Payload) ->
 	BagDisplayId?L,
 	BagInventoryType?B>> = CharData,
 	Name = [NameNum1, NameNum2, NameNum3, NameNum4],
-	io:format("received enum with ~p chars. name: ~p~n", [Num, Name]),
+	io:format("received enum with ~p chars. name: ~p guid: ~p~n", [Num, Name, Guid]),
 	false.
 
 
