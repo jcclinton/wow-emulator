@@ -1,5 +1,5 @@
 -module(character).
--export([enum/1, create/1, logout/1, login/1, update_account_data/1]).
+-export([enum/1, create/1, delete/1, logout/1, login/1, update_account_data/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -26,6 +26,19 @@ enum(PropList) ->
 						end,
 	Msg = <<Opcode?W, Num?B, CharDataOut2/binary>>,
 	%io:format("msg: ~p~n", [Msg]),
+	player_controller:send(Msg),
+	ok.
+
+
+delete(PropList) ->
+	Packet = proplists:get_value(payload, PropList),
+	<<Guid?Q>> = Packet,
+	[{Name,_,Guid,_, _}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
+	true = ets:delete(characters, Name),
+
+	Opcode = opcode_patterns:getNumByAtom(smsg_char_delete),
+	Success = 16#39,
+	Msg = <<Opcode?W, Success?B>>,
 	player_controller:send(Msg),
 	ok.
 

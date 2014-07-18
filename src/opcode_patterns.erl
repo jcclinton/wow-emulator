@@ -5,6 +5,7 @@
 
 getCallbackByNum(16#0036) -> {character, create};
 getCallbackByNum(16#0037) -> {character, enum};
+getCallbackByNum(16#0038) -> {character, delete};
 getCallbackByNum(16#003D) -> {character, login};
 getCallbackByNum(16#004B) -> {character, logout};
 getCallbackByNum(16#0050) -> {char_misc, name_query};
@@ -39,6 +40,7 @@ getCallbackByNum(Unk) ->
 
 
 getNumByAtom(msg_null_action) -> 16#000;
+getNumByAtom(smsg_char_delete) -> 16#03C;
 getNumByAtom(smsg_logout_response) -> 16#04C;
 getNumByAtom(smsg_logout_complete) -> 16#04D;
 getNumByAtom(msg_move_start_forward) -> 16#0B5;
