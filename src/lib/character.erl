@@ -54,7 +54,7 @@ create(PropList) ->
 	Result = 16#2E, % success
 	Msg = <<Opcode?W, Result?B>>,
 	player_controller:send(Msg),
-	ok.
+	Values.
 
 logout(PropList) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_logout_response),
@@ -151,7 +151,7 @@ set_rest_start(_Proplist) ->
 
 set_tutorial_flags(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_tutorial_flags),
-	Payload = <<0?QQ>>,
+	Payload = binary:copy(<<16#FFFFFFFF?L>>, 8),
 	Msg = <<Opcode?W, Payload/binary>>,
 	player_controller:send(Msg),
 	ok.
@@ -188,8 +188,8 @@ initial_spells(_Proplist) ->
 
 action_buttons(_Proplist) ->
 	Opcode = opcode_patterns:getNumByAtom(smsg_action_buttons),
-	Size = 120 * 32,
-	Payload = <<0:Size/unsigned-little-integer>>,
+	Size = 120,
+	Payload = binary:copy(<<0?L>>, Size),
 	Msg = <<Opcode?W, Payload/binary>>,
 	player_controller:send(Msg),
 	ok.
@@ -336,8 +336,11 @@ create_char_values(Proplist, Char) ->
 		_ -> {Power, 0, 0}
 	end,
 
+		%Guid2 = Guid + 1,
 		PackedGuidBin = <<Guid?G, 0>>,
+		%PackedGuidBin = <<41,179,24,0>>,
 	<<PackedGuid?L>> = PackedGuidBin,
+	io:format("values packed guid: ~p~n", [PackedGuid]),
 	KeyValues = [
 		{'OBJECT_FIELD_GUID', PackedGuid, uint64},
 		{'OBJECT_FIELD_TYPE', ObjectType, uint32},

@@ -43,6 +43,7 @@ getNumByAtom(msg_null_action) -> 16#000;
 getNumByAtom(smsg_char_delete) -> 16#03C;
 getNumByAtom(smsg_logout_response) -> 16#04C;
 getNumByAtom(smsg_logout_complete) -> 16#04D;
+getNumByAtom(smsg_name_query_response) -> 16#051;
 getNumByAtom(msg_move_start_forward) -> 16#0B5;
 getNumByAtom(smsg_char_enum) -> 16#03B;
 getNumByAtom(smsg_char_create) -> 16#03A;

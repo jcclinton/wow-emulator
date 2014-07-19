@@ -34,7 +34,11 @@ compress(Packet) ->
 		% 7 = (1 << 0) bor (1 << 1) bor (1 << 2)
 		% players are always 3 bytes
 		% objects can be a maximum up to 8 bytes
+		%GuidInt2 = GuidInt + 1,
 		Guid = <<7, GuidInt?G>>,
+		%Guid = <<7, 41, 179, 24>>,
+	io:format("update binary guid: ~p~n", [Guid]),
+
 		TypeId = 4, %type player
 		MovementData = getMovementData(Char, IsSelf),
 		ValuesCount = (byte_size(Values) div 4) - 1,

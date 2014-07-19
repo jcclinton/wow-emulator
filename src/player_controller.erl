@@ -48,8 +48,9 @@ handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{account
 	Args = [{payload, Payload}, {account_id, AccountId}, {controller_pid, self()}, {values, Values}],
 	NewValues = try M:F(Args) of
 		ok -> Values;
-		{Result} ->
-			proplists:get_value(values, Result, Values)
+		Result ->
+			Result
+			%proplists:get_value(values, Result, Values)
 		catch
 			badarg -> Values
 		end,

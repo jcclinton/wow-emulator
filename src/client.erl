@@ -70,7 +70,9 @@ handle_cast(move, State = #state{send_key=KeyState, char=Char, socket=Socket}) -
 	Msg = <<EncryptedHeader/binary, Payload/binary>>,
 	gen_tcp:send(Socket, Msg),
 	{noreply, State#state{send_key=NewSendKeyState}};
-handle_cast({store_char, Char}, State) ->
+handle_cast({store_char, _}, State) ->
+	% human start coords
+	Char = #char{ position_x = -8949.95, position_y = -132.493, position_z = 83.5312, orientation = 0},
 	{noreply, State#state{char=Char}};
 handle_cast(_Msg, State) ->
 	{noreply, State}.
