@@ -25,8 +25,10 @@ stand_state_change(_PropList) ->
 	io:format("received req to set stand state change~n"),
 	ok.
 
-set_active_mover(_PropList) ->
-	io:format("received req to set active mover~n"),
+set_active_mover(PropList) ->
+	Payload = proplists:get_value(payload, PropList),
+	% dont need to do anything
+	io:format("received req to set active mover: ~p~n", [Payload]),
 	ok.
 
 handle_movement(PropList) ->

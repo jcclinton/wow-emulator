@@ -37,7 +37,7 @@ compress(Packet) ->
 		%GuidInt2 = GuidInt + 1,
 		Guid = <<7, GuidInt?G>>,
 		%Guid = <<7, 41, 179, 24>>,
-	io:format("update binary guid: ~p~n", [Guid]),
+	%io:format("update binary guid: ~p~n", [Guid]),
 
 		TypeId = 4, %type player
 		MovementData = getMovementData(Char, IsSelf),

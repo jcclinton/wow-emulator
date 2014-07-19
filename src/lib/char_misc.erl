@@ -1,11 +1,18 @@
 -module(char_misc).
 -export([request_raid_info/1, name_query/1, cancel_trade/1, gmticket_getticket/1]).
 -export([query_next_mail_time/1, battlefield_status/1, meetingstone_info/1, zone_update/1]).
--export([tutorial_flag/1]).
+-export([tutorial_flag/1, far_sight/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
 
+
+far_sight(PropList) ->
+	Payload = proplists:get_value(payload, PropList),
+	% dont need to do anything
+	io:format("received req to set far sight: ~p~n", [Payload]),
+	% do nothing and camera stays on main char
+	ok.
 
 tutorial_flag(_PropList) ->
 	io:format("received req for tutorial flag~n"),
@@ -27,8 +34,13 @@ query_next_mail_time(_PropList) ->
 	io:format("received req to query next mail time~n"),
 	ok.
 
-gmticket_getticket(_PropList) ->
-	io:format("received req to get gmticket~n"),
+gmticket_getticket(PropList) ->
+	% send time response first
+	ok = server:query_time(PropList),
+
+	Opcode = opcode_patterns:getNumByAtom(smsg_gmticket_getticket),
+	Msg = <<Opcode?W, 16#0A?L>>,
+	player_controller:send(Msg),
 	ok.
 
 cancel_trade(_PropList) ->
@@ -36,7 +48,9 @@ cancel_trade(_PropList) ->
 	ok.
 
 request_raid_info(_PropList) ->
-	io:format("received req for raid info~n"),
+	Opcode = opcode_patterns:getNumByAtom(smsg_raid_instance_info),
+	Msg = <<Opcode?W, 0?L>>,
+	player_controller:send(Msg),
 	ok.
 
 

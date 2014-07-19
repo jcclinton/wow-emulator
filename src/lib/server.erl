@@ -4,8 +4,11 @@
 -include("include/binary.hrl").
 
 
-query_time(PropList) ->
-	io:format("received req for raid info~n"),
+query_time(_PropList) ->
+	Time = util:game_time(),
+	Opcode = opcode_patterns:getNumByAtom(smsg_query_time_response),
+	Msg = <<Opcode?W, Time?L>>,
+	player_controller:send(Msg),
 	ok.
 
 pong(PropList) ->

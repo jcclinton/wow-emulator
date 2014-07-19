@@ -7,7 +7,8 @@
 
 
 update_account_data(_PropList) ->
-	io:format("received req to update account~n"),
+	% dont need to do anything
+	%io:format("received req to update account~n"),
 	ok.
 
 enum(PropList) ->
@@ -340,7 +341,7 @@ create_char_values(Proplist, Char) ->
 		PackedGuidBin = <<Guid?G, 0>>,
 		%PackedGuidBin = <<41,179,24,0>>,
 	<<PackedGuid?L>> = PackedGuidBin,
-	io:format("values packed guid: ~p~n", [PackedGuid]),
+	%io:format("values packed guid: ~p~n", [PackedGuid]),
 	KeyValues = [
 		{'OBJECT_FIELD_GUID', PackedGuid, uint64},
 		{'OBJECT_FIELD_TYPE', ObjectType, uint32},
@@ -374,7 +375,7 @@ create_char_values(Proplist, Char) ->
     {'UNIT_FIELD_CHARMEDBY', Guid, uint64},
     {'UNIT_FIELD_SUMMONEDBY', Guid, uint64},
     {'UNIT_FIELD_CREATEDBY', Guid, uint64},
-    {'PLAYER_FARSIGHT', Guid, uint64},
+    {'PLAYER_FARSIGHT', 0, uint64},
     {'PLAYER_TRACK_CREATURES', 0, uint32},
     {'PLAYER_TRACK_RESOURCES', 0, uint32},
     {'PLAYER_DUEL_ARBITER', Guid, uint64},

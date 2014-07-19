@@ -34,8 +34,9 @@ getCallbackByNum(cmsg_meetingstone_info) -> {char_misc, meetingstone_info};
 getCallbackByNum(cmsg_move_time_skipped) -> {movement, move_time_skipped};
 getCallbackByNum(cmsg_request_raid_info) -> {char_misc, request_raid_info};
 getCallbackByNum(cmsg_battlefield_status) -> {char_misc, battlefield_status};
+getCallbackByNum(cmsg_far_sight) -> {char_misc, far_sight};
 getCallbackByNum(Unk) ->
-	io:format("unknown opcode by num: ~p~n", [Unk]),
+	io:format("unknown callbacks for opcode by num: ~p~n", [Unk]),
 	{server, null}.
 
 
