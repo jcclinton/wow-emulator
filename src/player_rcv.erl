@@ -44,7 +44,7 @@ rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid}) ->
 	%io:format("received world challenge with length ~p~n", [Length]),
 	{ok, PacketData} = gen_tcp:recv(Socket, Length),
 	%io:format("received world challenge data~n"),
-	Opcode = opcode_patterns:getNumByAtom(cmsg_challenge_accept),
+	Opcode = opcode_patterns:getNumByAtom(cmsg_auth_session),
 	<<Opcode?L, Msg/binary>> = PacketData,
 
 	{_ResponseName, ResponseData, AccountId, KeyState} = auth_session(Msg),

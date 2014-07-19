@@ -28,7 +28,7 @@ null(_PropList) ->
 
 accept_challenge(PropList) ->
 	Payload = proplists:get_value(payload, PropList),
-	Opcode = opcode_patterns:getNumByAtom(smsg_challenge_accept),
+	Opcode = opcode_patterns:getNumByAtom(smsg_auth_response),
 	% payload is created in rcv process and is passed straight through
 	Msg = <<Opcode?W, Payload/binary>>,
 	player_controller:send(Msg),
