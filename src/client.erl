@@ -60,8 +60,8 @@ handle_cast(move, State = #state{send_key=KeyState, char=Char, socket=Socket}) -
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
 	O = Char#char.orientation,
-	Time = 1,
-	Unk1 = 1,
+	Time = util:game_time(),
+	Unk1 = 0,
 	MoveFlags = 1,
 	Payload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>>,
 	Length = byte_size(Payload) + 4,
@@ -79,7 +79,7 @@ handle_cast(_Msg, State) ->
 
 handle_info({tcp, _Socket, <<_?WO, 16#1EC?W, _/binary>>}, State = #state{account=Account, socket=Socket}) when not State#state.authed ->
 	%io:format("CLIENT: received auth challenge~n"),
-	Opcode = opcode_patterns:getNumByAtom(cmsg_challenge_accept),
+	Opcode = opcode_patterns:getNumByAtom(cmsg_auth_session),
 	Name = list_to_binary(Account),
 	Payload = <<1?L, 1?L, Name/binary, 0?B, 0?B>>,
 	Length = byte_size(Payload) + 4,

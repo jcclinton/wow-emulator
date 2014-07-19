@@ -25,10 +25,9 @@ stand_state_change(_PropList) ->
 	io:format("received req to set stand state change~n"),
 	ok.
 
-set_active_mover(PropList) ->
-	Payload = proplists:get_value(payload, PropList),
+set_active_mover(_PropList) ->
 	% dont need to do anything
-	io:format("received req to set active mover: ~p~n", [Payload]),
+	%io:format("received req to set active mover~n"),
 	ok.
 
 handle_movement(PropList) ->
@@ -42,7 +41,7 @@ handle_movement(PropList) ->
 	Allowable = verify_movement(X, Y, Z, O),
 	Msg = <<Opcode?W, PackGuid/binary, Payload/binary>>,
 	%io:format("moveflags: ~p~ntime: ~p~nopcode: ~p~npayload: ~p~n", [MoveFlags, Time, Opcode, Payload]),
-	io:format("moveflags: ~p pos: {~p,~p,~p,~p} time: ~p unk1: ~p~n", [MoveFlags, X, Y, Z, O, Time, Unk1]),
+	%io:format("moveflags: ~p pos: {~p,~p,~p,~p} time: ~p unk1: ~p~n", [MoveFlags, X, Y, Z, O, Time, Unk1]),
 	%io:format("opcode: ~p rest: {~p}~n", [Opcode, Unk1]),
 	if Allowable ->
 			AccountId = proplists:get_value(account_id, PropList),

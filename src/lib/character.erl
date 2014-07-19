@@ -111,7 +111,7 @@ login(PropList) ->
 	Update = update_object(Char, Values, true),
 	player_controller:send(Update),
 	AccountId = proplists:get_value(account_id, PropList),
-	Update2 = update_object(Char, Values, true),
+	Update2 = update_object(Char, Values, false),
 	world:add_to_map(AccountId),
 	world:send_to_all_but_player(Update2, AccountId),
 	ok.
