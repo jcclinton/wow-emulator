@@ -12,9 +12,9 @@ update_account_data(_PropList) ->
 	ok.
 
 enum(PropList) ->
-	PlayerName = proplists:get_value(account_id, PropList),
-	Chars = ets:match_object(characters, {'_', PlayerName, '_', '_', '_'}),
-	%io:format("looking up player name: ~p~n", [PlayerName]),
+	AccountId = proplists:get_value(account_id, PropList),
+	Chars = char_data:enum_chars(AccountId),
+	%io:format("looking up player name: ~p~n", [AccountId]),
 	%io:format("matched: ~p~n", [Chars]),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_enum),
 	Num = length(Chars),
@@ -34,8 +34,8 @@ enum(PropList) ->
 delete(PropList) ->
 	Packet = proplists:get_value(payload, PropList),
 	<<Guid?Q>> = Packet,
-	[{Name,_,Guid,_, _}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
-	true = ets:delete(characters, Name),
+	CharName = char_data:get_logged_in_char_name(Guid),
+	char_data:delete_char(CharName),
 
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_delete),
 	Success = 16#39,
@@ -50,7 +50,8 @@ create(PropList) ->
 	Char = create_char_record(PropList2),
 	Values = create_char_values(PropList2, Char),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	ets:insert(characters, {Char#char.name, Char#char.account_id, Char#char.id, Char, Values}),
+	CharData = {Char#char.name, Char#char.account_id, Char#char.id, Char, Values},
+	char_data:create_char(CharData),
 	Opcode = opcode_patterns:getNumByAtom(smsg_char_create),
 	Result = 16#2E, % success
 	Msg = <<Opcode?W, Result?B>>,
@@ -74,7 +75,7 @@ logout(PropList) ->
 
 login(PropList) ->
 	<<Guid?Q>> = proplists:get_value(payload, PropList),
-	[{_,_,Guid,Char, Values}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
+	{Char, Values} = char_data:get_char_data(Guid),
 	%io:format("logging in ~p~n", [CharName]),
 	X = Char#char.position_x,
 	Y = Char#char.position_y,

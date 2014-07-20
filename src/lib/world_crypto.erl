@@ -30,5 +30,5 @@ decrypt(<<OldByte?B, Header/binary>>, {RI, RJ, K}, Result) ->
 
 %% @spec encrypt(string()) -> list().
 encryption_key(A) ->
-    [{_, K}] = ets:lookup(connected_clients, A),
-		binary_to_list(K).
+	K = char_data:get_session_key(A),
+	binary_to_list(K).

@@ -90,7 +90,7 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	%io:format("LOGIN SERVER sess key: ~p~n", [Skey]),
 	StringName = binary_to_list(Name),
 	KeyL = srp:b_to_l_endian(Key, 320),
-	ets:insert(connected_clients, {StringName, KeyL}),
+	char_data:store_connected_client(StringName, KeyL),
 	%io:format("LOGIN SERVER: sending proof response~n"),
 	Generator = srp:getGenerator(),
 	MsgOut = build_proof_response(Name, Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),

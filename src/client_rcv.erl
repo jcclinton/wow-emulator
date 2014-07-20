@@ -120,7 +120,7 @@ store_dummy_session_key(Account) ->
 	Key = srp:interleaveHash(Skey),
 	KeyL = srp:b_to_l_endian(Key, 320),
 	io:format("inserting ~p with key ~p~n", [KeyL, Account]),
-	ets:insert(connected_clients, {Account, KeyL}),
+	char_data:store_connected_client(Account, KeyL),
   {0, 0, binary_to_list(KeyL)}.
 
 

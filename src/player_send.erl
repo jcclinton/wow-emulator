@@ -23,7 +23,6 @@ init({Socket, KeyState}) ->
 
 
 send({send, <<ResponseOpcode?W, ResponseData/binary>>=Response}, State = #state{socket=Socket, key_state=KeyState}) ->
-	%% TODO store socket in ets
 	Length = size(Response),
 	Header = <<Length?WO, ResponseOpcode?W>>,
 	io:format("player sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),

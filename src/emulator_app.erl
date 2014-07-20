@@ -9,13 +9,11 @@ start(normal, _Args) ->
 	%application:start(sasl),
 	%application:start(mnesia),
 	%mnesia:wait_for_tables([account, realm, character], 1000),
-	ets:new(connected_clients, [named_table, set, public]),
-	ets:new(characters, [named_table, set, public]),
+	char_data:init(),
 	account:init(),
 	emulator_sup:start_link().
 
 stop(_State) ->
 	account:destroy(),
-	ets:delete(connected_clients),
-	ets:delete(characters),
+	char_data:cleanup(),
 	ok.

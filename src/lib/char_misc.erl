@@ -57,7 +57,7 @@ request_raid_info(_PropList) ->
 name_query(PropList) ->
 	Values = proplists:get_value(values, PropList),
 	Guid = object_values:get_uint64_value('OBJECT_FIELD_GUID', Values),
-	[{Name,_,Guid,_, _}] = ets:match_object(characters, {'_', '_', Guid, '_', '_'}),
+	Name = char_data:get_logged_in_char_name(Guid),
 	Opcode = opcode_patterns:getNumByAtom(smsg_name_query_response),
 	Null = <<"\0">>,
 	Race = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 0),
