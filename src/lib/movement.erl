@@ -77,4 +77,5 @@ verify_movement(C) ->
 
 
 % just check if its a 32 bit number
-finite(C) -> C band 16#00000000 == 0.
+%finite(C) -> C band 16#00000000 == 0.
+finite(_) -> true.

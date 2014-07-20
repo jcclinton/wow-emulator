@@ -3,11 +3,10 @@
 
 -record(state, {
 	socket,
-	account="ALICE",
+	account,
 	authed=false,
 	rcv_key,
-	send_key,
-	char
+	send_key
 }).
 
 -export([start_link/0]).
@@ -31,18 +30,17 @@ move(Pid) ->
 
 %% public
 start_link() ->
-	gen_server:start_link(?MODULE, {}, []).
+	Account = "ALICE",
+	Pid = world:get_pid(Account),
+	gen_server:start_link(Pid, ?MODULE, {Account}, []).
 
 
 
-init({}) ->
+init({Account}) ->
 	io:format("player CLIENT: started~n"),
 	gen_server:cast(self(), connect),
-	{ok, #state{}}.
+	{ok, #state{account=Account}}.
 
-
-handle_call(_E, _From, State) ->
-	{noreply, State}.
 
 handle_cast(connect, State = #state{account=Account}) ->
 	process_flag(trap_exit, true),
@@ -54,8 +52,9 @@ handle_cast(close, State = #state{account=Account}) ->
 	world:remove_from_map(Account),
 	catch gen_tcp:close(State#state.socket),
 	{stop, normal, State};
-handle_cast(move, State = #state{send_key=KeyState, char=Char, socket=Socket}) ->
+handle_cast(move, State = #state{send_key=KeyState, socket=Socket}) ->
 	Opcode = 16#0B5,
+	Char = #char{ position_x = -8949.95, position_y = -132.493, position_z = 83.5312, orientation = 0},
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
@@ -70,10 +69,6 @@ handle_cast(move, State = #state{send_key=KeyState, char=Char, socket=Socket}) -
 	Msg = <<EncryptedHeader/binary, Payload/binary>>,
 	gen_tcp:send(Socket, Msg),
 	{noreply, State#state{send_key=NewSendKeyState}};
-handle_cast({store_char, _}, State) ->
-	% human start coords
-	Char = #char{ position_x = -8949.95, position_y = -132.493, position_z = 83.5312, orientation = 0},
-	{noreply, State#state{char=Char}};
 handle_cast(_Msg, State) ->
 	{noreply, State}.
 
@@ -89,14 +84,17 @@ handle_info({tcp, _Socket, <<_?WO, 16#1EC?W, _/binary>>}, State = #state{account
 handle_info({tcp, _Socket, <<EncryptedHeader?L, Payload/binary>>}, State = #state{socket=Socket, rcv_key=RcvKeyState, send_key=SendKeyState}) when State#state.authed ->
 		EncryptedHeaderBin = <<EncryptedHeader?L>>,
 		{Header, NewRcvKeyState} = world_crypto:decrypt(EncryptedHeaderBin, RcvKeyState),
-		<<_Length?WO, Opcode?W>> = Header,
-		io:format("client received opcode: ~p~n", [Opcode]),
+		<<Length?WO, Opcode?W>> = Header,
+		io:format("client received opcode: ~p with length ~p~n", [Opcode, Length]),
 		NewSendKeyState = handle_response(Header, Payload, SendKeyState, Socket),
 	{noreply, State#state{rcv_key=NewRcvKeyState, send_key=NewSendKeyState}};
 handle_info(Msg, State) ->
 	io:format("CLIENT: received unexpected response: ~p~n", [Msg]),
 	{noreply, State}.
 
+
+handle_call(_E, _From, State) ->
+	{noreply, State}.
 
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
@@ -162,7 +160,6 @@ player_login(Payload) ->
 	0:SlotDataSize/unsigned-little-integer,
 	_BagDisplayId?L,
 	_BagInventoryType?B>> = CharData,
-	gen_server:cast(self(), {store_char,CharData}),
 	Name = [NameNum1, NameNum2, NameNum3, NameNum4],
 	io:format("received enum with ~p chars. name: ~p guid: ~p~n", [Num, Name, Guid]),
 	% send login

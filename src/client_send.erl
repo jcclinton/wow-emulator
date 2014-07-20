@@ -1,4 +1,4 @@
--module(player_send).
+-module(client_send).
 -behaviour(gen_fsm).
 
 -export([start_link/2]).
@@ -17,16 +17,16 @@ start_link(Socket, KeyState) ->
     gen_fsm:start_link(?MODULE, {Socket, KeyState}, []).
 
 init({Socket, KeyState}) ->
-	io:format("WORLD: starting send~n"),
+	io:format("client: starting send~n"),
 	process_flag(trap_exit, true),
     {ok, send, #state{socket=Socket, key_state=KeyState}}.
 
 
-send({send, <<ResponseOpcode?W, ResponseData/binary>>=Response}, State = #state{socket=Socket, key_state=KeyState}) ->
+send({send, <<ResponseOpcode?L, ResponseData/binary>>}, State = #state{socket=Socket, key_state=KeyState}) ->
 	%% TODO store socket in ets
-	Length = size(Response),
-	Header = <<Length?WO, ResponseOpcode?W>>,
-	io:format("player sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),
+	Length = size(ResponseData) + 4,
+	Header = <<Length?WO, ResponseOpcode?L>>,
+	io:format("client sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),
 	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
 	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
 	%io:format("sending packet: ~p~n", [Packet]),

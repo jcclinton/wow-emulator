@@ -10,7 +10,8 @@ get_count() ->
 	supervisor:count_children(?MODULE).
 
 start_child() ->
-	{ok, Pid} = supervisor:start_child(?MODULE, []),
+	Account = "ALICE",
+	{ok, Pid} = supervisor:start_child(?MODULE, [Account]),
 	Pid.
 
 start_link() ->
@@ -18,7 +19,7 @@ start_link() ->
 
 init([]) ->
 	{ok, {{simple_one_for_one, 0, 5},
-				[{client,
-					{client, start_link, []},
-					temporary, 10000, worker, [client]}
+				[{client_sup,
+					{client_sup, start_link, []},
+					temporary, 10000, worker, [client_sup]}
 				]}}.

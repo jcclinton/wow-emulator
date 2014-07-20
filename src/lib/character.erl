@@ -138,6 +138,7 @@ account_data_times(_Proplist) ->
 	Size = 32 * 32,
 	Payload = <<0:Size/unsigned-little-integer>>,
 	Msg = <<Opcode?W, Payload/binary>>,
+	io:format("sending account data times~n"),
 	player_controller:send(Msg),
 	ok.
 
