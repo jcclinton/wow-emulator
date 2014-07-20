@@ -9,10 +9,10 @@ start_link() ->
 	supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-	UseDummyClient = false,
-	ClientProc = {auth_client,
-								{auth_client, start_link, []},
-									permanent, 10000, worker, [auth_client]},
+	%UseDummyClient = false,
+	%ClientProc = {auth_client,
+								%{auth_client, start_link, []},
+									%permanent, 10000, worker, [auth_client]},
 	% eventually login server and world server will have to be split off from each other
 	% for now its ok to all be under the emulator_sup
 	Procs = [{login_server_sup,
@@ -27,5 +27,5 @@ init([]) ->
 				 {world,
 					{world, start_link, []},
 					permanent, 10000, worker, [world]}],
-	FinalProcs = if UseDummyClient -> Procs ++ [ClientProc]; true -> Procs end,
-	{ok, {{one_for_one, 60, 3600}, FinalProcs}}.
+	%FinalProcs = if UseDummyClient -> Procs ++ [ClientProc]; true -> Procs end,
+	{ok, {{one_for_one, 60, 3600}, Procs}}.

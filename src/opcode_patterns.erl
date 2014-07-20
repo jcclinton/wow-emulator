@@ -8,9 +8,22 @@ getCallbackByNum(cmsg_char_enum) -> {character, enum};
 getCallbackByNum(cmsg_char_delete) -> {character, delete};
 getCallbackByNum(cmsg_player_login) -> {character, login};
 getCallbackByNum(cmsg_logout_request) -> {character, logout};
+getCallbackByNum(cmsg_update_account_data) -> {character, update_account_data};
+
 getCallbackByNum(cmsg_name_query) -> {char_misc, name_query};
+getCallbackByNum(cmsg_tutorial_flag) -> {char_misc, tutorial_flag};
+getCallbackByNum(cmsg_cancel_trade) -> {char_misc, cancel_trade};
+getCallbackByNum(cmsg_zoneupdate) -> {char_misc, zone_update};
+getCallbackByNum(cmsg_gmticket_getticket) -> {char_misc, gmticket_getticket};
+getCallbackByNum(msg_query_next_mail_time) -> {char_misc, query_next_mail_time};
+getCallbackByNum(cmsg_meetingstone_info) -> {char_misc, meetingstone_info};
+getCallbackByNum(cmsg_request_raid_info) -> {char_misc, request_raid_info};
+getCallbackByNum(cmsg_battlefield_status) -> {char_misc, battlefield_status};
+getCallbackByNum(cmsg_far_sight) -> {char_misc, far_sight};
+
 getCallbackByNum(cmsg_messagechat) -> {chat, message_chat};
 getCallbackByNum(cmsg_join_channel) -> {chat, join_channel};
+
 getCallbackByNum(msg_move_start_forward) -> {movement, handle_movement};
 getCallbackByNum(msg_move_start_backward) -> {movement, handle_movement};
 getCallbackByNum(msg_move_stop) -> {movement, handle_movement};
@@ -19,22 +32,14 @@ getCallbackByNum(msg_move_start_turn_right) -> {movement, handle_movement};
 getCallbackByNum(msg_move_stop_turn) -> {movement, handle_movement};
 getCallbackByNum(msg_move_fall_land) -> {movement, move_fall_land};
 getCallbackByNum(msg_move_heartbeat) -> {movement, handle_movement};
-getCallbackByNum(cmsg_tutorial_flag) -> {char_misc, tutorial_flag};
 getCallbackByNum(cmsg_standstatechange) -> {movement, stand_state_change};
-getCallbackByNum(cmsg_cancel_trade) -> {char_misc, cancel_trade};
+getCallbackByNum(cmsg_set_active_mover) -> {movement, set_active_mover};
+getCallbackByNum(cmsg_move_time_skipped) -> {movement, move_time_skipped};
+
 getCallbackByNum(cmsg_query_time) -> {server, query_time};
-getCallbackByNum(cmsg_zoneupdate) -> {char_misc, zone_update};
 getCallbackByNum(cmsg_ping) -> {server, pong};
 getCallbackByNum(cmsg_auth_session) -> {server, accept_challenge};
-getCallbackByNum(cmsg_update_account_data) -> {character, update_account_data};
-getCallbackByNum(cmsg_gmticket_getticket) -> {char_misc, gmticket_getticket};
-getCallbackByNum(cmsg_set_active_mover) -> {movement, set_active_mover};
-getCallbackByNum(msg_query_next_mail_time) -> {char_misc, query_next_mail_time};
-getCallbackByNum(cmsg_meetingstone_info) -> {char_misc, meetingstone_info};
-getCallbackByNum(cmsg_move_time_skipped) -> {movement, move_time_skipped};
-getCallbackByNum(cmsg_request_raid_info) -> {char_misc, request_raid_info};
-getCallbackByNum(cmsg_battlefield_status) -> {char_misc, battlefield_status};
-getCallbackByNum(cmsg_far_sight) -> {char_misc, far_sight};
+
 getCallbackByNum(Unk) ->
 	io:format("unknown callbacks for opcode by num: ~p~n", [Unk]),
 	{server, null}.
