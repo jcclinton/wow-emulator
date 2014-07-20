@@ -35,7 +35,7 @@ handle_movement(PropList) ->
 	Guid = object_values:get_uint64_value('OBJECT_FIELD_GUID', Values),
 	PackGuid = <<7?B, Guid?G>>,
 
-	Opcode = opcode_patterns:getNumByAtom(msg_move_start_forward),
+	Opcode = opcodes:getNumByAtom(msg_move_start_forward),
 	Payload = proplists:get_value(payload, PropList),
 	<<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>> = Payload,
 	NewPayload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f>>,

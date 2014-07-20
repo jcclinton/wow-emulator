@@ -113,7 +113,7 @@ upgrade() -> ok.
 
 %% private
 buildAuthChallenge() ->
-	Opcode = opcode_patterns:getNumByAtom(smsg_auth_challenge),
+	Opcode = opcodes:getNumByAtom(smsg_auth_challenge),
 	Seed   = random:uniform(16#FFFFFFFF),
 	Msg = [
 	 O = <<Opcode?W>>,

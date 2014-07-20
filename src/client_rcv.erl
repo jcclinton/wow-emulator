@@ -36,7 +36,7 @@ world_challenge(_, State = #state{socket=Socket, hdr_len=HdrLen, account_id=Acco
 	%io:format("CLIENT: received auth challenge~n"),
 	{ok, <<Length?WO>>} = gen_tcp:recv(Socket, 2),
 	{ok, <<16#1EC?W, _/binary>>} = gen_tcp:recv(Socket, Length),
-	Opcode = opcode_patterns:getNumByAtom(cmsg_auth_session),
+	Opcode = opcodes:getNumByAtom(cmsg_auth_session),
 	Name = list_to_binary(Account),
 	Payload = <<1?L, 1?L, Name/binary, 0?B, 0?B>>,
 	PayloadLength = byte_size(Payload) + HdrLen,

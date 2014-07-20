@@ -1,4 +1,4 @@
--module(opcode_patterns).
+-module(opcodes).
 
 -export([getCallbackByNum/1, getNumByAtom/1, getAtomByNum/1]).
 
