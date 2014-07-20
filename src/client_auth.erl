@@ -1,4 +1,4 @@
--module(auth_client).
+-module(client_auth).
 -behavior(gen_server).
 
 -record(state, {realm_socket,

@@ -25,7 +25,7 @@ init({Socket, KeyState}) ->
 send({send, <<ResponseOpcode?L, ResponseData/binary>>}, State = #state{socket=Socket, key_state=KeyState}) ->
 	Length = size(ResponseData) + 4,
 	Header = <<Length?WO, ResponseOpcode?L>>,
-	io:format("client sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),
+	%io:format("client sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),
 	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
 	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
 	%io:format("sending packet: ~p~n", [Packet]),
