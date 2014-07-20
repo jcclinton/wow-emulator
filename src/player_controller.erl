@@ -42,7 +42,7 @@ init({AccountId, SendPid}) ->
 handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
-handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, S = #state{account_id=AccountId, values=Values}) ->
+handle_cast({tcp_packet_rcvd, <<Opcode?L, Payload/binary>>}, S = #state{account_id=AccountId, values=Values}) ->
 	%io:format("looking up opcode ~p for ~p~n", [Opcode, AccountId]),
 	OpcodeAtom = opcode_patterns:getAtomByNum(Opcode),
 	{M, F} = opcode_patterns:getCallbackByNum(OpcodeAtom),

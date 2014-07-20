@@ -52,7 +52,7 @@ handle_cast(move, State) ->
 	Msg = <<Opcode?L, Payload/binary>>,
 	gen_server:cast(self(), {send_to_server, Msg}),
 	{noreply, State};
-handle_cast({tcp_packet_rcvd, <<Opcode?LB, Payload/binary>>}, State) ->
+handle_cast({tcp_packet_rcvd, <<Opcode?L, Payload/binary>>}, State) ->
 	handle_response(Opcode, Payload),
 	{noreply, State};
 handle_cast({send_to_server, Msg}, S=#state{send_pid = SendPid}) ->

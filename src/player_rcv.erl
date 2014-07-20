@@ -39,13 +39,10 @@ challenge(_, State = #state{socket=Socket}) ->
 	gen_tcp:send(Socket, Msg),
 	rcv_challenge(ok, State).
 rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid}) ->
-	{ok, Packet} = gen_tcp:recv(Socket, 2),
-	<<Length?WO>> = Packet,
+	{ok, <<Length?WO>>} = gen_tcp:recv(Socket, 2),
 	%io:format("received world challenge with length ~p~n", [Length]),
-	{ok, PacketData} = gen_tcp:recv(Socket, Length),
+	{ok, <<Opcode?L, Msg/binary>>} = gen_tcp:recv(Socket, Length),
 	%io:format("received world challenge data~n"),
-	Opcode = opcode_patterns:getNumByAtom(cmsg_auth_session),
-	<<Opcode?L, Msg/binary>> = PacketData,
 
 	{_ResponseName, ResponseData, AccountId, KeyState} = auth_session(Msg),
 	%% now authorized
@@ -63,7 +60,7 @@ rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid}) ->
 		transient, 5000, worker, [ControllerName]},
 	{ok, _} = supervisor:start_child(ParentPid, ControlSpec),
 
-	Payload = <<Opcode?LB, ResponseData/binary>>,
+	Payload = <<Opcode?L, ResponseData/binary>>,
 	Pid = world:get_pid(AccountId),
 	gen_server:cast(Pid, {tcp_packet_rcvd, Payload}),
 	rcv(ok, State#state{key_state=KeyState, account_id=AccountId}).
@@ -73,20 +70,17 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account
 	case gen_tcp:recv(Socket, HdrLen) of
 		{ok, EncryptedHeader} ->
 			%io:format("received encrypted header: ~p~n", [EncryptedHeader]),
-			{Header, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
-			%io:format("decrypted header: ~p~n", [Header]),
+			{<<LengthRaw?WO, Opcode?L>>, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
 
-			<<LengthRaw?WO, Opcode?L>> = Header,
 			Length = LengthRaw - 4,
-			io:format("player rcv: received opcode ~p with length ~p on account ~p~n", [Opcode, Length, AccountId]),
+			%io:format("player rcv: received opcode ~p with length ~p on account ~p~n", [Opcode, Length, AccountId]),
 			Rest = if Length > 0 ->
 					{ok, Data} = gen_tcp:recv(Socket, Length),
 					Data;
 				true -> <<"">>
 			end,
 			%io:format("rcv: received payload ~p~n", [Rest]),
-			Payload = <<Opcode?LB, Rest/binary>>,
-			Msg = {tcp_packet_rcvd, Payload},
+			Msg = {tcp_packet_rcvd, <<Opcode?L, Rest/binary>>},
 			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
 			Pid = world:get_pid(AccountId),
 			gen_server:cast(Pid, Msg),
@@ -132,7 +126,7 @@ buildAuthChallenge() ->
 auth_session(Rest) ->
     {_, A, _}      = cmsg_auth_session(Rest),
     Data   = smsg_auth_response(),
-		io:format("authorizing session for ~p~n", [A]),
+		%io:format("authorizing session for ~p~n", [A]),
     K      = world_crypto:encryption_key(A),
     KTup     = {0, 0, K},
     {smsg_auth_response, Data, A, KTup}.
