@@ -12,30 +12,30 @@
 -define(MAP_HALFSIZE, ?MAP_SIZE/2).
 
 
-move_fall_land(_PropList, _AccountId) ->
+move_fall_land(_Data, _AccountId) ->
 	io:format("received req to move time land~n"),
 	ok.
 
 
-move_time_skipped(_PropList, _AccountId) ->
+move_time_skipped(_Data, _AccountId) ->
 	io:format("received req to move time skipped~n"),
 	ok.
 
-stand_state_change(_PropList, _AccountId) ->
+stand_state_change(_Data, _AccountId) ->
 	io:format("received req to set stand state change~n"),
 	ok.
 
-set_active_mover(_PropList, _AccountId) ->
+set_active_mover(_Data, _AccountId) ->
 	% dont need to do anything
 	%io:format("received req to set active mover~n"),
 	ok.
 
-handle_movement(PropList, AccountId) ->
-	Values = proplists:get_value(values, PropList),
+handle_movement(Data, AccountId) ->
+	Values = recv_data:get(values, Data),
 	Guid = object_values:get_uint64_value('OBJECT_FIELD_GUID', Values),
 	PackGuid = <<7?B, Guid?G>>,
 
-	Payload = proplists:get_value(payload, PropList),
+	Payload = recv_data:get(payload, Data),
 	<<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, _Unk1?L>> = Payload,
 	NewPayload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f>>,
 	Allowable = verify_movement(X, Y, Z, O),

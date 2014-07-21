@@ -4,14 +4,14 @@
 -include("include/binary.hrl").
 
 
-query_time(_PropList, AccountId) ->
+query_time(_Data, AccountId) ->
 	Time = util:game_time(),
 	Payload = <<Time?L>>,
 	player_router:send(AccountId, smsg_query_time_response, Payload),
 	ok.
 
-pong(PropList, AccountId) ->
-	Value = proplists:get_value(payload, PropList),
+pong(Data, AccountId) ->
+	Value = recv_data:get(payload, Data),
 	<<Ping?L, _Latency?L>> = case Value of
 		undefined -> throw(badarg);
 		Value -> Value
@@ -21,11 +21,11 @@ pong(PropList, AccountId) ->
 	ok.
 
 
-null(_PropList, _AccountId) ->
+null(_Data, _AccountId) ->
 	ok.
 
-accept_challenge(PropList, AccountId) ->
-	Payload = proplists:get_value(payload, PropList),
+accept_challenge(Data, AccountId) ->
+	Payload = recv_data:get(payload, Data),
 	% payload is created in rcv process and is passed straight through
 	player_router:send(AccountId, smsg_auth_response, Payload),
 	ok.

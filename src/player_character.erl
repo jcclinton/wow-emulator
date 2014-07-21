@@ -46,7 +46,8 @@ init({AccountId, Guid}) ->
 
 handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values}) ->
 	Args = [{payload, Payload}, {op_atom, OpAtom}, {name, CharName}, {char, CharRecord}, {values, Values}],
-	try M:F(Args, AccountId) of
+	Data = recv_data:build(Args),
+	try M:F(Data, AccountId) of
 		_ -> ok
 		catch
 			Error ->

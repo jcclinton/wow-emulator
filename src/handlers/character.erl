@@ -6,12 +6,12 @@
 
 
 
-update_account_data(_PropList, _AccountId) ->
+update_account_data(_Data, _AccountId) ->
 	% dont need to do anything
 	%io:format("received req to update account~n"),
 	ok.
 
-enum(_PropList, AccountId) ->
+enum(_Data, AccountId) ->
 	Chars = char_data:enum_chars(AccountId),
 	%io:format("looking up player name: ~p~n", [AccountId]),
 	%io:format("matched: ~p~n", [Chars]),
@@ -29,8 +29,8 @@ enum(_PropList, AccountId) ->
 	ok.
 
 
-delete(PropList, AccountId) ->
-	Packet = proplists:get_value(payload, PropList),
+delete(Data, AccountId) ->
+	Packet = recv_data:get(payload, Data),
 	<<Guid?Q>> = Packet,
 	CharName = char_data:get_logged_in_char_name(Guid),
 	char_data:delete_char(CharName),
@@ -41,11 +41,11 @@ delete(PropList, AccountId) ->
 	ok.
 
 
-create(PropList, AccountId) ->
+create(Data, AccountId) ->
 	Guid = world:get_guid(),
-	PropList2 = [{guid, Guid} | PropList],
-	Char = create_char_record(PropList2, AccountId),
-	Values = create_char_values(PropList2, Char),
+	Data2 = [{guid, Guid} | Data],
+	Char = create_char_record(Data2, AccountId),
+	Values = create_char_values(Data2, Char),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	CharData = {Char#char.name, Char#char.account_id, Char#char.id, Char, Values},
 	char_data:create_char(CharData),
@@ -54,7 +54,7 @@ create(PropList, AccountId) ->
 	player_router:send(AccountId, smsg_char_create, Msg),
 	ok.
 
-logout(PropList, AccountId) ->
+logout(Data, AccountId) ->
 	Reason = 0, %0 means is ok to logout
 	Wait = 16777216, % set to 0 to set wait time on logout
 	Msg = <<Reason?B, Wait?L>>,
@@ -62,13 +62,13 @@ logout(PropList, AccountId) ->
 	player_router:send(AccountId, smsg_logout_complete, <<>>),
 
 	world:remove_from_map(AccountId),
-	Guid = proplists:get_value(guid, PropList),
+	Guid = recv_data:get(guid, Data),
 	player_router:logout_char(AccountId, Guid),
 	ok.
 
 
-login(PropList, AccountId) ->
-	<<Guid?Q>> = proplists:get_value(payload, PropList),
+login(Data, AccountId) ->
+	<<Guid?Q>> = recv_data:get(payload, Data),
 	player_router:login_char(AccountId, Guid),
 
 
@@ -86,22 +86,22 @@ login(PropList, AccountId) ->
 
 
 	%login packets to send before player is added to map
-	PropList2 = [{char, Char}|PropList],
-	%PropList3 = [{values, Values}|PropList2],
-	account_data_times(PropList2, AccountId),
-	send_motd(PropList2, AccountId),
-	set_rest_start(PropList2, AccountId),
-	bind_point_update(PropList2, AccountId),
-	set_tutorial_flags(PropList2, AccountId),
+	Data2 = [{char, Char}|Data],
+	%Data3 = [{values, Values}|Data2],
+	account_data_times(Data2, AccountId),
+	send_motd(Data2, AccountId),
+	set_rest_start(Data2, AccountId),
+	bind_point_update(Data2, AccountId),
+	set_tutorial_flags(Data2, AccountId),
 
 
-	initial_spells(PropList2, AccountId),
+	initial_spells(Data2, AccountId),
 
-	%send_unlearn_spells(PropList2, AccountId),
-	action_buttons(PropList2, AccountId), % differs
-	initialize_factions(PropList2, AccountId), % differs
-	init_world_state(PropList2, AccountId),
-	login_settimespeed(PropList2, AccountId),
+	%send_unlearn_spells(Data2, AccountId),
+	action_buttons(Data2, AccountId), % differs
+	initialize_factions(Data2, AccountId), % differs
+	init_world_state(Data2, AccountId),
+	login_settimespeed(Data2, AccountId),
 
 
 	%login packets to send after player is added to map
@@ -114,7 +114,7 @@ login(PropList, AccountId) ->
 
 
 
-send_motd(_PropList, AccountId) ->
+send_motd(_Data, AccountId) ->
 	Type = 16#0a,
 	Lang = 0,
 	Guid = 0,
@@ -126,7 +126,7 @@ send_motd(_PropList, AccountId) ->
 	player_router:send(AccountId, smsg_messagechat, Payload),
 	ok.
 
-account_data_times(_PropList, AccountId) ->
+account_data_times(_Data, AccountId) ->
 	% send 32 empty 32 bit words
 	Size = 32 * 32,
 	Payload = <<0:Size/unsigned-little-integer>>,
@@ -134,20 +134,20 @@ account_data_times(_PropList, AccountId) ->
 	player_router:send(AccountId, smsg_account_data_times, Payload),
 	ok.
 
-set_rest_start(_PropList, AccountId) ->
+set_rest_start(_Data, AccountId) ->
 	%GameTime = game_time(),
 	GameTime = 0,
 	Payload = <<GameTime?L>>,
 	player_router:send(AccountId, smsg_set_rest_start, Payload),
 	ok.
 
-set_tutorial_flags(_PropList, AccountId) ->
+set_tutorial_flags(_Data, AccountId) ->
 	Payload = binary:copy(<<16#FFFFFFFF?L>>, 8),
 	player_router:send(AccountId, smsg_tutorial_flags, Payload),
 	ok.
 
-bind_point_update(PropList, AccountId) ->
-	Char = proplists:get_value(char, PropList),
+bind_point_update(Data, AccountId) ->
+	Char = recv_data:get(char, Data),
 	Zone = Char#char.zone_id,
 	Map = Char#char.map_id,
 	X = Char#char.position_x,
@@ -157,7 +157,7 @@ bind_point_update(PropList, AccountId) ->
 	player_router:send(AccountId, smsg_bindpointupdate, Payload),
 	ok.
 
-initial_spells(_PropList, AccountId) ->
+initial_spells(_Data, AccountId) ->
 	Unk = 0,
 	NumSpells = 0,
 	NumSpellsOnCooldown = 0,
@@ -165,32 +165,32 @@ initial_spells(_PropList, AccountId) ->
 	player_router:send(AccountId, smsg_initial_spells, Payload),
 	ok.
 
-%send_unlearn_spells(_PropList, AccountId) ->
+%send_unlearn_spells(_Data, AccountId) ->
 	%Payload = <<0?L>>,
 	%player_router:send(AccountId, smsg_send_unlearn_spells, Payload),
 	%ok.
 
-action_buttons(_PropList, AccountId) ->
+action_buttons(_Data, AccountId) ->
 	Size = 120,
 	Payload = binary:copy(<<0?L>>, Size),
 	player_router:send(AccountId, smsg_action_buttons, Payload),
 	ok.
 
-initialize_factions(_PropList, AccountId) ->
+initialize_factions(_Data, AccountId) ->
 	Size = 64 * 5 * 8,
 	Payload = <<16#40?L, 0:Size/unsigned-little-integer>>,
 	player_router:send(AccountId, smsg_initialize_factions, Payload),
 	ok.
 
-login_settimespeed(_PropList, AccountId) ->
+login_settimespeed(_Data, AccountId) ->
 	GameTime = util:game_time(),
 	Speed = util:game_speed(),
 	Payload = <<GameTime?L, Speed?f>>,
 	player_router:send(AccountId, smsg_login_settimespeed, Payload),
 	ok.
 
-init_world_state(PropList, AccountId) ->
-	Char = proplists:get_value(char, PropList),
+init_world_state(Data, AccountId) ->
+	Char = recv_data:get(char, Data),
 	MapId = Char#char.map_id,
 	ZoneId = Char#char.zone_id,
 	Count = 6,
@@ -274,7 +274,7 @@ mapCharData({_CharName, _AccountName, _, #char{id=Guid, name=Name, race=RaceName
 	BagInventoryType?B>>.
 	
 
-create_char_values(_PropList, Char) ->
+create_char_values(_Data, Char) ->
 	TotalCount = update_fields:get_total_count(player),
 	Values = binary:copy(<<0?L>>, TotalCount),
 
@@ -403,9 +403,9 @@ create_char_values(_PropList, Char) ->
 		
 
 
-create_char_record(PropList, AccountId) ->
-	Payload = proplists:get_value(payload, PropList),
-	Guid = proplists:get_value(guid, PropList),
+create_char_record(Data, AccountId) ->
+	Payload = recv_data:get(payload, Data),
+	Guid = recv_data:get(guid, Data),
 	{Name, NewPayload} = extract_name(Payload),
     <<Race?B, Class?B, Gender?B, Skin?B,
       Face?B, HS?B, HC?B, FH?B, _?B>> = NewPayload,

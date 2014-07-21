@@ -42,7 +42,8 @@ init({AccountId}) ->
 
 handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId}) ->
 	Args = [{payload, Payload}, {op_atom, OpAtom}],
-	try M:F(Args, AccountId) of
+	Data = recv_data:build(Args),
+	try M:F(Data, AccountId) of
 		_ -> ok
 		catch
 			Error -> io:format("error in account: ~p~n", [Error]),
