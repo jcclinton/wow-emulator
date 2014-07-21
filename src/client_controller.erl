@@ -94,7 +94,7 @@ terminate(_Reason, _State) ->
 %private
 
 handle_response(Opcode, Payload) ->
-	OpAtom = opcodes:getAtomByNum(Opcode),
+	OpAtom = opcodes:get_atom_by_num(Opcode),
 	io:format("client looking up opcode: ~p~n", [OpAtom]),
 	Fun = lookup_opcode(OpAtom),
 	if Fun /= false ->

@@ -71,7 +71,7 @@ receive_packet(HdrLen, KeyState, Socket, ShouldDecrypt) ->
 
 
 send_packet(OpAtom, Payload, HdrLen, KeyState, Socket, ShouldEncrypt) ->
-	Opcode = opcodes:getNumByAtom(OpAtom),
+	Opcode = opcodes:get_num_by_atom(OpAtom),
 	OpBin = if HdrLen == ?SEND_HDR_LEN -> <<Opcode?W>>;
 		HdrLen == ?RCV_HDR_LEN -> <<Opcode?L>>
 	end,

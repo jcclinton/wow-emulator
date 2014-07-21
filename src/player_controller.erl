@@ -58,8 +58,8 @@ handle_call(_E, _From, State) ->
 
 handle_cast({tcp_packet_rcvd, {Opcode, Payload}}, S = #state{account_id=AccountId, values=Values}) ->
 	%io:format("looking up opcode ~p for ~p~n", [Opcode, AccountId]),
-	OpcodeAtom = opcodes:getAtomByNum(Opcode),
-	{M, F} = opcodes:getCallbackByNum(OpcodeAtom),
+	OpcodeAtom = opcodes:get_atom_by_num(Opcode),
+	{M, F} = opcodes:get_callback_by_num(OpcodeAtom),
 	Args = [{payload, Payload}, {account_id, AccountId}, {controller_pid, self()}, {values, Values}],
 	NewValues = try M:F(Args) of
 		ok -> Values;
