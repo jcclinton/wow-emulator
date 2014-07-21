@@ -19,7 +19,7 @@
 %% public api
 
 get_pid(AccountId) ->
-	world:get_pid(AccountId ++ "_router").
+	world:build_pid(AccountId, "router").
 
 
 packet_received(AccountId, Opcode, Payload) ->
@@ -27,7 +27,7 @@ packet_received(AccountId, Opcode, Payload) ->
 	gen_server:cast(Pid, {packet_rcvd, Opcode, Payload}).
 
 send(Name, OpAtom, Payload) ->
-	Pid = player_router:get_pid(Name),
+	Pid = get_pid(Name),
 	gen_server:cast(Pid, {send_to_client, OpAtom, Payload}).
 
 login_char(AccountId, Guid) ->

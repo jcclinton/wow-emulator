@@ -17,11 +17,11 @@
 %% public api
 
 send(Name, OpAtom, Payload) ->
-	Pid = player_router:get_pid(Name),
-	player_router:send(Pid, OpAtom, Payload).
+	RouterPid = player_router:get_pid(Name),
+	player_router:send(RouterPid, OpAtom, Payload).
 
 get_pid(AccountId) ->
-	world:get_pid(AccountId ++ "_account").
+	world:build_pid(AccountId, "account").
 
 
 handle_packet(AccountId, OpAtom, M, F, Payload) ->

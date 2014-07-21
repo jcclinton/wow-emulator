@@ -28,7 +28,8 @@ tcp_packet_received(AccountId, Opcode, Payload) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, Msg).
 
-get_pid(Name) -> world:get_pid(Name ++ "client").
+get_pid(Name) ->
+	world:build_pid(Name, "client").
 
 
 
