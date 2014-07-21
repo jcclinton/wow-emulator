@@ -26,10 +26,11 @@ send(Name, OpAtom, Payload) ->
 	send_internal(Pid, OpAtom, Payload).
 
 send_internal(Pid, OpAtom, Payload) ->
-	gen_server:cast(Pid, {send_to_client, {OpAtom, Payload}}).
+	gen_server:cast(Pid, {send_to_client, OpAtom, Payload}).
+
 
 tcp_packet_received(AccountId, Opcode, Payload) ->
-	Msg = {tcp_packet_rcvd, {Opcode, Payload}},
+	Msg = {tcp_packet_rcvd, Opcode, Payload},
 	%% sends to a process that handles the operation for this opcode, probaly a 'user' process
 	Pid = world:get_pid(AccountId),
 	gen_server:cast(Pid, Msg).
@@ -56,10 +57,10 @@ init({AccountId, SendPid}) ->
 handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
-handle_cast({tcp_packet_rcvd, {Opcode, Payload}}, S = #state{account_id=AccountId, values=Values}) ->
+handle_cast({tcp_packet_rcvd, Opcode, Payload}, S = #state{account_id=AccountId, values=Values}) ->
 	%io:format("looking up opcode ~p for ~p~n", [Opcode, AccountId]),
-	OpcodeAtom = opcodes:get_atom_by_num(Opcode),
-	{M, F} = opcodes:get_callback_by_num(OpcodeAtom),
+	OpAtom = opcodes:get_atom_by_num(Opcode),
+	{M, F} = opcodes:get_callback_by_num(OpAtom),
 	Args = [{payload, Payload}, {account_id, AccountId}, {controller_pid, self()}, {values, Values}],
 	NewValues = try M:F(Args) of
 		ok -> Values;
@@ -70,8 +71,9 @@ handle_cast({tcp_packet_rcvd, {Opcode, Payload}}, S = #state{account_id=AccountI
 			badarg -> Values
 		end,
 	{noreply, S#state{values=NewValues}};
-handle_cast({send_to_client, Msg}, S=#state{send_pid = SendPid}) ->
-	gen_fsm:send_event(SendPid, {send, Msg}),
+handle_cast({send_to_client, OpAtom, Payload}, S=#state{send_pid = SendPid}) ->
+	Opcode = opcodes:get_num_by_atom(OpAtom),
+	player_send:send_msg(SendPid, Opcode, Payload),
 	{noreply, S};
 handle_cast(Msg, S) ->
 	io:format("unknown casted message: ~p~n", [Msg]),

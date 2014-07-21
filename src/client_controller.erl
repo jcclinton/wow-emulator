@@ -62,8 +62,9 @@ handle_cast(move, State) ->
 handle_cast({tcp_packet_rcvd, {Opcode, Payload}}, State) ->
 	handle_response(Opcode, Payload),
 	{noreply, State};
-handle_cast({send_to_server, Msg}, S=#state{send_pid = SendPid}) ->
-	gen_fsm:send_event(SendPid, {send, Msg}),
+handle_cast({send_to_server, {OpAtom, Payload}}, S=#state{send_pid = SendPid}) ->
+	Opcode = opcodes:get_num_by_atom(OpAtom),
+	client_send:send_msg(SendPid, Opcode, Payload),
 	{noreply, S};
 handle_cast(Msg, S) ->
 	io:format("unknown casted message: ~p~n", [Msg]),

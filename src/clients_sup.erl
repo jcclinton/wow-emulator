@@ -21,5 +21,5 @@ init([]) ->
 	{ok, {{simple_one_for_one, 0, 5},
 				[{client_sup,
 					{client_sup, start_link, []},
-					temporary, 10000, worker, [client_sup]}
+					temporary, 1000, worker, [client_sup]}
 				]}}.

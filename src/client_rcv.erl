@@ -33,11 +33,12 @@ connect(ok, State=#state{account_id=Account}) ->
 	world_challenge(ok, State#state{socket=Socket, rcv_key=KTup}).
 world_challenge(_, State = #state{socket=Socket, account_id=AccountId, rcv_key=KeyState, parent_pid=ParentPid, hdr_len=HdrLen}) ->
 
-	try world_crypto:receive_packet(HdrLen, _KeyStateReceive=nil, Socket, _ShouldDecrypt=false) of
+	try network:receive_packet(HdrLen, _KeyStateReceive=nil, Socket, _ShouldDecrypt=false) of
 		{_Opcode, _Payload, _} ->
 			Name = list_to_binary(AccountId),
 			PayloadOut = <<1?L, 1?L, Name/binary, 0?B, 0?B>>,
-			world_crypto:send_packet(cmsg_auth_session, PayloadOut, ?RCV_HDR_LEN, _KeyStateSend=nil, Socket, _ShouldEncrypt=false),
+			Opcode = opcodes:get_num_by_atom(cmsg_auth_session),
+			network:send_packet(Opcode, PayloadOut, ?RCV_HDR_LEN, _KeyStateSend=nil, Socket, _ShouldEncrypt=false),
 
 			start_siblings(Socket, KeyState, AccountId, ParentPid),
 
@@ -47,7 +48,7 @@ world_challenge(_, State = #state{socket=Socket, account_id=AccountId, rcv_key=K
 	end.
 
 rcv(ok, State = #state{socket=Socket, hdr_len=HdrLen, rcv_key=KeyState, account_id=AccountId}) ->
-	try world_crypto:receive_packet(HdrLen, KeyState, Socket, _ShouldDecrypt=true) of
+	try network:receive_packet(HdrLen, KeyState, Socket, _ShouldDecrypt=true) of
 		{Opcode, Payload, NewKeyState} ->
 			client_controller:tcp_packet_received(AccountId, Opcode, Payload),
 			rcv(ok, State#state{rcv_key=NewKeyState})

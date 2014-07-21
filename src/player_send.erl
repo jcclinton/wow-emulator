@@ -6,6 +6,7 @@
 				 handle_info/3, terminate/3, code_change/4]).
 -export([send/2]).
 -export([upgrade/0]).
+-export([send_msg/3]).
 
 -include("include/binary.hrl").
 -include("include/network_defines.hrl").
@@ -14,6 +15,14 @@
 	key_state,
 	hdr_len
 				}).
+
+%% public api
+send_msg(SendPid, Opcode, Payload) ->
+	gen_fsm:send_event(SendPid, {send, Opcode, Payload}).
+
+
+
+%% behavior callbacks
 
 start_link(Socket, KeyState) ->
     gen_fsm:start_link(?MODULE, {Socket, KeyState}, []).
@@ -24,8 +33,8 @@ init({Socket, KeyState}) ->
     {ok, send, #state{socket=Socket, key_state=KeyState, hdr_len=?SEND_HDR_LEN}}.
 
 
-send({send, {OpAtom, Payload}}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen}) ->
-	try world_crypto:send_packet(OpAtom, Payload, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
+send({send, Opcode, Payload}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen}) ->
+	try network:send_packet(Opcode, Payload, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
 		NewKeyState -> {next_state, send, State#state{key_state=NewKeyState}}
 	catch
 		Error -> {stop, Error, State}

@@ -34,13 +34,14 @@ accept({accept, ListenSocket}, State) ->
 	players_sup:start_socket(),
 	io:format("WORLD received accept socket: ~p~n", [AcceptSocket]),
 	challenge(ok, State#state{socket=AcceptSocket}).
-challenge(ok, State = #state{socket=Socket}) ->
+challenge(_, State = #state{socket=Socket}) ->
 	Seed   = random:uniform(16#FFFFFFFF),
 	Payload = <<Seed?L>>,
-	world_crypto:send_packet(smsg_auth_challenge, Payload, ?SEND_HDR_LEN, _KeyState=nil, Socket, _ShouldEncrypt=false),
+	Opcode = opcodes:get_num_by_atom(smsg_auth_challenge),
+	network:send_packet(Opcode, Payload, ?SEND_HDR_LEN, _KeyState=nil, Socket, _ShouldEncrypt=false),
 	rcv_challenge(ok, State).
-rcv_challenge(ok, State = #state{socket=Socket, parent_pid=ParentPid, hdr_len=HdrLen}) ->
-	try world_crypto:receive_packet(HdrLen, _KeyState=nil, Socket, _ShouldDecrypt=false) of
+rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid, hdr_len=HdrLen}) ->
+	try network:receive_packet(HdrLen, _KeyState=nil, Socket, _ShouldDecrypt=false) of
 		{Opcode, PayloadIn, _} ->
 			{PayloadOut, AccountId, KeyState} = auth_session(PayloadIn),
 			%% now authorized
@@ -52,8 +53,8 @@ rcv_challenge(ok, State = #state{socket=Socket, parent_pid=ParentPid, hdr_len=Hd
 	catch
 		Error -> {stop, Error, State}
 	end.
-rcv(ok, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account_id=AccountId}) ->
-	try world_crypto:receive_packet(HdrLen, KeyState, Socket, _ShouldDecrypt=true) of
+rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account_id=AccountId}) ->
+	try network:receive_packet(HdrLen, KeyState, Socket, _ShouldDecrypt=true) of
 		{Opcode, Payload, NewKeyState} ->
 			%io:format("rcv: received payload ~p~n", [Rest]),
 			player_controller:tcp_packet_received(AccountId, Opcode, Payload),
@@ -63,22 +64,22 @@ rcv(ok, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, accoun
 	end.
 
 %% callbacks
-handle_info(_Info, State, Data) ->
-	{next_state, State, Data}.
+handle_info(_Info, StateName, State) ->
+	{next_state, StateName, State}.
 
-handle_event(_Event, State, Data) ->
-	{next_state, State, Data}.
+handle_event(_Event, StateName, State) ->
+	{next_state, StateName, State}.
 
-handle_sync_event(_Event, _From, State, Data) ->
-	{next_state, State, Data}.
+handle_sync_event(_Event, _From, StateName, State) ->
+	{next_state, StateName, State}.
 
-terminate(_Reason, State, _Data) ->
+terminate(_Reason, StateName, _State) ->
 	io:format("WORLD RCV: closing connected realm_socket~n"),
-	catch gen_tcp:close(State#state.socket),
+	catch gen_tcp:close(StateName#state.socket),
 	ok.
 
-code_change(_OldVsn, State, Data, _Extra) ->
-	{ok, State, Data}.
+code_change(_OldVsn, StateName, State, _Extra) ->
+	{ok, StateName, State}.
 
 
 upgrade() -> ok.
