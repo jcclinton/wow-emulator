@@ -40,7 +40,7 @@ handle_movement(PropList) ->
 	NewPayload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f>>,
 	Allowable = verify_movement(X, Y, Z, O),
 	Msg = <<PackGuid/binary, NewPayload/binary>>,
-	io:format("moveflags: ~p pos: {~p,~p,~p,~p} time: ~p unk1: ~p~n", [MoveFlags, X, Y, Z, O, Time, Unk1]),
+	%io:format("moveflags: ~p pos: {~p,~p,~p,~p} time: ~p unk1: ~p~n", [MoveFlags, X, Y, Z, O, Time, Unk1]),
 	if Allowable ->
 			AccountId = proplists:get_value(account_id, PropList),
 			world:send_to_all_but_player(msg_move_start_forward, Msg, AccountId);

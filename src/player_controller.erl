@@ -54,10 +54,10 @@ init({AccountId, SendPid}) ->
 	{ok, #state{values=Values, send_pid=SendPid, account_id=AccountId}}.
 
 
-handle_call(_E, _From, State) ->
+handle_call(_Msg, _From, State) ->
 	{reply, ok, State}.
 
-handle_cast({tcp_packet_rcvd, Opcode, Payload}, S = #state{account_id=AccountId, values=Values}) ->
+handle_cast({tcp_packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId, values=Values}) ->
 	%io:format("looking up opcode ~p for ~p~n", [Opcode, AccountId]),
 	OpAtom = opcodes:get_atom_by_num(Opcode),
 	{M, F} = opcodes:get_callback_by_num(OpAtom),
@@ -70,14 +70,14 @@ handle_cast({tcp_packet_rcvd, Opcode, Payload}, S = #state{account_id=AccountId,
 		catch
 			badarg -> Values
 		end,
-	{noreply, S#state{values=NewValues}};
-handle_cast({send_to_client, OpAtom, Payload}, S=#state{send_pid = SendPid}) ->
+	{noreply, State#state{values=NewValues}};
+handle_cast({send_to_client, OpAtom, Payload}, State=#state{send_pid = SendPid}) ->
 	Opcode = opcodes:get_num_by_atom(OpAtom),
 	player_send:send_msg(SendPid, Opcode, Payload),
-	{noreply, S};
-handle_cast(Msg, S) ->
+	{noreply, State};
+handle_cast(Msg, State) ->
 	io:format("unknown casted message: ~p~n", [Msg]),
-	{noreply, S}.
+	{noreply, State}.
 
 handle_info(upgrade, State) ->
 	%% loads latest code

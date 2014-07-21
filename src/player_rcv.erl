@@ -121,7 +121,7 @@ start_siblings(Socket, KeyState, AccountId, ParentPid) ->
 			ControllerName = player_controller_sup,
 			ControlSpec = {ControllerName,
 				{ControllerName, start_link, [AccountId, SendPid]},
-				transient, 5000, worker, [ControllerName]},
+				permanent, 5000, supervisor, [ControllerName]},
 			{ok, _} = supervisor:start_child(ParentPid, ControlSpec),
 
 			ok.

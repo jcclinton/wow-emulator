@@ -20,5 +20,5 @@ init(ListenSocket) ->
 getChildSpecs(ListenSocket) ->[
 				{player_rcv,
 					{player_rcv, start_link, [ListenSocket, self()]},
-					transient, 10000, worker, [player_rcv]}
+					transient, 5000, worker, [player_rcv]}
 					].
