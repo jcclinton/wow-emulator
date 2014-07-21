@@ -8,6 +8,7 @@
 -export([upgrade/0]).
 
 -include("include/binary.hrl").
+-include("include/network_defines.hrl").
 
 -record(state, {socket,
 				hdr_len,
@@ -24,7 +25,7 @@ start_link(ListenSocket, ParentPid) ->
 init({ListenSocket, ParentPid}) ->
 		io:format("WORLD starting rcv~n"),
     gen_fsm:send_event(self(), {accept, ListenSocket}),
-    {ok, accept, #state{hdr_len=6, parent_pid=ParentPid}}.
+    {ok, accept, #state{hdr_len=?RCV_HDR_LEN, parent_pid=ParentPid}}.
 
 accept({accept, ListenSocket}, State) ->
 	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
@@ -34,9 +35,9 @@ accept({accept, ListenSocket}, State) ->
 	io:format("WORLD received accept socket: ~p~n", [AcceptSocket]),
 	challenge(ok, State#state{socket=AcceptSocket}).
 challenge(_, State = #state{socket=Socket}) ->
-	Msg = buildAuthChallenge(),
-	%io:format("sending auth challenge~n"),
-	gen_tcp:send(Socket, Msg),
+	Seed   = random:uniform(16#FFFFFFFF),
+	Payload = <<Seed?L>>,
+	world_crypto:send_packet(smsg_auth_challenge, Payload, ?SEND_HDR_LEN, <<>>, Socket, false),
 	rcv_challenge(ok, State).
 rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid}) ->
 	{ok, <<Length?WO>>} = gen_tcp:recv(Socket, 2),
@@ -112,16 +113,6 @@ upgrade() -> ok.
 
 
 %% private
-buildAuthChallenge() ->
-	Opcode = opcodes:getNumByAtom(smsg_auth_challenge),
-	Seed   = random:uniform(16#FFFFFFFF),
-	Msg = [
-	 O = <<Opcode?W>>,
-	 S = <<Seed?L>>
-	],
-	Length = size(O) + size(S),
-	[<<Length?WO>>, Msg].
-
 
 auth_session(Rest) ->
     {_, A, _}      = cmsg_auth_session(Rest),

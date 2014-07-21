@@ -39,7 +39,7 @@ init({AccountId, SendPid}) ->
 
 
 handle_cast(move, State) ->
-	Opcode = 16#0B5,
+	OpAtom = msg_move_start_forward,
 	Char = #char{ position_x = -8949.95, position_y = -132.493, position_z = 83.5312, orientation = 0},
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
@@ -49,8 +49,7 @@ handle_cast(move, State) ->
 	Unk1 = 0,
 	MoveFlags = 1,
 	Payload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>>,
-	Msg = <<Opcode?L, Payload/binary>>,
-	gen_server:cast(self(), {send_to_server, Msg}),
+	gen_server:cast(self(), {send_to_server, {OpAtom, Payload}}),
 	{noreply, State};
 handle_cast({tcp_packet_rcvd, <<Opcode?L, Payload/binary>>}, State) ->
 	handle_response(Opcode, Payload),
@@ -87,13 +86,13 @@ terminate(_Reason, _State) ->
 %private
 
 handle_response(Opcode, Payload) ->
-		io:format("client looking up opcode: ~p~n", [Opcode]),
-	Fun = lookup_opcode(Opcode),
+	OpAtom = opcodes:getAtomByNum(Opcode),
+	io:format("client looking up opcode: ~p~n", [OpAtom]),
+	Fun = lookup_opcode(OpAtom),
 	if Fun /= false ->
 			case Fun(Payload) of
 				false -> ok;
-				{OutOpcode, Response} ->
-					Msg = <<OutOpcode?L, Response/binary>>,
+				Msg ->
 					gen_server:cast(self(), {send_to_server, Msg}),
 					ok
 			end;
@@ -101,8 +100,8 @@ handle_response(Opcode, Payload) ->
 			ok
 	end.
 
-lookup_opcode(16#03B) -> fun player_login/1;
-lookup_opcode(16#1EE) -> fun send_char_enum/1;
+lookup_opcode(smsg_char_enum) -> fun player_login/1;
+lookup_opcode(smsg_auth_response) -> fun send_char_enum/1;
 lookup_opcode(_) -> false.
 
 
@@ -142,11 +141,9 @@ player_login(Payload) ->
 	Name = [NameNum1, NameNum2, NameNum3, NameNum4],
 	io:format("received enum with ~p chars. name: ~p guid: ~p~n", [Num, Name, Guid]),
 	% send login
-	Opcode = 16#003D,
-	{Opcode, <<Guid?Q>>}.
+	{cmsg_player_login, <<Guid?Q>>}.
 
 
 send_char_enum(_) ->
-	Opcode = 16#0037,
-	{Opcode, <<0?L>>}.
+	{cmsg_char_enum, <<0?L>>}.
 		

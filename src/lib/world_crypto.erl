@@ -1,6 +1,7 @@
 -module(world_crypto).
 
 -export([encrypt/2, decrypt/2, encryption_key/1]).
+-export([send_packet/6]).
 
 -include("binary.hrl").
 
@@ -32,3 +33,18 @@ decrypt(<<OldByte?B, Header/binary>>, {RI, RJ, K}, Result) ->
 encryption_key(A) ->
 	K = char_data:get_session_key(A),
 	binary_to_list(K).
+
+
+send_packet(OpAtom, Payload, HdrLen, KeyState, Socket, ShouldEncrypt) ->
+	Opcode = opcodes:getNumByAtom(OpAtom),
+	OpBin = if HdrLen == 4 -> <<Opcode?W>>;
+		HdrLen == 6 -> <<Opcode?L>>
+	end,
+	Length = size(OpBin) + size(Payload),
+	Header = <<Length?WO, OpBin/binary>>,
+	{HeaderOut, NewKeyState} = if ShouldEncrypt -> encrypt(Header, KeyState);
+		not ShouldEncrypt -> {Header, KeyState}
+	end,
+	Packet = <<HeaderOut/binary, Payload/binary>>,
+	gen_tcp:send(Socket, Packet),
+	NewKeyState.

@@ -8,9 +8,11 @@
 -export([upgrade/0]).
 
 -include("include/binary.hrl").
+-include("include/network_defines.hrl").
 
 -record(state, {socket,
-	key_state
+	key_state,
+	hdr_len
 				}).
 
 start_link(Socket, KeyState) ->
@@ -19,17 +21,11 @@ start_link(Socket, KeyState) ->
 init({Socket, KeyState}) ->
 	io:format("client: starting send~n"),
 	process_flag(trap_exit, true),
-    {ok, send, #state{socket=Socket, key_state=KeyState}}.
+    {ok, send, #state{socket=Socket, key_state=KeyState, hdr_len=?RCV_HDR_LEN}}.
 
 
-send({send, <<ResponseOpcode?L, ResponseData/binary>>}, State = #state{socket=Socket, key_state=KeyState}) ->
-	Length = size(ResponseData) + 4,
-	Header = <<Length?WO, ResponseOpcode?L>>,
-	%io:format("client sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),
-	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
-	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
-	%io:format("sending packet: ~p~n", [Packet]),
-	gen_tcp:send(Socket, Packet),
+send({send, {OpAtom, Payload}}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen}) ->
+	NewKeyState = world_crypto:send_packet(OpAtom, Payload, HdrLen, KeyState, Socket, true),
 	{next_state, send, State#state{key_state=NewKeyState}}.
 
 upgrade() -> ok.

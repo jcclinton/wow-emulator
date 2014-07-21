@@ -9,6 +9,7 @@
 -export([get_pid/1]).
 
 -include("include/binary.hrl").
+-include("include/network_defines.hrl").
 
 -record(state, {socket,
 				hdr_len,
@@ -23,7 +24,7 @@ start_link(ParentPid, Account) ->
 init({ParentPid, Account}) ->
 	io:format("client starting rcv~n"),
 	gen_fsm:send_event(self(), ok),
-	{ok, connect, #state{hdr_len=4, parent_pid=ParentPid, account_id=Account}}.
+	{ok, connect, #state{hdr_len=?SEND_HDR_LEN, parent_pid=ParentPid, account_id=Account}}.
 
 connect(ok, State=#state{account_id=Account}) ->
 	process_flag(trap_exit, true),
@@ -31,17 +32,15 @@ connect(ok, State=#state{account_id=Account}) ->
 	{ok, Port} = application:get_env(world_port),
 	{ok, Socket} = gen_tcp:connect({127,0,0,1}, Port, [binary, {active, false}]),
 	world_challenge(ok, State#state{socket=Socket, rcv_key=KTup}).
-world_challenge(_, State = #state{socket=Socket, hdr_len=HdrLen, account_id=Account, rcv_key=KeyState, parent_pid=ParentPid}) ->
+world_challenge(_, State = #state{socket=Socket, account_id=Account, rcv_key=KeyState, parent_pid=ParentPid}) ->
 
 	%io:format("CLIENT: received auth challenge~n"),
 	{ok, <<Length?WO>>} = gen_tcp:recv(Socket, 2),
 	{ok, <<16#1EC?W, _/binary>>} = gen_tcp:recv(Socket, Length),
-	Opcode = opcodes:getNumByAtom(cmsg_auth_session),
+
 	Name = list_to_binary(Account),
 	Payload = <<1?L, 1?L, Name/binary, 0?B, 0?B>>,
-	PayloadLength = byte_size(Payload) + HdrLen,
-	Packet = <<PayloadLength?WO, Opcode?L, Payload/binary>>,
-	gen_tcp:send(Socket, Packet),
+	world_crypto:send_packet(cmsg_auth_session, Payload, ?RCV_HDR_LEN, <<>>, Socket, false),
 
 	%start siblings
 	SendName = client_send,
