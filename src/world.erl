@@ -76,7 +76,7 @@ handle_cast({send_to_all_but_player, OpAtom, Payload, Name}, State = #state{play
 	% inform other players in list
 	lists:foreach(fun(Player) ->
 		if Player /= Name ->
-				player_controller:send(Player, OpAtom, Payload);
+				player_router:send(Player, OpAtom, Payload);
 			Player == Name -> ok
 		end
 	end, Players),

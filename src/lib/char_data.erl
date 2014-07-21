@@ -52,5 +52,5 @@ create_char(CharData) ->
 get_char_data(Guid) ->
 	case ets:match_object(?char, {'_', '_', Guid, '_', '_'}) of
 		[] -> throw(badarg);
-		[{_,_,Guid,Char, Values}] -> {Char, Values}
+		[All] -> All
 	end.

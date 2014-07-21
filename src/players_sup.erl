@@ -20,7 +20,7 @@ init([]) ->
 	{ok, {{simple_one_for_one, 60, 3600},
 				[{player_sup,
 					{player_sup, start_link, [ListenSocket]},
-					temporary, 10000, supervisor, [player_sup]}
+					temporary, 11000, supervisor, [player_sup]}
 				]}}.
 
 start_socket() ->

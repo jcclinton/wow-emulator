@@ -1,6 +1,6 @@
 -module(movement).
--export([handle_movement/1, set_active_mover/1, stand_state_change/1, move_time_skipped/1]).
--export([move_fall_land/1]).
+-export([handle_movement/2, set_active_mover/2, stand_state_change/2, move_time_skipped/2]).
+-export([move_fall_land/2]).
 -export([null/0]).
 
 -include("include/binary.hrl").
@@ -12,37 +12,36 @@
 -define(MAP_HALFSIZE, ?MAP_SIZE/2).
 
 
-move_fall_land(_PropList) ->
+move_fall_land(_PropList, _AccountId) ->
 	io:format("received req to move time land~n"),
 	ok.
 
 
-move_time_skipped(_PropList) ->
+move_time_skipped(_PropList, _AccountId) ->
 	io:format("received req to move time skipped~n"),
 	ok.
 
-stand_state_change(_PropList) ->
+stand_state_change(_PropList, _AccountId) ->
 	io:format("received req to set stand state change~n"),
 	ok.
 
-set_active_mover(_PropList) ->
+set_active_mover(_PropList, _AccountId) ->
 	% dont need to do anything
 	%io:format("received req to set active mover~n"),
 	ok.
 
-handle_movement(PropList) ->
+handle_movement(PropList, AccountId) ->
 	Values = proplists:get_value(values, PropList),
 	Guid = object_values:get_uint64_value('OBJECT_FIELD_GUID', Values),
 	PackGuid = <<7?B, Guid?G>>,
 
 	Payload = proplists:get_value(payload, PropList),
-	<<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>> = Payload,
+	<<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, _Unk1?L>> = Payload,
 	NewPayload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f>>,
 	Allowable = verify_movement(X, Y, Z, O),
 	Msg = <<PackGuid/binary, NewPayload/binary>>,
 	%io:format("moveflags: ~p pos: {~p,~p,~p,~p} time: ~p unk1: ~p~n", [MoveFlags, X, Y, Z, O, Time, Unk1]),
 	if Allowable ->
-			AccountId = proplists:get_value(account_id, PropList),
 			world:send_to_all_but_player(msg_move_start_forward, Msg, AccountId);
 		not Allowable ->
 			io:format("bad movement data passed in: ~p~n", [Payload]),
