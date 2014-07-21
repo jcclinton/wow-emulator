@@ -6,9 +6,8 @@
 
 query_time(_PropList) ->
 	Time = util:game_time(),
-	Opcode = opcodes:getNumByAtom(smsg_query_time_response),
-	Msg = <<Opcode?W, Time?L>>,
-	player_controller:send(Msg),
+	Payload = <<Time?L>>,
+	player_controller:send(smsg_query_time_response, Payload),
 	ok.
 
 pong(PropList) ->
@@ -17,22 +16,17 @@ pong(PropList) ->
 		undefined -> throw(badarg);
 		Value -> Value
 	end,
-	Opcode = opcodes:getNumByAtom(smsg_pong),
-	Msg = <<Opcode?W, Ping?L>>,
-	player_controller:send(Msg),
+	Payload = <<Ping?L>>,
+	player_controller:send(smsg_pong, Payload),
 	ok.
 
 
 null(_PropList) ->
-	%Opcode = opcodes:getNumByAtom(msg_null_action),
-	%Msg = <<Opcode?W>>,
-	%player_controller:send(Msg),
+	%player_controller:send(msg_null_action, <<>>),
 	ok.
 
 accept_challenge(PropList) ->
 	Payload = proplists:get_value(payload, PropList),
-	Opcode = opcodes:getNumByAtom(smsg_auth_response),
 	% payload is created in rcv process and is passed straight through
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_auth_response, Payload),
 	ok.

@@ -10,18 +10,21 @@
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([send/1, send/2]).
+-export([send/2, send/3]).
 -compile([export_all]).
 
 
 -include("include/binary.hrl").
 
 %send message to self
-send(Msg) ->
-	gen_server:cast(self(), {send_to_client, Msg}).
-send(Name, Msg) ->
+send(OpAtom, Payload) ->
+	send_internal(self(), OpAtom, Payload).
+send(Name, OpAtom, Payload) ->
 	Pid = world:get_pid(Name),
-	gen_server:cast(Pid, {send_to_client, Msg}).
+	send_internal(Pid, OpAtom, Payload).
+
+send_internal(Pid, OpAtom, Payload) ->
+	gen_server:cast(Pid, {send_to_client, {OpAtom, Payload}}).
 
 
 

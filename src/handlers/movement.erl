@@ -35,18 +35,15 @@ handle_movement(PropList) ->
 	Guid = object_values:get_uint64_value('OBJECT_FIELD_GUID', Values),
 	PackGuid = <<7?B, Guid?G>>,
 
-	Opcode = opcodes:getNumByAtom(msg_move_start_forward),
 	Payload = proplists:get_value(payload, PropList),
 	<<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>> = Payload,
 	NewPayload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f>>,
 	Allowable = verify_movement(X, Y, Z, O),
-	Msg = <<Opcode?W, PackGuid/binary, NewPayload/binary>>,
-	%io:format("moveflags: ~p~ntime: ~p~nopcode: ~p~npayload: ~p~n", [MoveFlags, Time, Opcode, Payload]),
+	Msg = <<PackGuid/binary, NewPayload/binary>>,
 	io:format("moveflags: ~p pos: {~p,~p,~p,~p} time: ~p unk1: ~p~n", [MoveFlags, X, Y, Z, O, Time, Unk1]),
-	%io:format("opcode: ~p rest: {~p}~n", [Opcode, Unk1]),
 	if Allowable ->
 			AccountId = proplists:get_value(account_id, PropList),
-			world:send_to_all_but_player(Msg, AccountId);
+			world:send_to_all_but_player(msg_move_start_forward, Msg, AccountId);
 		not Allowable ->
 			io:format("bad movement data passed in: ~p~n", [Payload]),
 			ok

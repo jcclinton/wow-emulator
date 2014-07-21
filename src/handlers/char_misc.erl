@@ -38,9 +38,8 @@ gmticket_getticket(PropList) ->
 	% send time response first
 	ok = server:query_time(PropList),
 
-	Opcode = opcodes:getNumByAtom(smsg_gmticket_getticket),
-	Msg = <<Opcode?W, 16#0A?L>>,
-	player_controller:send(Msg),
+	Payload = <<16#0A?L>>,
+	player_controller:send(smsg_gmticket_getticket, Payload),
 	ok.
 
 cancel_trade(_PropList) ->
@@ -48,9 +47,8 @@ cancel_trade(_PropList) ->
 	ok.
 
 request_raid_info(_PropList) ->
-	Opcode = opcodes:getNumByAtom(smsg_raid_instance_info),
-	Msg = <<Opcode?W, 0?L>>,
-	player_controller:send(Msg),
+	Payload = <<0?L>>,
+	player_controller:send(smsg_raid_instance_info, Payload),
 	ok.
 
 
@@ -58,11 +56,10 @@ name_query(PropList) ->
 	Values = proplists:get_value(values, PropList),
 	Guid = object_values:get_uint64_value('OBJECT_FIELD_GUID', Values),
 	Name = char_data:get_logged_in_char_name(Guid),
-	Opcode = opcodes:getNumByAtom(smsg_name_query_response),
 	Null = <<"\0">>,
 	Race = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 0),
 	Gender = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 1),
 	Class = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 2),
-	Msg = <<Opcode?W, Guid?Q, Name/binary, Null/binary, Race?L, Gender?L, Class?L>>,
-	player_controller:send(Msg),
+	Payload = <<Guid?Q, Name/binary, Null/binary, Race?L, Gender?L, Class?L>>,
+	player_controller:send(smsg_name_query_response, Payload),
 	ok.

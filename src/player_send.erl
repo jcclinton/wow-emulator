@@ -22,12 +22,13 @@ init({Socket, KeyState}) ->
     {ok, send, #state{socket=Socket, key_state=KeyState}}.
 
 
-send({send, <<ResponseOpcode?W, ResponseData/binary>>=Response}, State = #state{socket=Socket, key_state=KeyState}) ->
-	Length = size(Response),
-	Header = <<Length?WO, ResponseOpcode?W>>,
+send({send, {OpAtom, Payload}}, State = #state{socket=Socket, key_state=KeyState}) ->
+	Opcode = opcodes:getNumByAtom(OpAtom),
+	Length = size(<<Opcode?W>>) + size(Payload),
+	Header = <<Length?WO, Opcode?W>>,
 	%io:format("player sending opcode ~p with length ~p~n", [ResponseOpcode, Length]),
 	{EncryptedHeader, NewKeyState} = world_crypto:encrypt(Header, KeyState),
-	Packet = <<EncryptedHeader/binary, ResponseData/binary>>,
+	Packet = <<EncryptedHeader/binary, Payload/binary>>,
 	%io:format("sending packet: ~p~n", [Packet]),
 	gen_tcp:send(Socket, Packet),
 	{next_state, send, State#state{key_state=NewKeyState}}.

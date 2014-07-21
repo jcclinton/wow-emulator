@@ -12,7 +12,7 @@
 -export([get_guid/0]).
 -export([get_pid/1]).
 -export([add_to_map/1, remove_from_map/1, get_map_players/0]).
--export([send_to_all_but_player/2]).
+-export([send_to_all_but_player/3]).
 
 
 -include("include/binary.hrl").
@@ -31,8 +31,8 @@ remove_from_map(Name) ->
 get_map_players() ->
 	gen_server:call(?MODULE, get_map_players).
 
-send_to_all_but_player(Msg, Player) ->
-	gen_server:cast(?MODULE, {send_to_all_but_player, Msg, Player}).
+send_to_all_but_player(OpAtom, Payload, Player) ->
+	gen_server:cast(?MODULE, {send_to_all_but_player, OpAtom, Payload, Player}).
 
 
 get_pid(Pid) when is_pid(Pid) -> Pid;
@@ -72,11 +72,11 @@ handle_call(new_guid, _From, State = #state{current_guid=Guid}) ->
 handle_call(_E, _From, State) ->
 	{noreply, State}.
 
-handle_cast({send_to_all_but_player, Msg, Name}, State = #state{players=Players}) ->
+handle_cast({send_to_all_but_player, OpAtom, Payload, Name}, State = #state{players=Players}) ->
 	% inform other players in list
 	lists:foreach(fun(Player) ->
 		if Player /= Name ->
-				player_controller:send(Player, Msg);
+				player_controller:send(Player, OpAtom, Payload);
 			Player == Name -> ok
 		end
 	end, Players),

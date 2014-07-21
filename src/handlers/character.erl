@@ -16,7 +16,6 @@ enum(PropList) ->
 	Chars = char_data:enum_chars(AccountId),
 	%io:format("looking up player name: ~p~n", [AccountId]),
 	%io:format("matched: ~p~n", [Chars]),
-	Opcode = opcodes:getNumByAtom(smsg_char_enum),
 	Num = length(Chars),
 	CharDataOut2 = if Num > 0 ->
 								CharList = lists:map(fun mapCharData/1, Chars),
@@ -25,9 +24,9 @@ enum(PropList) ->
 								CharData;
 							true -> <<>>
 						end,
-	Msg = <<Opcode?W, Num?B, CharDataOut2/binary>>,
+	Msg = <<Num?B, CharDataOut2/binary>>,
 	%io:format("msg: ~p~n", [Msg]),
-	player_controller:send(Msg),
+	player_controller:send(smsg_char_enum, Msg),
 	ok.
 
 
@@ -37,10 +36,9 @@ delete(PropList) ->
 	CharName = char_data:get_logged_in_char_name(Guid),
 	char_data:delete_char(CharName),
 
-	Opcode = opcodes:getNumByAtom(smsg_char_delete),
 	Success = 16#39,
-	Msg = <<Opcode?W, Success?B>>,
-	player_controller:send(Msg),
+	Msg = <<Success?B>>,
+	player_controller:send(smsg_char_delete, Msg),
 	ok.
 
 
@@ -52,21 +50,17 @@ create(PropList) ->
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	CharData = {Char#char.name, Char#char.account_id, Char#char.id, Char, Values},
 	char_data:create_char(CharData),
-	Opcode = opcodes:getNumByAtom(smsg_char_create),
 	Result = 16#2E, % success
-	Msg = <<Opcode?W, Result?B>>,
-	player_controller:send(Msg),
+	Msg = <<Result?B>>,
+	player_controller:send(smsg_char_create, Msg),
 	Values.
 
 logout(PropList) ->
-	Opcode = opcodes:getNumByAtom(smsg_logout_response),
 	Reason = 0, %0 means is ok to logout
 	Wait = 16777216, % set to 0 to set wait time on logout
-	Msg = <<Opcode?W, Reason?B, Wait?L>>,
-	player_controller:send(Msg),
-	CompleteOpcode = opcodes:getNumByAtom(smsg_logout_complete),
-	Msg2 = <<CompleteOpcode?W>>,
-	player_controller:send(Msg2),
+	Msg = <<Reason?B, Wait?L>>,
+	player_controller:send(smsg_logout_response, Msg),
+	player_controller:send(smsg_logout_complete, <<>>),
 
 	AccountId = proplists:get_value(account_id, PropList),
 	world:remove_from_map(AccountId),
@@ -82,11 +76,9 @@ login(PropList) ->
 	Z = Char#char.position_z,
 	MapId = Char#char.map_id,
 	Orientation = Char#char.orientation,
-	Opcode = opcodes:getNumByAtom(smsg_login_verify_world),
 	Payload = <<MapId?L, X?f, Y?f, Z?f, Orientation?f>>,
 	%io:format("login payload: ~p~n", [Payload]),
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_login_verify_world, Payload),
 
 
 	%login packets to send before player is added to map
@@ -109,18 +101,17 @@ login(PropList) ->
 
 
 	%login packets to send after player is added to map
-	Update = update_object(Char, Values, true),
-	player_controller:send(Update),
+	{OpAtom, Update} = update_object(Char, Values, true),
+	player_controller:send(OpAtom, Update),
 	AccountId = proplists:get_value(account_id, PropList),
-	Update2 = update_object(Char, Values, false),
+	{OpAtom2, Update2} = update_object(Char, Values, false),
 	world:add_to_map(AccountId),
-	world:send_to_all_but_player(Update2, AccountId),
+	world:send_to_all_but_player(OpAtom2, Update2, AccountId),
 	ok.
 
 
 
 send_motd(_Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_messagechat),
 	Type = 16#0a,
 	Lang = 0,
 	Guid = 0,
@@ -129,38 +120,30 @@ send_motd(_Proplist) ->
 	ChatTag = 0,
 	MsgBin = list_to_binary(ChatMsg),
 	Payload = <<Type?B, Lang?L, Guid?Q, Len?L, MsgBin/binary, 0?B, ChatTag?B>>,
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_messagechat, Payload),
 	ok.
 
 account_data_times(_Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_account_data_times),
 	% send 32 empty 32 bit words
 	Size = 32 * 32,
 	Payload = <<0:Size/unsigned-little-integer>>,
-	Msg = <<Opcode?W, Payload/binary>>,
 	io:format("sending account data times~n"),
-	player_controller:send(Msg),
+	player_controller:send(smsg_account_data_times, Payload),
 	ok.
 
 set_rest_start(_Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_set_rest_start),
 	%GameTime = game_time(),
 	GameTime = 0,
 	Payload = <<GameTime?L>>,
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_set_rest_start, Payload),
 	ok.
 
 set_tutorial_flags(_Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_tutorial_flags),
 	Payload = binary:copy(<<16#FFFFFFFF?L>>, 8),
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_tutorial_flags, Payload),
 	ok.
 
 bind_point_update(Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_bindpointupdate),
 	Char = proplists:get_value(char, Proplist),
 	Zone = Char#char.zone_id,
 	Map = Char#char.map_id,
@@ -168,54 +151,42 @@ bind_point_update(Proplist) ->
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
 	Payload = <<X?f, Y?f, Z?f, Map?L, Zone?L>>,
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_bindpointupdate, Payload),
 	ok.
 
 initial_spells(_Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_initial_spells),
 	Unk = 0,
 	NumSpells = 0,
 	NumSpellsOnCooldown = 0,
 	Payload = <<Unk?B, NumSpells?W, NumSpellsOnCooldown?W>>,
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_initial_spells, Payload),
 	ok.
 
 %send_unlearn_spells(_Proplist) ->
-	%Opcode = opcodes:getNumByAtom(smsg_send_unlearn_spells),
 	%Payload = <<0?L>>,
-	%Msg = <<Opcode?W, Payload/binary>>,
-	%player_controller:send(Msg),
+	%player_controller:send(smsg_send_unlearn_spells, Payload),
 	%ok.
 
 action_buttons(_Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_action_buttons),
 	Size = 120,
 	Payload = binary:copy(<<0?L>>, Size),
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_action_buttons, Payload),
 	ok.
 
 initialize_factions(_Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_initialize_factions),
 	Size = 64 * 5 * 8,
 	Payload = <<16#40?L, 0:Size/unsigned-little-integer>>,
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_initialize_factions, Payload),
 	ok.
 
 login_settimespeed(_Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_login_settimespeed),
 	GameTime = util:game_time(),
 	Speed = util:game_speed(),
 	Payload = <<GameTime?L, Speed?f>>,
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_login_settimespeed, Payload),
 	ok.
 
 init_world_state(Proplist) ->
-	Opcode = opcodes:getNumByAtom(smsg_init_world_states),
 	Char = proplists:get_value(char, Proplist),
 	MapId = Char#char.map_id,
 	ZoneId = Char#char.zone_id,
@@ -223,8 +194,7 @@ init_world_state(Proplist) ->
 	%Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
 	Rest = <<16#d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:384/unsigned-big-integer>>,
 	Payload = <<MapId?L, ZoneId?L, Count?W, Rest/binary>>,
-	Msg = <<Opcode?W, Payload/binary>>,
-	player_controller:send(Msg),
+	player_controller:send(smsg_init_world_states, Payload),
 	ok.
 
 			
@@ -237,12 +207,10 @@ update_object(Char, Values, IsSelf) ->
 	Payload = <<BlockCount?L, HasTransport?B, Block/binary>>,
 	PayloadSize = byte_size(Payload),
 	if PayloadSize > 100 ->
-			CompressedOpcode = opcodes:getNumByAtom(smsg_compressed_update_object),
 			CompressedPayload = update_data:compress(Payload),
-			<<CompressedOpcode?W, PayloadSize?L, CompressedPayload/binary>>;
+			{smsg_compressed_update_object, <<PayloadSize?L, CompressedPayload/binary>>};
 		true ->
-			Opcode = opcodes:getNumByAtom(smsg_update_object),
-			<<Opcode?W, Payload/binary>>
+			{smsg_update_object, Payload}
 	end.
 
 
