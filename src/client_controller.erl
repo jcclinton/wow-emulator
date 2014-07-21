@@ -9,8 +9,8 @@
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
+-export([tcp_packet_received/3]).
 -export([move/0]).
--compile([export_all]).
 
 
 -include("include/binary.hrl").
@@ -19,8 +19,16 @@
 
 move() ->
 	AccountId = "ALICE",
-	Pid = client_rcv:get_pid(AccountId),
+	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, move).
+
+tcp_packet_received(AccountId, Opcode, Payload) ->
+	Msg = {tcp_packet_rcvd, {Opcode, Payload}},
+	%% sends to a process that handles the operation for this opcode, probaly a 'user' process
+	Pid = get_pid(AccountId),
+	gen_server:cast(Pid, Msg).
+
+get_pid(Name) -> world:get_pid(Name ++ "client").
 
 
 
@@ -28,7 +36,7 @@ move() ->
 	
 
 start_link(AccountId, SendPid) ->
-	Pid = client_rcv:get_pid(AccountId),
+	Pid = get_pid(AccountId),
 	gen_server:start_link(Pid, ?MODULE, {AccountId, SendPid}, []).
 
 init({AccountId, SendPid}) ->
@@ -51,7 +59,7 @@ handle_cast(move, State) ->
 	Payload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>>,
 	gen_server:cast(self(), {send_to_server, {OpAtom, Payload}}),
 	{noreply, State};
-handle_cast({tcp_packet_rcvd, <<Opcode?L, Payload/binary>>}, State) ->
+handle_cast({tcp_packet_rcvd, {Opcode, Payload}}, State) ->
 	handle_response(Opcode, Payload),
 	{noreply, State};
 handle_cast({send_to_server, Msg}, S=#state{send_pid = SendPid}) ->

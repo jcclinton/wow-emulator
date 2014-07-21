@@ -6,7 +6,6 @@
 				 handle_info/3, terminate/3, code_change/4]).
 -export([connect/2, world_challenge/2, rcv/2]).
 -export([upgrade/0]).
--export([get_pid/1]).
 
 -include("include/binary.hrl").
 -include("include/network_defines.hrl").
@@ -32,52 +31,29 @@ connect(ok, State=#state{account_id=Account}) ->
 	{ok, Port} = application:get_env(world_port),
 	{ok, Socket} = gen_tcp:connect({127,0,0,1}, Port, [binary, {active, false}]),
 	world_challenge(ok, State#state{socket=Socket, rcv_key=KTup}).
-world_challenge(_, State = #state{socket=Socket, account_id=Account, rcv_key=KeyState, parent_pid=ParentPid}) ->
+world_challenge(_, State = #state{socket=Socket, account_id=AccountId, rcv_key=KeyState, parent_pid=ParentPid, hdr_len=HdrLen}) ->
 
-	%io:format("CLIENT: received auth challenge~n"),
-	{ok, <<Length?WO>>} = gen_tcp:recv(Socket, 2),
-	{ok, <<16#1EC?W, _/binary>>} = gen_tcp:recv(Socket, Length),
+	try world_crypto:receive_packet(HdrLen, _KeyStateReceive=nil, Socket, _ShouldDecrypt=false) of
+		{_Opcode, _Payload, _} ->
+			Name = list_to_binary(AccountId),
+			PayloadOut = <<1?L, 1?L, Name/binary, 0?B, 0?B>>,
+			world_crypto:send_packet(cmsg_auth_session, PayloadOut, ?RCV_HDR_LEN, _KeyStateSend=nil, Socket, _ShouldEncrypt=false),
 
-	Name = list_to_binary(Account),
-	Payload = <<1?L, 1?L, Name/binary, 0?B, 0?B>>,
-	world_crypto:send_packet(cmsg_auth_session, Payload, ?RCV_HDR_LEN, <<>>, Socket, false),
+			start_siblings(Socket, KeyState, AccountId, ParentPid),
 
-	%start siblings
-	SendName = client_send,
-	SendSpec = {SendName,
-		{SendName, start_link, [Socket, KeyState]},
-		transient, 5000, worker, [SendName]},
-	{ok, SendPid} = supervisor:start_child(ParentPid, SendSpec),
+			rcv(ok, State)
+	catch
+		Error -> {stop, Error, State}
+	end.
 
-	ControllerName = client_controller,
-	ControlSpec = {ControllerName,
-		{ControllerName, start_link, [Account, SendPid]},
-		transient, 5000, worker, [ControllerName]},
-	{ok, _} = supervisor:start_child(ParentPid, ControlSpec),
-
-	rcv(ok, State).
 rcv(ok, State = #state{socket=Socket, hdr_len=HdrLen, rcv_key=KeyState, account_id=AccountId}) ->
-	%io:format("waiting for client header~n"),
-	case gen_tcp:recv(Socket, HdrLen) of
-		{ok, EncryptedHeader} ->
-			%io:format("received encrypted header: ~p~n", [EncryptedHeader]),
-			{<<LengthRaw?WO, Opcode?W>>, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
-
-			Length = LengthRaw - 2,
-			%io:format("client rcv: received opcode ~p with length ~p on account ~p~n", [Opcode, Length, AccountId]),
-			Rest = if Length > 0 ->
-					{ok, Data} = gen_tcp:recv(Socket, Length),
-					Data;
-				true -> <<"">>
-			end,
-			%io:format("rcv: received payload ~p~n", [Rest]),
-			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
-			Pid = get_pid(AccountId),
-			Msg = {tcp_packet_rcvd, <<Opcode?L, Rest/binary>>},
-			gen_server:cast(Pid, Msg),
-			rcv(ok, State#state{rcv_key=NewKeyState});
-		_ -> {stop, socket_closed, State}
-		end.
+	try world_crypto:receive_packet(HdrLen, KeyState, Socket, _ShouldDecrypt=true) of
+		{Opcode, Payload, NewKeyState} ->
+			client_controller:tcp_packet_received(AccountId, Opcode, Payload),
+			rcv(ok, State#state{rcv_key=NewKeyState})
+	catch
+		Error -> {stop, Error, State}
+	end.
 
 %% callbacks
 handle_info(_Info, State, Data) ->
@@ -120,4 +96,19 @@ store_dummy_session_key(Account) ->
   {0, 0, binary_to_list(KeyL)}.
 
 
-get_pid(Name) -> world:get_pid(Name ++ "client").
+
+
+start_siblings(Socket, KeyState, AccountId, ParentPid) ->
+	SendName = client_send,
+	SendSpec = {SendName,
+		{SendName, start_link, [Socket, KeyState]},
+		transient, 5000, worker, [SendName]},
+	{ok, SendPid} = supervisor:start_child(ParentPid, SendSpec),
+
+	ControllerName = client_controller,
+	ControlSpec = {ControllerName,
+		{ControllerName, start_link, [AccountId, SendPid]},
+		transient, 5000, worker, [ControllerName]},
+	{ok, _} = supervisor:start_child(ParentPid, ControlSpec),
+
+	ok.

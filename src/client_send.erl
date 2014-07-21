@@ -25,8 +25,11 @@ init({Socket, KeyState}) ->
 
 
 send({send, {OpAtom, Payload}}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen}) ->
-	NewKeyState = world_crypto:send_packet(OpAtom, Payload, HdrLen, KeyState, Socket, true),
-	{next_state, send, State#state{key_state=NewKeyState}}.
+	try world_crypto:send_packet(OpAtom, Payload, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
+		NewKeyState -> {next_state, send, State#state{key_state=NewKeyState}}
+	catch
+		Error -> {stop, Error, State}
+	end.
 
 upgrade() -> ok.
 
@@ -41,7 +44,7 @@ handle_sync_event(_Event, _From, State, Data) ->
 	{next_state, State, Data}.
 
 terminate(_Reason, State, _Data) ->
-	io:format("WORLD SEND: closing connected realm_socket~n"),
+	io:format("CLIENT SEND: closing connected realm_socket~n"),
 	catch gen_tcp:close(State#state.socket),
 	ok.
 

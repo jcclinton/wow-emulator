@@ -1,2 +1,2 @@
--define(RCV_HDR_LEN, 6).
--define(SEND_HDR_LEN, 4).
+-define(RCV_HDR_LEN, 6). %size of header received at server
+-define(SEND_HDR_LEN, 4). % size of header sent at server

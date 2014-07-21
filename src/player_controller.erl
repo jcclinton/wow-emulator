@@ -5,16 +5,18 @@
 	account_id,
   send_pid,
 	values
-							 }).
+}).
 
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([send/2, send/3]).
--compile([export_all]).
+-export([send/2, send/3, tcp_packet_received/3]).
 
 
 -include("include/binary.hrl").
+
+
+%% public api
 
 %send message to self
 send(OpAtom, Payload) ->
@@ -26,7 +28,16 @@ send(Name, OpAtom, Payload) ->
 send_internal(Pid, OpAtom, Payload) ->
 	gen_server:cast(Pid, {send_to_client, {OpAtom, Payload}}).
 
+tcp_packet_received(AccountId, Opcode, Payload) ->
+	Msg = {tcp_packet_rcvd, {Opcode, Payload}},
+	%% sends to a process that handles the operation for this opcode, probaly a 'user' process
+	Pid = world:get_pid(AccountId),
+	gen_server:cast(Pid, Msg).
 
+
+
+
+%% behavior callbacks
 
 start_link(AccountId, SendPid) ->
 	Pid = world:get_pid(AccountId),
@@ -45,7 +56,7 @@ init({AccountId, SendPid}) ->
 handle_call(_E, _From, State) ->
 	{reply, ok, State}.
 
-handle_cast({tcp_packet_rcvd, <<Opcode?L, Payload/binary>>}, S = #state{account_id=AccountId, values=Values}) ->
+handle_cast({tcp_packet_rcvd, {Opcode, Payload}}, S = #state{account_id=AccountId, values=Values}) ->
 	%io:format("looking up opcode ~p for ~p~n", [Opcode, AccountId]),
 	OpcodeAtom = opcodes:getAtomByNum(Opcode),
 	{M, F} = opcodes:getCallbackByNum(OpcodeAtom),

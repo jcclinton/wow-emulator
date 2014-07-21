@@ -34,60 +34,33 @@ accept({accept, ListenSocket}, State) ->
 	players_sup:start_socket(),
 	io:format("WORLD received accept socket: ~p~n", [AcceptSocket]),
 	challenge(ok, State#state{socket=AcceptSocket}).
-challenge(_, State = #state{socket=Socket}) ->
+challenge(ok, State = #state{socket=Socket}) ->
 	Seed   = random:uniform(16#FFFFFFFF),
 	Payload = <<Seed?L>>,
-	world_crypto:send_packet(smsg_auth_challenge, Payload, ?SEND_HDR_LEN, <<>>, Socket, false),
+	world_crypto:send_packet(smsg_auth_challenge, Payload, ?SEND_HDR_LEN, _KeyState=nil, Socket, _ShouldEncrypt=false),
 	rcv_challenge(ok, State).
-rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid}) ->
-	{ok, <<Length?WO>>} = gen_tcp:recv(Socket, 2),
-	%io:format("received world challenge with length ~p~n", [Length]),
-	{ok, <<Opcode?L, Msg/binary>>} = gen_tcp:recv(Socket, Length),
-	%io:format("received world challenge data~n"),
+rcv_challenge(ok, State = #state{socket=Socket, parent_pid=ParentPid, hdr_len=HdrLen}) ->
+	try world_crypto:receive_packet(HdrLen, _KeyState=nil, Socket, _ShouldDecrypt=false) of
+		{Opcode, PayloadIn, _} ->
+			{PayloadOut, AccountId, KeyState} = auth_session(PayloadIn),
+			%% now authorized
 
-	{_ResponseName, ResponseData, AccountId, KeyState} = auth_session(Msg),
-	%% now authorized
+			start_siblings(Socket, KeyState, AccountId, ParentPid),
 
-	%start siblings
-	SendName = player_send,
-	SendSpec = {SendName,
-		{SendName, start_link, [Socket, KeyState]},
-		transient, 5000, worker, [SendName]},
-	{ok, SendPid} = supervisor:start_child(ParentPid, SendSpec),
-
-	ControllerName = player_controller_sup,
-	ControlSpec = {ControllerName,
-		{ControllerName, start_link, [AccountId, SendPid]},
-		transient, 5000, worker, [ControllerName]},
-	{ok, _} = supervisor:start_child(ParentPid, ControlSpec),
-
-	Payload = <<Opcode?L, ResponseData/binary>>,
-	Pid = world:get_pid(AccountId),
-	gen_server:cast(Pid, {tcp_packet_rcvd, Payload}),
-	rcv(ok, State#state{key_state=KeyState, account_id=AccountId}).
-rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account_id=AccountId}) ->
-	%% TODO handle error case
-	%io:format("waiting for client header~n"),
-	case gen_tcp:recv(Socket, HdrLen) of
-		{ok, EncryptedHeader} ->
-			%io:format("received encrypted header: ~p~n", [EncryptedHeader]),
-			{<<LengthRaw?WO, Opcode?L>>, NewKeyState} = world_crypto:decrypt(EncryptedHeader, KeyState),
-
-			Length = LengthRaw - 4,
-			%io:format("player rcv: received opcode ~p with length ~p on account ~p~n", [Opcode, Length, AccountId]),
-			Rest = if Length > 0 ->
-					{ok, Data} = gen_tcp:recv(Socket, Length),
-					Data;
-				true -> <<"">>
-			end,
+			player_controller:tcp_packet_received(AccountId, Opcode, PayloadOut),
+			rcv(ok, State#state{key_state=KeyState, account_id=AccountId})
+	catch
+		Error -> {stop, Error, State}
+	end.
+rcv(ok, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account_id=AccountId}) ->
+	try world_crypto:receive_packet(HdrLen, KeyState, Socket, _ShouldDecrypt=true) of
+		{Opcode, Payload, NewKeyState} ->
 			%io:format("rcv: received payload ~p~n", [Rest]),
-			Msg = {tcp_packet_rcvd, <<Opcode?L, Rest/binary>>},
-			%% sends to a process that handles the operation for this opcode, probaly a 'user' process
-			Pid = world:get_pid(AccountId),
-			gen_server:cast(Pid, Msg),
-			rcv(ok, State#state{key_state=NewKeyState});
-		_ -> {stop, socket_closed, State}
-		end.
+			player_controller:tcp_packet_received(AccountId, Opcode, Payload),
+			rcv(ok, State#state{key_state=NewKeyState})
+	catch
+		Error -> {stop, Error, State}
+	end.
 
 %% callbacks
 handle_info(_Info, State, Data) ->
@@ -120,18 +93,34 @@ auth_session(Rest) ->
 		%io:format("authorizing session for ~p~n", [A]),
     K      = world_crypto:encryption_key(A),
     KTup     = {0, 0, K},
-    {smsg_auth_response, Data, A, KTup}.
+    {Data, A, KTup}.
 
 cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
-    {Account, Key} = cmsg_auth_session_extract(Rest, ""),
+    {Account, Key} = cmsg_auth_session_extract(Rest, <<>>),
     {Build, Account, Key};
 cmsg_auth_session(_) ->
     {error, bad_cmsg_auth_session}.
 
-cmsg_auth_session_extract(<<0?B, Rest/bytes>>, Account) ->
-    {Account, binary_to_list(Rest)};
+cmsg_auth_session_extract(<<0?B, Rest/binary>>, Account) ->
+    {binary_to_list(Account), Rest};
 cmsg_auth_session_extract(<<Letter?B, Rest/binary>>, Account) ->
-    cmsg_auth_session_extract(Rest, Account ++ [Letter]).
+    cmsg_auth_session_extract(Rest, <<Account/binary, Letter?B>>).
 
 smsg_auth_response() ->
     <<16#0c?B, 0?L, 0?B, 0?L>>.
+
+
+start_siblings(Socket, KeyState, AccountId, ParentPid) ->
+			SendName = player_send,
+			SendSpec = {SendName,
+				{SendName, start_link, [Socket, KeyState]},
+				transient, 5000, worker, [SendName]},
+			{ok, SendPid} = supervisor:start_child(ParentPid, SendSpec),
+
+			ControllerName = player_controller_sup,
+			ControlSpec = {ControllerName,
+				{ControllerName, start_link, [AccountId, SendPid]},
+				transient, 5000, worker, [ControllerName]},
+			{ok, _} = supervisor:start_child(ParentPid, ControlSpec),
+
+			ok.

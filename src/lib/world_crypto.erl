@@ -1,9 +1,10 @@
 -module(world_crypto).
 
 -export([encrypt/2, decrypt/2, encryption_key/1]).
--export([send_packet/6]).
+-export([send_packet/6, receive_packet/4]).
 
 -include("binary.hrl").
+-include("include/network_defines.hrl").
 
 -define(K, 40).
 
@@ -35,10 +36,44 @@ encryption_key(A) ->
 	binary_to_list(K).
 
 
+receive_packet(HdrLen, KeyState, Socket, ShouldDecrypt) ->
+	case gen_tcp:recv(Socket, HdrLen) of
+		{ok, HeaderIn} ->
+			{Header, NewKeyState} = if ShouldDecrypt ->
+					world_crypto:decrypt(HeaderIn, KeyState);
+				not ShouldDecrypt ->
+					{HeaderIn, KeyState}
+			end,
+
+			{LengthRaw, Opcode} = if HdrLen == ?RCV_HDR_LEN ->
+					<<LenRaw?WO, Op?L>> = Header,
+					{LenRaw, Op};
+				HdrLen == ?SEND_HDR_LEN ->
+					<<LenRaw?WO, Op?W>> = Header,
+					{LenRaw, Op}
+			end,
+
+			% size of length is always 2
+			OpSize = HdrLen - 2,
+			Length = LengthRaw - OpSize,
+			%io:format("player rcv: received opcode ~p with length ~p on account ~p~n", [Opcode, Length, AccountId]),
+			Payload = if Length > 0 ->
+					case gen_tcp:recv(Socket, Length) of
+						{ok, Data} -> Data;
+						{error, Error} -> throw(Error)
+					end;
+				Length == 0 -> <<>>;
+				Length < 0 -> throw(bad_header_length)
+			end,
+			{Opcode, Payload, NewKeyState};
+		{error, Error} -> throw(Error)
+	end.
+
+
 send_packet(OpAtom, Payload, HdrLen, KeyState, Socket, ShouldEncrypt) ->
 	Opcode = opcodes:getNumByAtom(OpAtom),
-	OpBin = if HdrLen == 4 -> <<Opcode?W>>;
-		HdrLen == 6 -> <<Opcode?L>>
+	OpBin = if HdrLen == ?SEND_HDR_LEN -> <<Opcode?W>>;
+		HdrLen == ?RCV_HDR_LEN -> <<Opcode?L>>
 	end,
 	Length = size(OpBin) + size(Payload),
 	Header = <<Length?WO, OpBin/binary>>,
@@ -46,5 +81,7 @@ send_packet(OpAtom, Payload, HdrLen, KeyState, Socket, ShouldEncrypt) ->
 		not ShouldEncrypt -> {Header, KeyState}
 	end,
 	Packet = <<HeaderOut/binary, Payload/binary>>,
-	gen_tcp:send(Socket, Packet),
-	NewKeyState.
+	case gen_tcp:send(Socket, Packet) of
+		ok -> NewKeyState;
+		{eror, Error} -> throw(Error)
+	end.
