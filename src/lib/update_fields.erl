@@ -1,6 +1,24 @@
 -module(update_fields).
 
--export([fields/1]).
+-export([fields/1, get_total_count/1]).
+
+
+get_total_count(player) ->
+	update_fields:fields('PLAYER_END');
+get_total_count(object) ->
+	update_fields:fields('OBJECT_END');
+get_total_count(item) ->
+	update_fields:fields('OBJECT_ITEM');
+get_total_count(container) ->
+	update_fields:fields('CONTAINER_END');
+get_total_count(unit) ->
+	update_fields:fields('UNIT_END');
+get_total_count(game_object) ->
+	update_fields:fields('GAMEOBJECT_END');
+get_total_count(dynamic_object) ->
+	update_fields:fields('DYNAMICOBJECT_END');
+get_total_count(corpse) ->
+	update_fields:fields('CORPSE_END').
 
 
 

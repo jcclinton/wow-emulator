@@ -49,7 +49,7 @@ init({AccountId, SendPid}) ->
 	process_flag(trap_exit, true),
 
 	%TODO this is char data, not player data, should be put somewhere else
-	TotalCount = update_fields:fields('PLAYER_END'),
+	TotalCount = update_fields:get_total_count(player),
 	Values = binary:copy(<<0?L>>, TotalCount),
 	{ok, #state{values=Values, send_pid=SendPid, account_id=AccountId}}.
 
