@@ -1,4 +1,4 @@
--module(player_router).
+-module(player_controller).
 -behavior(gen_server).
 
 -record(state, {
@@ -19,7 +19,7 @@
 %% public api
 
 get_pid(AccountId) ->
-	world:build_pid(AccountId, "router").
+	world:build_pid(AccountId, "controller").
 
 
 packet_received(AccountId, Opcode, Payload) ->
@@ -48,7 +48,7 @@ start_link(AccountId, SendPid, ParentPid) ->
 	gen_server:start_link(Pid, ?MODULE, {AccountId, SendPid, ParentPid}, []).
 
 init({AccountId, SendPid, ParentPid}) ->
-	io:format("router SERVER: started~n"),
+	io:format("controller SERVER: started~n"),
 	{ok, #state{account_id=AccountId, send_pid=SendPid, parent_pid=ParentPid}}.
 
 
@@ -100,5 +100,5 @@ code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
 terminate(_Reason, _State) ->
-	io:format("WORLD: shutting down router~n"),
+	io:format("WORLD: shutting down controller~n"),
 	ok.

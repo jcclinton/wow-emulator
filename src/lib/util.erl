@@ -29,7 +29,7 @@ call(M, F, Args, AccountId) ->
 	try M:F(Data) of
 		ok -> ok;
 		{OpAtom, Payload} ->
-			player_router:send(AccountId, OpAtom, Payload)
+			player_controller:send(AccountId, OpAtom, Payload)
 		catch
 			Error ->
 				io:format("error in char: ~p~n", [Error]),

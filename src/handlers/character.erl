@@ -58,19 +58,19 @@ logout(Data) ->
 	Reason = 0, %0 means is ok to logout
 	Wait = 16777216, % set to 0 to set wait time on logout
 	Msg = <<Reason?B, Wait?L>>,
-	player_router:send(AccountId, smsg_logout_response, Msg),
-	player_router:send(AccountId, smsg_logout_complete, <<>>),
+	player_controller:send(AccountId, smsg_logout_response, Msg),
+	player_controller:send(AccountId, smsg_logout_complete, <<>>),
 
 	world:remove_from_map(AccountId),
 	Guid = recv_data:get(guid, Data),
-	player_router:logout_char(AccountId, Guid),
+	player_controller:logout_char(AccountId, Guid),
 	ok.
 
 
 login(Data) ->
 	AccountId = recv_data:get(account_id, Data),
 	<<Guid?Q>> = recv_data:get(payload, Data),
-	player_router:login_char(AccountId, Guid),
+	player_controller:login_char(AccountId, Guid),
 
 
 
@@ -83,7 +83,7 @@ login(Data) ->
 	Orientation = Char#char.orientation,
 	Payload = <<MapId?L, X?f, Y?f, Z?f, Orientation?f>>,
 	%io:format("login payload: ~p~n", [Payload]),
-	player_router:send(AccountId, smsg_login_verify_world, Payload),
+	player_controller:send(AccountId, smsg_login_verify_world, Payload),
 
 
 	%login packets to send before player is added to map
@@ -97,10 +97,9 @@ login(Data) ->
 		bind_point_update(Data2),
 		set_tutorial_flags(Data2),
 
-
 		initial_spells(Data2),
 
-		%send_unlearn_spells(Data2, AccountId),
+		%send_unlearn_spells(Data2),
 		action_buttons(Data2), % differs
 		initialize_factions(Data2), % differs
 		init_world_state(Data2),
@@ -108,13 +107,13 @@ login(Data) ->
 	],
 
 	lists:foreach(fun({OpAtomIn, PayloadIn}) ->
-		player_router:send(AccountId, OpAtomIn, PayloadIn)
+		player_controller:send(AccountId, OpAtomIn, PayloadIn)
 	end, Funs),
 
 
 	%login packets to send after player is added to map
 	{OpAtom, Update} = update_object(Char, Values, true),
-	player_router:send(AccountId, OpAtom, Update),
+	player_controller:send(AccountId, OpAtom, Update),
 	{OpAtom2, Update2} = update_object(Char, Values, false),
 	world:add_to_map(AccountId),
 	world:send_to_all_but_player(OpAtom2, Update2, AccountId),

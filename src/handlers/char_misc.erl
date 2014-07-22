@@ -38,7 +38,7 @@ gmticket_getticket(Data) ->
 	% send time response first
 	AccountId = recv_data:get(account_id, Data),
 	{OpAtom, Payload1} = server:query_time(Data),
-	player_router:send(AccountId, OpAtom, Payload1),
+	player_controller:send(AccountId, OpAtom, Payload1),
 
 	Payload = <<16#0A?L>>,
 	{smsg_gmticket_getticket, Payload}.

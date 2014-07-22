@@ -17,8 +17,8 @@
 %% public api
 
 send(Name, OpAtom, Payload) ->
-	RouterPid = player_router:get_pid(Name),
-	player_router:send(RouterPid, OpAtom, Payload).
+	RouterPid = player_controller:get_pid(Name),
+	player_controller:send(RouterPid, OpAtom, Payload).
 
 get_pid(AccountId) ->
 	world:build_pid(AccountId, "account").

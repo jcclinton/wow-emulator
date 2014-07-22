@@ -48,7 +48,7 @@ rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid, hdr_len=Hdr
 
 			start_siblings(Socket, KeyState, AccountId, ParentPid),
 
-			player_router:packet_received(AccountId, Opcode, PayloadOut),
+			player_controller:packet_received(AccountId, Opcode, PayloadOut),
 			rcv(ok, State#state{key_state=KeyState, account_id=AccountId})
 	catch
 		Error -> {stop, Error, State}
@@ -57,7 +57,7 @@ rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account
 	try network:receive_packet(HdrLen, KeyState, Socket, _ShouldDecrypt=true) of
 		{Opcode, Payload, NewKeyState} ->
 			%io:format("rcv: received payload ~p~n", [Rest]),
-			player_router:packet_received(AccountId, Opcode, Payload),
+			player_controller:packet_received(AccountId, Opcode, Payload),
 			rcv(ok, State#state{key_state=NewKeyState})
 	catch
 		Error -> {stop, Error, State}
@@ -113,7 +113,7 @@ smsg_auth_response() ->
 
 start_siblings(Socket, KeyState, AccountId, ParentPid) ->
 	SendPid = start_child(player_send, [Socket, KeyState], ParentPid, worker),
-	_ = start_child(player_router_sup, [AccountId, SendPid], ParentPid, supervisor),
+	_ = start_child(player_controller_sup, [AccountId, SendPid], ParentPid, supervisor),
 	ok.
 
 start_child(Name, Args, ParentPid, Type) ->

@@ -1,4 +1,4 @@
--module(player_router_sup).
+-module(player_controller_sup).
 -behavior(supervisor).
 
 -export([start_link/2]).
@@ -9,13 +9,13 @@ start_link(AccountId, SendPid) ->
 	supervisor:start_link(?MODULE, {AccountId, SendPid}).
 
 init({AccountId, SendPid}) ->
-	Router = player_router,
+	Controller = player_controller,
 	Account = player_account,
 	{ok, {{one_for_one, 3, 5},
 				[
-					{Router,
-						{Router, start_link, [AccountId, SendPid, self()]},
-						transient, 1000, worker, [Router]},
+					{Controller,
+						{Controller, start_link, [AccountId, SendPid, self()]},
+						transient, 1000, worker, [Controller]},
 					{Account,
 						{Account, start_link, [AccountId]},
 						transient, 1000, worker, [Account]}
