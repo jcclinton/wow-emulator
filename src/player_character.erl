@@ -3,9 +3,6 @@
 
 -record(state, {
 	account_id,
-	name,
-	values,
-	char,
 	guid
 }).
 
@@ -43,10 +40,10 @@ start_link(AccountId, Guid) ->
 init({AccountId, Guid}) ->
 	io:format("char SERVER: started~n"),
 	{Guid, CharName, AccountId, CharRecord, Values} = char_data:get_char_data(Guid),
-	{ok, #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values, guid=Guid}}.
+	{ok, #state{account_id=AccountId, guid=Guid}}.
 
-handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values, guid=Guid}) ->
-	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}, {char_name, CharName}, {char, CharRecord}, {values, Values}],
+handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
+	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}],
 	util:call(M, F, Args, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->

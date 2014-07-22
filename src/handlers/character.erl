@@ -41,9 +41,8 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(),
-	Data2 = recv_data:add_value(Data, guid, Guid),
-	Char = create_char_record(Data2),
-	Values = create_char_values(Data2, Char),
+	Char = create_char_record(Data, Guid),
+	Values = create_char_values(Data, Char),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	CharData = {Char#char.name, Char#char.account_id, Char#char.id, Char, Values},
 	char_data:create_char(CharData),
@@ -149,7 +148,8 @@ set_tutorial_flags(_Data) ->
 	{smsg_tutorial_flags, Payload}.
 
 bind_point_update(Data) ->
-	Char = recv_data:get(char, Data),
+	Guid = recv_data:get(guid, Data),
+	Char = char_data:get_char_record(Guid),
 	Zone = Char#char.zone_id,
 	Map = Char#char.map_id,
 	X = Char#char.position_x,
@@ -186,7 +186,8 @@ login_settimespeed(_Data) ->
 	{smsg_login_settimespeed, Payload}.
 
 init_world_state(Data) ->
-	Char = recv_data:get(char, Data),
+	Guid = recv_data:get(guid, Data),
+	Char = char_data:get_char_record(Guid),
 	MapId = Char#char.map_id,
 	ZoneId = Char#char.zone_id,
 	Count = 6,
@@ -397,10 +398,9 @@ create_char_values(_Data, Char) ->
 		
 
 
-create_char_record(Data) ->
+create_char_record(Data, Guid) ->
 	AccountId = recv_data:get(account_id, Data),
 	Payload = recv_data:get(payload, Data),
-	Guid = recv_data:get(guid, Data),
 	{Name, NewPayload} = extract_name(Payload),
     <<Race?B, Class?B, Gender?B, Skin?B,
       Face?B, HS?B, HC?B, FH?B, _?B>> = NewPayload,

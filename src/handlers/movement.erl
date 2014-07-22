@@ -31,8 +31,7 @@ set_active_mover(_Data) ->
 
 handle_movement(Data) ->
 	AccountId = recv_data:get(account_id, Data),
-	Values = recv_data:get(values, Data),
-	Guid = object_values:get_uint64_value('OBJECT_FIELD_GUID', Values),
+	Guid = recv_data:get(guid, Data),
 	PackGuid = <<7?B, Guid?G>>,
 
 	Payload = recv_data:get(payload, Data),

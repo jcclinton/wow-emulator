@@ -53,9 +53,9 @@ request_raid_info(_Data) ->
 
 
 name_query(Data) ->
-	Values = recv_data:get(values, Data),
 	Guid = recv_data:get(guid, Data),
-	Name = recv_data:get(char_name, Data),
+	Name = char_data:get_char_name(Guid),
+	Values = char_data:get_char_values(Guid),
 	Null = <<"\0">>,
 	Race = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 0),
 	Gender = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 1),

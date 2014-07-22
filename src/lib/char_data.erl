@@ -3,6 +3,7 @@
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
 -export([enum_chars/1, delete_char/1, create_char/1, get_char_data/1]).
+-export([get_char_name/1, get_char_values/1, get_char_record/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -44,6 +45,18 @@ enum_chars(AccountId) ->
 
 delete_char(Guid) ->
 	ets:delete(?char, Guid).
+
+get_char_record(Guid) ->
+	{_Guid, _CharName, _AccountId, CharRecord, _Values} = get_char_data(Guid),
+	CharRecord.
+
+get_char_name(Guid) ->
+	{_Guid, CharName, _AccountId, _CharRecord, _Values} = get_char_data(Guid),
+	CharName.
+
+get_char_values(Guid) ->
+	{_Guid, _CharName, _AccountId, _CharRecord, Values} = get_char_data(Guid),
+	Values.
 
 create_char(CharData) ->
 	% just decomposing this because it may change in the future
