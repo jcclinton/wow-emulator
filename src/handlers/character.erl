@@ -1,17 +1,18 @@
 -module(character).
--export([enum/2, create/2, delete/2, logout/2, login/2, update_account_data/2]).
+-export([enum/1, create/1, delete/1, logout/1, login/1, update_account_data/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
 
 
 
-update_account_data(_Data, _AccountId) ->
+update_account_data(_Data) ->
 	% dont need to do anything
 	%io:format("received req to update account~n"),
 	ok.
 
-enum(_Data, AccountId) ->
+enum(Data) ->
+	AccountId = recv_data:get(account_id, Data),
 	Chars = char_data:enum_chars(AccountId),
 	%io:format("looking up player name: ~p~n", [AccountId]),
 	%io:format("matched: ~p~n", [Chars]),
@@ -25,11 +26,10 @@ enum(_Data, AccountId) ->
 						end,
 	Msg = <<Num?B, CharDataOut2/binary>>,
 	%io:format("msg: ~p~n", [Msg]),
-	player_router:send(AccountId, smsg_char_enum, Msg),
-	ok.
+	{smsg_char_enum, Msg}.
 
 
-delete(Data, AccountId) ->
+delete(Data) ->
 	Packet = recv_data:get(payload, Data),
 	<<Guid?Q>> = Packet,
 	CharName = char_data:get_logged_in_char_name(Guid),
@@ -37,24 +37,24 @@ delete(Data, AccountId) ->
 
 	Success = 16#39,
 	Msg = <<Success?B>>,
-	player_router:send(AccountId, smsg_char_delete, Msg),
-	ok.
+	{smsg_char_delete, Msg}.
 
 
-create(Data, AccountId) ->
+create(Data) ->
 	Guid = world:get_guid(),
-	Data2 = [{guid, Guid} | Data],
-	Char = create_char_record(Data2, AccountId),
+	Data2 = recv_data:add_value(Data, guid, Guid),
+	Char = create_char_record(Data2),
 	Values = create_char_values(Data2, Char),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	CharData = {Char#char.name, Char#char.account_id, Char#char.id, Char, Values},
 	char_data:create_char(CharData),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
-	player_router:send(AccountId, smsg_char_create, Msg),
-	ok.
+	{smsg_char_create, Msg}.
 
-logout(Data, AccountId) ->
+
+logout(Data) ->
+	AccountId = recv_data:get(account_id, Data),
 	Reason = 0, %0 means is ok to logout
 	Wait = 16777216, % set to 0 to set wait time on logout
 	Msg = <<Reason?B, Wait?L>>,
@@ -67,7 +67,8 @@ logout(Data, AccountId) ->
 	ok.
 
 
-login(Data, AccountId) ->
+login(Data) ->
+	AccountId = recv_data:get(account_id, Data),
 	<<Guid?Q>> = recv_data:get(payload, Data),
 	player_router:login_char(AccountId, Guid),
 
@@ -86,22 +87,29 @@ login(Data, AccountId) ->
 
 
 	%login packets to send before player is added to map
-	Data2 = [{char, Char}|Data],
-	%Data3 = [{values, Values}|Data2],
-	account_data_times(Data2, AccountId),
-	send_motd(Data2, AccountId),
-	set_rest_start(Data2, AccountId),
-	bind_point_update(Data2, AccountId),
-	set_tutorial_flags(Data2, AccountId),
+	Data1 = recv_data:add_value(Data, guid, Guid),
+	Data2 = recv_data:add_value(Data1, char, Char),
+
+	Funs = [
+		account_data_times(Data2),
+		send_motd(Data2),
+		set_rest_start(Data2),
+		bind_point_update(Data2),
+		set_tutorial_flags(Data2),
 
 
-	initial_spells(Data2, AccountId),
+		initial_spells(Data2),
 
-	%send_unlearn_spells(Data2, AccountId),
-	action_buttons(Data2, AccountId), % differs
-	initialize_factions(Data2, AccountId), % differs
-	init_world_state(Data2, AccountId),
-	login_settimespeed(Data2, AccountId),
+		%send_unlearn_spells(Data2, AccountId),
+		action_buttons(Data2), % differs
+		initialize_factions(Data2), % differs
+		init_world_state(Data2),
+		login_settimespeed(Data2)
+	],
+
+	lists:foreach(fun({OpAtomIn, PayloadIn}) ->
+		player_router:send(AccountId, OpAtomIn, PayloadIn)
+	end, Funs),
 
 
 	%login packets to send after player is added to map
@@ -114,7 +122,7 @@ login(Data, AccountId) ->
 
 
 
-send_motd(_Data, AccountId) ->
+send_motd(_Data) ->
 	Type = 16#0a,
 	Lang = 0,
 	Guid = 0,
@@ -123,30 +131,26 @@ send_motd(_Data, AccountId) ->
 	ChatTag = 0,
 	MsgBin = list_to_binary(ChatMsg),
 	Payload = <<Type?B, Lang?L, Guid?Q, Len?L, MsgBin/binary, 0?B, ChatTag?B>>,
-	player_router:send(AccountId, smsg_messagechat, Payload),
-	ok.
+	{smsg_messagechat, Payload}.
 
-account_data_times(_Data, AccountId) ->
+account_data_times(_Data) ->
 	% send 32 empty 32 bit words
 	Size = 32 * 32,
 	Payload = <<0:Size/unsigned-little-integer>>,
 	io:format("sending account data times~n"),
-	player_router:send(AccountId, smsg_account_data_times, Payload),
-	ok.
+	{smsg_account_data_times, Payload}.
 
-set_rest_start(_Data, AccountId) ->
+set_rest_start(_Data) ->
 	%GameTime = game_time(),
 	GameTime = 0,
 	Payload = <<GameTime?L>>,
-	player_router:send(AccountId, smsg_set_rest_start, Payload),
-	ok.
+	{smsg_set_rest_start, Payload}.
 
-set_tutorial_flags(_Data, AccountId) ->
+set_tutorial_flags(_Data) ->
 	Payload = binary:copy(<<16#FFFFFFFF?L>>, 8),
-	player_router:send(AccountId, smsg_tutorial_flags, Payload),
-	ok.
+	{smsg_tutorial_flags, Payload}.
 
-bind_point_update(Data, AccountId) ->
+bind_point_update(Data) ->
 	Char = recv_data:get(char, Data),
 	Zone = Char#char.zone_id,
 	Map = Char#char.map_id,
@@ -154,42 +158,36 @@ bind_point_update(Data, AccountId) ->
 	Y = Char#char.position_y,
 	Z = Char#char.position_z,
 	Payload = <<X?f, Y?f, Z?f, Map?L, Zone?L>>,
-	player_router:send(AccountId, smsg_bindpointupdate, Payload),
-	ok.
+	{smsg_bindpointupdate, Payload}.
 
-initial_spells(_Data, AccountId) ->
+initial_spells(_Data) ->
 	Unk = 0,
 	NumSpells = 0,
 	NumSpellsOnCooldown = 0,
 	Payload = <<Unk?B, NumSpells?W, NumSpellsOnCooldown?W>>,
-	player_router:send(AccountId, smsg_initial_spells, Payload),
-	ok.
+	{smsg_initial_spells, Payload}.
 
-%send_unlearn_spells(_Data, AccountId) ->
+%send_unlearn_spells(_Data) ->
 	%Payload = <<0?L>>,
-	%player_router:send(AccountId, smsg_send_unlearn_spells, Payload),
-	%ok.
+	%{smsg_send_unlearn_spells, Payload}.
 
-action_buttons(_Data, AccountId) ->
+action_buttons(_Data) ->
 	Size = 120,
 	Payload = binary:copy(<<0?L>>, Size),
-	player_router:send(AccountId, smsg_action_buttons, Payload),
-	ok.
+	{smsg_action_buttons, Payload}.
 
-initialize_factions(_Data, AccountId) ->
+initialize_factions(_Data) ->
 	Size = 64 * 5 * 8,
 	Payload = <<16#40?L, 0:Size/unsigned-little-integer>>,
-	player_router:send(AccountId, smsg_initialize_factions, Payload),
-	ok.
+	{smsg_initialize_factions, Payload}.
 
-login_settimespeed(_Data, AccountId) ->
+login_settimespeed(_Data) ->
 	GameTime = util:game_time(),
 	Speed = util:game_speed(),
 	Payload = <<GameTime?L, Speed?f>>,
-	player_router:send(AccountId, smsg_login_settimespeed, Payload),
-	ok.
+	{smsg_login_settimespeed, Payload}.
 
-init_world_state(Data, AccountId) ->
+init_world_state(Data) ->
 	Char = recv_data:get(char, Data),
 	MapId = Char#char.map_id,
 	ZoneId = Char#char.zone_id,
@@ -197,10 +195,13 @@ init_world_state(Data, AccountId) ->
 	%Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
 	Rest = <<16#d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:384/unsigned-big-integer>>,
 	Payload = <<MapId?L, ZoneId?L, Count?W, Rest/binary>>,
-	player_router:send(AccountId, smsg_init_world_states, Payload),
-	ok.
+	{smsg_init_world_states, Payload}.
 
 			
+%%%%%%%%%%%%
+%% private
+
+
 
 update_object(Char, Values, IsSelf) ->
 	Block = update_data:block(Char, Values, IsSelf),
@@ -218,11 +219,6 @@ update_object(Char, Values, IsSelf) ->
 
 
 
-
-
-
-%%%%%%%%%%%%
-%% private
 
 extract_name(Payload) ->
 	extract_name(Payload, []).
@@ -403,7 +399,8 @@ create_char_values(_Data, Char) ->
 		
 
 
-create_char_record(Data, AccountId) ->
+create_char_record(Data) ->
+	AccountId = recv_data:get(account_id, Data),
 	Payload = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
 	{Name, NewPayload} = extract_name(Payload),

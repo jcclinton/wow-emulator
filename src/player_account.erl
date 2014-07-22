@@ -41,14 +41,8 @@ init({AccountId}) ->
 	{ok, #state{account_id=AccountId}}.
 
 handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId}) ->
-	Args = [{payload, Payload}, {op_atom, OpAtom}],
-	Data = recv_data:build(Args),
-	try M:F(Data, AccountId) of
-		_ -> ok
-		catch
-			Error -> io:format("error in account: ~p~n", [Error]),
-				ok
-		end,
+	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}],
+	util:call(M, F, Args, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->
 	io:format("unknown casted message: ~p~n", [Msg]),

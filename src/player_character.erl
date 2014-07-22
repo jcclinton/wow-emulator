@@ -5,7 +5,8 @@
 	account_id,
 	name,
 	values,
-	char
+	char,
+	guid
 }).
 
 
@@ -42,18 +43,11 @@ start_link(AccountId, Guid) ->
 init({AccountId, Guid}) ->
 	io:format("char SERVER: started~n"),
 	{CharName, AccountId, Guid, CharRecord, Values} = char_data:get_char_data(Guid),
-	{ok, #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values}}.
+	{ok, #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values, guid=Guid}}.
 
-handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values}) ->
-	Args = [{payload, Payload}, {op_atom, OpAtom}, {name, CharName}, {char, CharRecord}, {values, Values}],
-	Data = recv_data:build(Args),
-	try M:F(Data, AccountId) of
-		_ -> ok
-		catch
-			Error ->
-				io:format("error in char: ~p~n", [Error]),
-				ok
-		end,
+handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values, guid=Guid}) ->
+	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}, {name, CharName}, {char, CharRecord}, {values, Values}],
+	util:call(M, F, Args, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->
 	io:format("unknown casted message: ~p~n", [Msg]),

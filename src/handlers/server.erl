@@ -1,31 +1,28 @@
 -module(server).
--export([pong/2, null/2, accept_challenge/2, query_time/2]).
+-export([pong/1, null/1, accept_challenge/1, query_time/1]).
 
 -include("include/binary.hrl").
 
 
-query_time(_Data, AccountId) ->
+query_time(_Data) ->
 	Time = util:game_time(),
 	Payload = <<Time?L>>,
-	player_router:send(AccountId, smsg_query_time_response, Payload),
-	ok.
+	{smsg_query_time_response, Payload}.
 
-pong(Data, AccountId) ->
+pong(Data) ->
 	Value = recv_data:get(payload, Data),
 	<<Ping?L, _Latency?L>> = case Value of
 		undefined -> throw(badarg);
 		Value -> Value
 	end,
 	Payload = <<Ping?L>>,
-	player_router:send(AccountId, smsg_pong, Payload),
+	{smsg_pong, Payload}.
+
+
+null(_Data) ->
 	ok.
 
-
-null(_Data, _AccountId) ->
-	ok.
-
-accept_challenge(Data, AccountId) ->
+accept_challenge(Data) ->
 	Payload = recv_data:get(payload, Data),
 	% payload is created in rcv process and is passed straight through
-	player_router:send(AccountId, smsg_auth_response, Payload),
-	ok.
+	{smsg_auth_response, Payload}.

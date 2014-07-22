@@ -1,6 +1,7 @@
 -module(util).
 
 -export([game_time/0, game_speed/0]).
+-export([call/4]).
 
 
 game_speed() ->
@@ -17,3 +18,20 @@ game_time() ->
                    ((Mo - 1)*1048576 band 16#F00000)) bor 
                    ((Y - 2000)*16777216 band 16#1F000000),
     GameTime.
+
+
+% used to call callback functions
+% if a callback returns ok, nothing happens
+% if it returns {OpAtom, Payload}
+% it sends that packet to this player
+call(M, F, Args, AccountId) ->
+	Data = recv_data:build(Args),
+	try M:F(Data) of
+		ok -> ok;
+		{OpAtom, Payload} ->
+			player_router:send(AccountId, OpAtom, Payload)
+		catch
+			Error ->
+				io:format("error in char: ~p~n", [Error]),
+				ok
+		end.

@@ -1,7 +1,6 @@
 -module(movement).
--export([handle_movement/2, set_active_mover/2, stand_state_change/2, move_time_skipped/2]).
--export([move_fall_land/2]).
--export([null/0]).
+-export([handle_movement/1, set_active_mover/1, stand_state_change/1, move_time_skipped/1]).
+-export([move_fall_land/1]).
 
 -include("include/binary.hrl").
 
@@ -12,25 +11,26 @@
 -define(MAP_HALFSIZE, ?MAP_SIZE/2).
 
 
-move_fall_land(_Data, _AccountId) ->
+move_fall_land(_Data) ->
 	io:format("received req to move time land~n"),
 	ok.
 
 
-move_time_skipped(_Data, _AccountId) ->
+move_time_skipped(_Data) ->
 	io:format("received req to move time skipped~n"),
 	ok.
 
-stand_state_change(_Data, _AccountId) ->
+stand_state_change(_Data) ->
 	io:format("received req to set stand state change~n"),
 	ok.
 
-set_active_mover(_Data, _AccountId) ->
+set_active_mover(_Data) ->
 	% dont need to do anything
 	%io:format("received req to set active mover~n"),
 	ok.
 
-handle_movement(Data, AccountId) ->
+handle_movement(Data) ->
+	AccountId = recv_data:get(account_id, Data),
 	Values = recv_data:get(values, Data),
 	Guid = object_values:get_uint64_value('OBJECT_FIELD_GUID', Values),
 	PackGuid = <<7?B, Guid?G>>,
@@ -48,8 +48,6 @@ handle_movement(Data, AccountId) ->
 			ok
 	end,
 	ok.
-
-null() -> ok.
 
 
 
