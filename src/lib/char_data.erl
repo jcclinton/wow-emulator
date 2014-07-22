@@ -2,7 +2,7 @@
 
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
--export([get_logged_in_char_name/1, enum_chars/1, delete_char/1, create_char/1, get_char_data/1]).
+-export([enum_chars/1, delete_char/1, create_char/1, get_char_data/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -23,6 +23,9 @@ cleanup() ->
 	ok.
 
 
+
+% authorized connection data
+
 store_connected_client(AccountId, Key) ->
 	ets:insert(?conn, {AccountId, Key}).
 
@@ -32,25 +35,23 @@ get_session_key(AccountId) ->
 	Key.
 
 
-get_logged_in_char_name(Guid) ->
-	case ets:match_object(?char, {'_', '_', Guid, '_', '_'}) of
-		[] -> throw(badarg);
-		[{Name,_,Guid,_, _}] -> Name
-	end.
+
+
+%char data
 
 enum_chars(AccountId) ->
-	ets:match_object(?char, {'_', AccountId, '_', '_', '_'}).
+	ets:match_object(?char, {'_', '_', AccountId, '_', '_'}).
 
-delete_char(CharName) ->
-	ets:delete(?char, CharName).
+delete_char(Guid) ->
+	ets:delete(?char, Guid).
 
 create_char(CharData) ->
 	% just decomposing this because it may change in the future
 	{CharName, AccountId, Guid, CharRecord, Values} = CharData,
-	ets:insert(?char, {CharName, AccountId, Guid, CharRecord, Values}).
+	ets:insert(?char, {Guid, CharName, AccountId, CharRecord, Values}).
 
 get_char_data(Guid) ->
-	case ets:match_object(?char, {'_', '_', Guid, '_', '_'}) of
+	case ets:lookup(?char, Guid) of
 		[] -> throw(badarg);
 		[All] -> All
 	end.

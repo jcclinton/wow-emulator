@@ -32,8 +32,7 @@ enum(Data) ->
 delete(Data) ->
 	Packet = recv_data:get(payload, Data),
 	<<Guid?Q>> = Packet,
-	CharName = char_data:get_logged_in_char_name(Guid),
-	char_data:delete_char(CharName),
+	char_data:delete_char(Guid),
 
 	Success = 16#39,
 	Msg = <<Success?B>>,
@@ -74,7 +73,7 @@ login(Data) ->
 
 
 
-	{_CharName, AccountId, Guid, Char, Values} = char_data:get_char_data(Guid),
+	{Guid, _CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
 	%io:format("logging in ~p~n", [CharName]),
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
@@ -228,7 +227,7 @@ extract_name(<<Char?B, Rest/binary>>, Name) ->
 	extract_name(Rest, [Char|Name]).
 	
 
-mapCharData({_CharName, _AccountName, _, #char{id=Guid, name=Name, race=RaceName, class=ClassName, gender=GenderName, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, guild_id=GuildId, general_flags=GeneralFlags, at_login_flags=AtLoginFlags}, _Values}) ->
+mapCharData({_, _CharName, _AccountName, #char{id=Guid, name=Name, race=RaceName, class=ClassName, gender=GenderName, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, guild_id=GuildId, general_flags=GeneralFlags, at_login_flags=AtLoginFlags}, _Values}) ->
 	Race = char_helper:race(RaceName),
 	Class = char_helper:class(ClassName),
 	Gender = char_helper:gender(GenderName),

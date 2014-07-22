@@ -42,11 +42,11 @@ start_link(AccountId, Guid) ->
 
 init({AccountId, Guid}) ->
 	io:format("char SERVER: started~n"),
-	{CharName, AccountId, Guid, CharRecord, Values} = char_data:get_char_data(Guid),
+	{Guid, CharName, AccountId, CharRecord, Values} = char_data:get_char_data(Guid),
 	{ok, #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values, guid=Guid}}.
 
 handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, name=CharName, char=CharRecord, values=Values, guid=Guid}) ->
-	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}, {name, CharName}, {char, CharRecord}, {values, Values}],
+	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}, {char_name, CharName}, {char, CharRecord}, {values, Values}],
 	util:call(M, F, Args, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->
