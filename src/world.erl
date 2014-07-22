@@ -2,7 +2,6 @@
 -behavior(gen_server).
 
 -record(state, {
-								current_guid,
 								players = []
 							 }).
 
@@ -56,7 +55,7 @@ start_link() ->
 
 init([]) ->
 	io:format("world: started~n"),
-	{ok, #state{current_guid=1}}.
+	{ok, #state{}}.
 
 
 handle_call({add_to_map, Name}, _From, State = #state{players=Players}) ->
@@ -74,8 +73,9 @@ handle_call({remove_from_map, Name}, _From, State = #state{players=Players}) ->
 	{reply, ok, State#state{players=NewPlayers}};
 handle_call(get_map_players, _From, State = #state{players=Players}) ->
 	{reply, Players, State};
-handle_call(new_guid, _From, State = #state{current_guid=Guid}) ->
-	{reply, Guid, State#state{current_guid=Guid+1}};
+handle_call(new_guid, _From, State) ->
+	Guid = world_data:increment_guid(),
+	{reply, Guid, State};
 handle_call(_E, _From, State) ->
 	{noreply, State}.
 
