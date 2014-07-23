@@ -1,25 +1,31 @@
 -module(account).
 -export([create/2, init/0, destroy/0, lookup/1]).
+-export([create_dummy_accounts/0]).
 
 -include("include/database_records.hrl").
 
+-define(acc, accounts).
+
 
 init() ->
-	ets:new(users, [named_table, set, public]),
-	create_dummy_account(),
+	ets:new(?acc, [named_table, set, public]),
+
+	dets:open_file(?acc, [{file, "./db/accounts.dets"}]),
+	dets:to_ets(?acc, ?acc),
 	ok.
 
-create_dummy_account() ->
+create_dummy_accounts() ->
 	account:create("alice", "password123"),
 	account:create("alice2", "password123").
 
 destroy() ->
-	ets:delete(users),
+	ets:delete(?acc),
+	dets:close(?acc),
 	ok.
 
 lookup(I) ->
 	io:format("looking up ~p~n", [I]),
-	Result = ets:lookup(users, I),
+	Result = ets:lookup(?acc, I),
 	Value = case Result of
 		[] -> false;
 		[{_, Record}] -> Record
@@ -38,7 +44,8 @@ create(Name, Password) when is_list(Name), is_list(Password), length(Name) > 0, 
 	Value = #account{name=BinName, salt=Salt, verifier=Verifier},
 	Key = srp:normalize(BinName),
 	%io:format("storing ~p~n", [Key]),
-	Result = ets:insert_new(users, {Key, Value}),
+	Result = ets:insert_new(?acc, {Key, Value}),
+	dets:insert_new(?acc, {Key, Value}),
 	if Result -> ok;
 		not Result -> {error, name_taken}
 	end;

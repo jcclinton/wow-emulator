@@ -6,17 +6,27 @@
 
 
 init() ->
-	ets:new(world, [named_table, set, public]),
+	Tab = world,
+	ets:new(Tab, [named_table, set, public]),
+
+	dets:open_file(Tab, [{file, "./db/world.dets"}]),
+	dets:to_ets(Tab, Tab),
 	ok.
 
 cleanup() ->
-	ets:delete(world),
+	Tab = world,
+
+	ets:delete(Tab),
+	dets:close(Tab),
 	ok.
 
 increment_guid() ->
-	Guid = case ets:lookup(world, guid) of
+	Tab = world,
+	Guid = case ets:lookup(Tab, guid) of
 		[] -> 1;
 		[{guid, Num}] -> Num
 	end,
-	ets:insert(world, {guid, Guid + 1}),
+	StoreGuid = Guid + 1,
+	ets:insert(Tab, {guid, StoreGuid}),
+	dets:insert(Tab, {guid, StoreGuid}),
 	Guid.

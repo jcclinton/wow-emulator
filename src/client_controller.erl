@@ -18,7 +18,7 @@
 
 
 move() ->
-	AccountId = "ALICE",
+	AccountId = "ALICE2",
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, move).
 

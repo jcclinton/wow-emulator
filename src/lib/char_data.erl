@@ -16,11 +16,16 @@
 init() ->
 	ets:new(?conn, [named_table, set, public]),
 	ets:new(?char, [named_table, set, public]),
+
+	dets:open_file(?char, [{file, "./db/characters.dets"}]),
+	dets:to_ets(?char, ?char),
 	ok.
 
 cleanup() ->
 	ets:delete(?conn),
 	ets:delete(?char),
+	
+	dets:close(?char),
 	ok.
 
 
@@ -61,7 +66,8 @@ get_char_values(Guid) ->
 create_char(CharData) ->
 	% just decomposing this because it may change in the future
 	{CharName, AccountId, Guid, CharRecord, Values} = CharData,
-	ets:insert(?char, {Guid, CharName, AccountId, CharRecord, Values}).
+	ets:insert(?char, {Guid, CharName, AccountId, CharRecord, Values}),
+	dets:insert(?char, {Guid, CharName, AccountId, CharRecord, Values}).
 
 get_char_data(Guid) ->
 	case ets:lookup(?char, Guid) of
