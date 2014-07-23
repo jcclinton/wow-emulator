@@ -1,8 +1,9 @@
 -module(movement).
--export([handle_movement/1, set_active_mover/1, stand_state_change/1, move_time_skipped/1]).
--export([move_fall_land/1]).
+-export([handle_movement/1]).
+-export([set_active_mover/1, stand_state_change/1, move_time_skipped/1]).
 
 -include("include/binary.hrl").
+-include("include/database_records.hrl").
 
 
 -define(MAX_NUMBER_OF_GRIDS, 64).
@@ -11,22 +12,28 @@
 -define(MAP_HALFSIZE, ?MAP_SIZE/2).
 
 
-move_fall_land(_Data) ->
-	io:format("received req to move time land~n"),
-	ok.
-
 
 move_time_skipped(_Data) ->
-	io:format("received req to move time skipped~n"),
+	% this is used if you need to modify last move time
+	% but not needed for now
+
+	%<<Guid?Q, Time?L>> = recv_data:get(payload, Data),
+	%then subtract Time from last move time maybe?
+	
 	ok.
 
-stand_state_change(_Data) ->
-	io:format("received req to set stand state change~n"),
-	ok.
+stand_state_change(Data) ->
+	<<AnimState?B>> = recv_data:get(payload, Data),
+	Guid = recv_data:get(guid, Data),
+	{Guid, CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
+	NewValues = object_values:set_byte_value('UNIT_FIELD_BYTES_1', AnimState, Values, 0),
+	CharData = {Guid, CharName, AccountId, Char, NewValues},
+	char_data:update_char(CharData),
+	{smsg_standstate_update, AnimState}.
+
 
 set_active_mover(_Data) ->
 	% dont need to do anything
-	%io:format("received req to set active mover~n"),
 	ok.
 
 handle_movement(Data) ->
@@ -39,6 +46,11 @@ handle_movement(Data) ->
 	if Allowable ->
 			OpAtom = recv_data:get(op_atom, Data),
 			Guid = recv_data:get(guid, Data),
+			{Guid, CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
+			NewChar = Char#char{position_x = X, position_y = Y, position_z = Z, orientation = O},
+			CharData = {Guid, CharName, AccountId, NewChar, Values},
+			char_data:update_char(CharData),
+
 			PackGuid = <<7?B, Guid?G>>,
 			Time = move_info:get_value(time, MoveData),
 			NewTime = Time + 500,
