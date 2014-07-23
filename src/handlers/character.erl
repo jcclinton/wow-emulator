@@ -113,11 +113,23 @@ login(Data) ->
 
 
 	%login packets to send after player is added to map
-	{OpAtom, Update} = update_object(Char, Values, true),
+	CharSelf = {Char, Values, true},
+	{OpAtom, Update} = update_data:build_packet([CharSelf]),
 	player_controller:send(AccountId, OpAtom, Update),
-	{OpAtom2, Update2} = update_object(Char, Values, false),
+
+	{OpAtom2, Update2} = update_data:build_packet([CharSelf]),
 	world:add_to_map(AccountId),
 	world:send_to_all_but_player(OpAtom2, Update2, AccountId),
+
+	AccountId2 = client_controller:get_dummy_account(),
+	if AccountId /= AccountId2 ->
+			[{_, _, _, Char2, Values2}] = char_data:enum_chars(AccountId2),
+			CharOther = {Char2, Values2, false},
+			{OpAtom2, Update3} = update_data:build_packet([CharOther]),
+			player_controller:send(AccountId, OpAtom2, Update3);
+		true -> ok
+	end,
+
 	ok.
 
 
@@ -203,19 +215,6 @@ init_world_state(Data) ->
 
 
 
-update_object(Char, Values, IsSelf) ->
-	Block = update_data:block(Char, Values, IsSelf),
-
-	BlockCount = 1,
-	HasTransport = 0,
-	Payload = <<BlockCount?L, HasTransport?B, Block/binary>>,
-	PayloadSize = byte_size(Payload),
-	if PayloadSize > 100 ->
-			CompressedPayload = update_data:compress(Payload),
-			{smsg_compressed_update_object, <<PayloadSize?L, CompressedPayload/binary>>};
-		true ->
-			{smsg_update_object, Payload}
-	end.
 
 
 

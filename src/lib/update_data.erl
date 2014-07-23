@@ -1,24 +1,32 @@
 -module(update_data).
 
--export([compress/1, decompress/1, block/3]).
+-export([compress/1, decompress/1]).
+-export([block/3]).
+-export([build_packet/1]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
 
 
-decompress(Packet) ->
-	Z = zlib:open(),
-	zlib:inflateInit(Z),
-	Data = zlib:inflate(Z, Packet),
-	zlib:inflateEnd(Z),
-	list_to_binary(Data).
 
-compress(Packet) ->
-    Z  = zlib:open(),
-    ok = zlib:deflateInit(Z, best_speed),
-    P  = zlib:deflate(Z, Packet, finish),
-    ok = zlib:deflateEnd(Z),
-    list_to_binary(P).
+build_packet(Chars) ->
+
+	Blocks = lists:foldl(fun({Char, Values, IsSelf}, Acc) ->
+		Block = update_data:block(Char, Values, IsSelf),
+		<<Acc/binary, Block/binary>>
+	end, <<>>, Chars),
+	BlockCount = length(Chars),
+
+
+	HasTransport = 0,
+	Payload = <<BlockCount?L, HasTransport?B, Blocks/binary>>,
+	PayloadSize = byte_size(Payload),
+	if PayloadSize > 100 ->
+			CompressedPayload = update_data:compress(Payload),
+			{smsg_compressed_update_object, <<PayloadSize?L, CompressedPayload/binary>>};
+		true ->
+			{smsg_update_object, Payload}
+	end.
 
 
 
@@ -87,3 +95,20 @@ compress(Packet) ->
 		Z = Char#char.position_z,
 		O = Char#char.orientation,
 		<<UpdateFlags?B, MoveFlags?L, WorldTime?L, X?f, Y?f, Z?f, O?f, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f, 1?L>>.
+
+
+
+decompress(Packet) ->
+	Z = zlib:open(),
+	zlib:inflateInit(Z),
+	Data = zlib:inflate(Z, Packet),
+	zlib:inflateEnd(Z),
+	list_to_binary(Data).
+
+compress(Packet) ->
+    Z  = zlib:open(),
+    ok = zlib:deflateInit(Z, best_speed),
+    P  = zlib:deflate(Z, Packet, finish),
+    ok = zlib:deflateEnd(Z),
+    list_to_binary(P).
+
