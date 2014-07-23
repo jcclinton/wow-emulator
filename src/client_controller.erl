@@ -11,6 +11,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([tcp_packet_received/3]).
 -export([move/0, logout/0]).
+-export([move/1, logout/1]).
 -export([get_dummy_account/0]).
 
 
@@ -23,11 +24,15 @@ get_dummy_account() ->
 
 move() ->
 	AccountId = get_dummy_account(),
+	move(AccountId).
+move(AccountId) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, move).
 
 logout() ->
 	AccountId = get_dummy_account(),
+	logout(AccountId).
+logout(AccountId) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, logout).
 

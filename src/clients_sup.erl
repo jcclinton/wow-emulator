@@ -3,7 +3,7 @@
 
 -export([start_link/0, get_count/0]).
 -export([init/1]).
--export([start_child/0]).
+-export([start_child/0, start_child/1]).
 
 
 get_count() ->
@@ -11,6 +11,8 @@ get_count() ->
 
 start_child() ->
 	AccountId = client_controller:get_dummy_account(),
+	start_child(AccountId).
+start_child(AccountId) ->
 	{ok, Pid} = supervisor:start_child(?MODULE, [AccountId]),
 	Pid.
 

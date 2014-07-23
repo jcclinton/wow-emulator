@@ -41,7 +41,7 @@ delete(Tab, Key, HasEts) ->
 
 
 
-store_new(Tab, Data) -> store(Tab, Data, false).
+store_new(Tab, Data) -> store_new(Tab, Data, false).
 store_new(Tab, Data, HasEts) ->
 	if HasEts ->
 			ets:insert_new(Tab, Data);
@@ -55,7 +55,6 @@ store(Tab, Data, HasEts) ->
 			ets:insert(Tab, Data);
 		true -> ok
 	end,
-	io:format("data: ~p~n", [Data]),
 	dets:insert(Tab, Data).
 
 
