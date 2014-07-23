@@ -117,7 +117,7 @@ terminate(_Reason, _State) ->
 
 handle_response(Opcode, Payload) ->
 	OpAtom = opcodes:get_atom_by_num(Opcode),
-	io:format("client looking up opcode: ~p~n", [OpAtom]),
+	%io:format("client looking up opcode: ~p~n", [OpAtom]),
 	Fun = lookup_opcode(OpAtom),
 	if Fun /= false ->
 			case Fun(Payload) of

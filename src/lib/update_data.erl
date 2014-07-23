@@ -9,17 +9,12 @@
 
 
 
-build_packet(Chars) ->
-
-	Blocks = lists:foldl(fun({Char, Values, IsSelf}, Acc) ->
-		Block = update_data:block(Char, Values, IsSelf),
-		<<Acc/binary, Block/binary>>
-	end, <<>>, Chars),
-	BlockCount = length(Chars),
-
+build_packet({Char, Values, IsSelf}) ->
+	Block = update_data:block(Char, Values, IsSelf),
+	BlockCount = 1,
 
 	HasTransport = 0,
-	Payload = <<BlockCount?L, HasTransport?B, Blocks/binary>>,
+	Payload = <<BlockCount?L, HasTransport?B, Block/binary>>,
 	PayloadSize = byte_size(Payload),
 	if PayloadSize > 100 ->
 			CompressedPayload = update_data:compress(Payload),
