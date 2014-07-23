@@ -9,8 +9,7 @@ init() ->
 	Tab = world,
 	ets:new(Tab, [named_table, set, public]),
 
-	dets:open_file(Tab, [{file, "./db/world.dets"}]),
-	dets:to_ets(Tab, Tab),
+	dets_store:open(Tab, true),
 	ok.
 
 cleanup() ->

@@ -10,8 +10,7 @@
 init() ->
 	ets:new(?acc, [named_table, set, public]),
 
-	dets:open_file(?acc, [{file, "./db/accounts.dets"}]),
-	dets:to_ets(?acc, ?acc),
+	dets_store:open(?acc, true),
 	ok.
 
 create_dummy_accounts() ->

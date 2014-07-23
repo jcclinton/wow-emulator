@@ -17,8 +17,7 @@ init() ->
 	ets:new(?conn, [named_table, set, public]),
 	ets:new(?char, [named_table, set, public]),
 
-	dets:open_file(?char, [{file, "./db/characters.dets"}]),
-	dets:to_ets(?char, ?char),
+	dets_store:open(?char, true),
 	ok.
 
 cleanup() ->
