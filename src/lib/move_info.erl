@@ -1,10 +1,27 @@
 -module(move_info).
 
--export([write/1, read/1]).
--export([get_coords/1]).
+-export([write/1, read/1, update/3]).
+-export([get_coords/1, get_value/2]).
 
 -include("include/binary.hrl").
 -include("include/movement.hrl").
+
+
+update(Type, ValueIn, MoveData) ->
+	lists:foldl(fun(Data={Key, _}, Acc) ->
+		if Key == Type -> [{Type, ValueIn} | Acc];
+			Key /= Type -> [Data|Acc]
+		end
+	end, [], MoveData).
+
+get_coords(MoveData) ->
+	[X, Y, Z, O] = get_values([x, y, z, o], MoveData),
+	{X, Y, Z, O}.
+
+
+get_value(Type, MoveData) ->
+	proplists:get_value(Type, MoveData).
+
 
 
 write(MoveData) ->
@@ -122,26 +139,21 @@ read(Payload) ->
 
 
 
-get_coords(MoveData) ->
-	[X, Y, Z, O] = get_values([x, y, z, o], MoveData),
-	{X, Y, Z, O}.
-
-
 % private
-get_value(Type, MoveData) ->
-	proplists:get_value(Type, MoveData).
-
 get_values(Types, MoveData) ->
-	lists:foldl(fun(Type, Acc) ->
+	Values = lists:foldl(fun(Type, Acc) ->
 		Value = proplists:get_value(Type, MoveData),
 		[Value|Acc]
-	end, [], Types).
+	end, [], Types),
+	lists:reverse(Values).
 
 create(Values) ->
 	lists:foldl(fun(Val, Acc) ->
 		[Val|Acc]
 	end, [], Values).
 		
+
+% adds values not previous in movedata
 add(Values, MoveData) ->
 	lists:foldl(fun(Val, Acc) ->
 		[Val|Acc]

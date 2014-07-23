@@ -75,9 +75,9 @@ handle_cast(move, State) ->
 	Z = Char#char.position_z,
 	O = Char#char.orientation,
 	Time = util:game_time(),
-	Unk1 = 0,
+	Fall = 0,
 	MoveFlags = 1,
-	Payload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Unk1?L>>,
+	Payload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, Fall?f>>,
 	gen_server:cast(self(), {send_to_server, {OpAtom, Payload}}),
 	{noreply, State};
 handle_cast({tcp_packet_rcvd, {Opcode, Payload}}, State) ->

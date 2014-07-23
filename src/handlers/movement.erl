@@ -40,7 +40,10 @@ handle_movement(Data) ->
 			OpAtom = recv_data:get(op_atom, Data),
 			Guid = recv_data:get(guid, Data),
 			PackGuid = <<7?B, Guid?G>>,
-			NewPayload = move_info:write(MoveData),
+			Time = move_info:get_value(time, MoveData),
+			NewTime = Time + 500,
+			MoveData2 = move_info:update(time, NewTime, MoveData),
+			NewPayload = move_info:write(MoveData2),
 			Msg = <<PackGuid/binary, NewPayload/binary>>,
 			world:send_to_all_but_player(OpAtom, Msg, Guid);
 		not Allowable ->

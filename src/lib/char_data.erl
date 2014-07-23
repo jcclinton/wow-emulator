@@ -4,6 +4,7 @@
 -export([store_connected_client/2, get_session_key/1]).
 -export([enum_chars/1, delete_char/1, create_char/1, get_char_data/1]).
 -export([get_char_name/1, get_char_values/1, get_char_record/1, get_char_record_value/1]).
+-export([update_coords/2]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -42,6 +43,13 @@ get_session_key(AccountId) ->
 
 %char data
 
+update_coords(Coords, Guid) ->
+	{Guid, CharName, AccountId, Char, Values} = get_char_data(Guid),
+	{X, Y, Z, O} = Coords,
+	NewChar = Char#char{position_x = X, position_y = Y, position_z = Z, orientation = O},
+	CharData = {Guid, CharName, AccountId, NewChar, Values},
+	update_char(CharData).
+
 enum_chars(AccountId) ->
 	ets:match_object(?char, {'_', '_', AccountId, '_', '_'}).
 
@@ -64,11 +72,15 @@ get_char_record_value(Guid) ->
 	{_Guid, _CharName, _AccountId, CharRecord, Values} = get_char_data(Guid),
 	{CharRecord, Values}.
 
-create_char(CharData) ->
-	dets_store:store_new(?char, CharData, true).
-
 get_char_data(Guid) ->
 	case dets_store:lookup(?char, Guid, true) of
 		[] -> throw(badarg);
 		[All] -> All
 	end.
+
+
+create_char(CharData) ->
+	dets_store:store_new(?char, CharData, true).
+
+update_char(CharData) ->
+	dets_store:store(?char, CharData, true).
