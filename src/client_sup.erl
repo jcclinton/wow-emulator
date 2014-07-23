@@ -5,11 +5,11 @@
 -export([init/1]).
 
 
-start_link(Account) ->
-	supervisor:start_link(?MODULE, {Account}).
+start_link(AccountId) ->
+	supervisor:start_link(?MODULE, {AccountId}).
 
-init({Account}) ->
-	Procs = getChildSpecs(Account),
+init({AccountId}) ->
+	Procs = getChildSpecs(AccountId),
 	% this supervisor wont restart its children if one dies
 	% the reason is that if a process containing the socket dies,
 	% then the socket will get closed, then the client will disconnect
@@ -17,8 +17,8 @@ init({Account}) ->
 	% so there is no point in keeping these processes around
 	{ok, {{one_for_all, 0, 1}, Procs}}.
 
-getChildSpecs(Account) ->[
+getChildSpecs(AccountId) ->[
 				{client_rcv,
-					{client_rcv, start_link, [self(), Account]},
+					{client_rcv, start_link, [self(), AccountId]},
 					transient, 10000, worker, [client_rcv]}
 				].

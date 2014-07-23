@@ -61,6 +61,9 @@ logout(Data) ->
 
 	world:remove_from_map(AccountId),
 	Guid = recv_data:get(guid, Data),
+	world:send_to_all_but_player(smsg_destroy_object, <<Guid?Q>>, AccountId),
+
+	Guid = recv_data:get(guid, Data),
 	player_controller:logout_char(AccountId, Guid),
 	ok.
 

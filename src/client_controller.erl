@@ -10,17 +10,27 @@
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([tcp_packet_received/3]).
--export([move/0]).
+-export([move/0, logout/0]).
+-export([get_dummy_account/0]).
 
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
 
 
+get_dummy_account() ->
+	"ALICE2".
+
 move() ->
-	AccountId = "ALICE2",
+	AccountId = get_dummy_account(),
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, move).
+
+logout() ->
+	AccountId = get_dummy_account(),
+	Pid = get_pid(AccountId),
+	gen_server:cast(Pid, logout).
+
 
 tcp_packet_received(AccountId, Opcode, Payload) ->
 	Msg = {tcp_packet_rcvd, {Opcode, Payload}},
@@ -47,6 +57,11 @@ init({AccountId, SendPid}) ->
 	{ok, #state{send_pid=SendPid, account_id=AccountId}}.
 
 
+handle_cast(logout, State) ->
+	OpAtom = cmsg_logout_request,
+	Payload = <<>>,
+	gen_server:cast(self(), {send_to_server, {OpAtom, Payload}}),
+	{noreply, State};
 handle_cast(move, State) ->
 	OpAtom = msg_move_start_forward,
 	Char = #char{ position_x = -8949.95, position_y = -132.493, position_z = 83.5312, orientation = 0},

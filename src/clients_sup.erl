@@ -10,8 +10,8 @@ get_count() ->
 	supervisor:count_children(?MODULE).
 
 start_child() ->
-	Account = "ALICE",
-	{ok, Pid} = supervisor:start_child(?MODULE, [Account]),
+	AccountId = client_controller:get_dummy_account(),
+	{ok, Pid} = supervisor:start_child(?MODULE, [AccountId]),
 	Pid.
 
 start_link() ->
