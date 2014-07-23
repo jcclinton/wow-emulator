@@ -35,8 +35,10 @@ handle_movement(Data) ->
 	PackGuid = <<7?B, Guid?G>>,
 
 	Payload = recv_data:get(payload, Data),
-	<<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f, _Unk1?L>> = Payload,
-	NewPayload = <<MoveFlags?L, Time?L, X?f, Y?f, Z?f, O?f>>,
+	MoveData = move_info:read(Payload),
+	NewPayload = move_info:write(MoveData),
+
+	{X, Y, Z, O} = move_info:get_coords(MoveData),
 	Allowable = verify_movement(X, Y, Z, O),
 	Msg = <<PackGuid/binary, NewPayload/binary>>,
 	%io:format("moveflags: ~p pos: {~p,~p,~p,~p} time: ~p unk1: ~p~n", [MoveFlags, X, Y, Z, O, Time, Unk1]),
