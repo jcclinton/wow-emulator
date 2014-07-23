@@ -2,6 +2,11 @@
 
 -export([game_time/0, game_speed/0]).
 -export([call/4]).
+-export([has_flag/2]).
+
+
+has_flag(Flags, Flag) ->
+	Flags band Flag /= 0.
 
 
 game_speed() ->

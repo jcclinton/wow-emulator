@@ -30,20 +30,19 @@ set_active_mover(_Data) ->
 	ok.
 
 handle_movement(Data) ->
-	AccountId = recv_data:get(account_id, Data),
-	Guid = recv_data:get(guid, Data),
-	PackGuid = <<7?B, Guid?G>>,
-
 	Payload = recv_data:get(payload, Data),
 	MoveData = move_info:read(Payload),
-	NewPayload = move_info:write(MoveData),
 
 	{X, Y, Z, O} = move_info:get_coords(MoveData),
 	Allowable = verify_movement(X, Y, Z, O),
-	Msg = <<PackGuid/binary, NewPayload/binary>>,
-	%io:format("moveflags: ~p pos: {~p,~p,~p,~p} time: ~p unk1: ~p~n", [MoveFlags, X, Y, Z, O, Time, Unk1]),
+
 	if Allowable ->
-			world:send_to_all_but_player(msg_move_start_forward, Msg, AccountId);
+			OpAtom = recv_data:get(op_atom, Data),
+			Guid = recv_data:get(guid, Data),
+			PackGuid = <<7?B, Guid?G>>,
+			NewPayload = move_info:write(MoveData),
+			Msg = <<PackGuid/binary, NewPayload/binary>>,
+			world:send_to_all_but_player(OpAtom, Msg, Guid);
 		not Allowable ->
 			io:format("bad movement data passed in: ~p~n", [Payload]),
 			ok
