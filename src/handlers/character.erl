@@ -53,17 +53,15 @@ create(Data) ->
 
 logout(Data) ->
 	AccountId = recv_data:get(account_id, Data),
+	Guid = recv_data:get(guid, Data),
 	Reason = 0, %0 means is ok to logout
 	Wait = 16777216, % set to 0 to set wait time on logout
 	Msg = <<Reason?B, Wait?L>>,
 	player_controller:send(AccountId, smsg_logout_response, Msg),
 	player_controller:send(AccountId, smsg_logout_complete, <<>>),
 
-	world:remove_from_map(AccountId),
-	Guid = recv_data:get(guid, Data),
-	world:send_to_all_but_player(smsg_destroy_object, <<Guid?Q>>, AccountId),
+	ok = world:remove_from_map(Guid),
 
-	Guid = recv_data:get(guid, Data),
 	player_controller:logout_char(AccountId, Guid),
 	ok.
 
@@ -75,7 +73,7 @@ login(Data) ->
 
 
 
-	{Guid, _CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
+	Char = char_data:get_char_record(Guid),
 	%io:format("logging in ~p~n", [CharName]),
 	X = Char#char.position_x,
 	Y = Char#char.position_y,
@@ -112,23 +110,8 @@ login(Data) ->
 	end, Funs),
 
 
-	%login packets to send after player is added to map
-	CharSelf = {Char, Values, true},
-	{OpAtom, Update} = update_data:build_packet([CharSelf]),
-	player_controller:send(AccountId, OpAtom, Update),
 
-	{OpAtom2, Update2} = update_data:build_packet([CharSelf]),
-	world:add_to_map(AccountId),
-	world:send_to_all_but_player(OpAtom2, Update2, AccountId),
-
-	AccountId2 = client_controller:get_dummy_account(),
-	if AccountId /= AccountId2 ->
-			[{_, _, _, Char2, Values2}] = char_data:enum_chars(AccountId2),
-			CharOther = {Char2, Values2, false},
-			{OpAtom2, Update3} = update_data:build_packet([CharOther]),
-			player_controller:send(AccountId, OpAtom2, Update3);
-		true -> ok
-	end,
+	ok = world:add_to_map({AccountId, Guid}),
 
 	ok.
 

@@ -3,7 +3,7 @@
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
 -export([enum_chars/1, delete_char/1, create_char/1, get_char_data/1]).
--export([get_char_name/1, get_char_values/1, get_char_record/1]).
+-export([get_char_name/1, get_char_values/1, get_char_record/1, get_char_record_value/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -59,6 +59,10 @@ get_char_name(Guid) ->
 get_char_values(Guid) ->
 	{_Guid, _CharName, _AccountId, _CharRecord, Values} = get_char_data(Guid),
 	Values.
+
+get_char_record_value(Guid) ->
+	{_Guid, _CharName, _AccountId, CharRecord, Values} = get_char_data(Guid),
+	{CharRecord, Values}.
 
 create_char(CharData) ->
 	dets_store:store_new(?char, CharData, true).

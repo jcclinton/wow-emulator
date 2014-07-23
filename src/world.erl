@@ -11,7 +11,7 @@
 -export([get_guid/0]).
 -export([get_pid/1]).
 -export([build_pid/1, build_pid/2]).
--export([add_to_map/1, remove_from_map/1, get_map_players/0]).
+-export([add_to_map/1, remove_from_map/1]).
 -export([send_to_all_but_player/3]).
 
 
@@ -22,17 +22,14 @@
 get_guid() ->
 	gen_server:call(?MODULE, new_guid).
 
-add_to_map(Name) ->
-	gen_server:call(?MODULE, {add_to_map, Name}).
+add_to_map(Player) ->
+	gen_server:call(?MODULE, {add_to_map, Player}).
 
-remove_from_map(Name) ->
-	gen_server:call(?MODULE, {remove_from_map, Name}).
+remove_from_map(Guid) ->
+	gen_server:call(?MODULE, {remove_from_map, Guid}).
 
-get_map_players() ->
-	gen_server:call(?MODULE, get_map_players).
-
-send_to_all_but_player(OpAtom, Payload, Player) ->
-	gen_server:cast(?MODULE, {send_to_all_but_player, OpAtom, Payload, Player}).
+send_to_all_but_player(OpAtom, Payload, Guid) ->
+	gen_server:cast(?MODULE, {send_to_all_but_player, OpAtom, Payload, Guid}).
 
 
 get_pid(Pid) when is_pid(Pid) -> Pid;
@@ -58,33 +55,54 @@ init([]) ->
 	{ok, #state{}}.
 
 
-handle_call({add_to_map, Name}, _From, State = #state{players=Players}) ->
-	InList = lists:any(fun(Player) -> Player == Name end, Players),
+handle_call({add_to_map, NewPlayer={AccountId, Guid}}, _From, State = #state{players=Players}) ->
+	%login packets to send when player is added to map
+	{Char, Values} = char_data:get_char_record_value(Guid),
+	CharSelf = {Char, Values, true},
+	{OpAtom1, Update1} = update_data:build_packet([CharSelf]),
+	player_controller:send(AccountId, OpAtom1, Update1),
 
+	% send update to other players
+	CharSelf2 = {Char, Values, false},
+	{OpAtom2, Update2} = update_data:build_packet([CharSelf2]),
+	send_to_all_but_player(OpAtom2, Update2, Guid),
+
+
+	InList = lists:any(fun({_, GuidOther}) -> GuidOther == Guid end, Players),
 	%add player to list
 	NewPlayers = if InList -> Players;
 		not InList ->
-			[Name|Players]
+			% send updates about other players to new player
+			lists:foreach(fun({_, GuidOther}) ->
+				{CharOther, ValuesOther} = char_data:get_char_record_value(GuidOther),
+				CharDataOther = {CharOther, ValuesOther, false},
+				{OpAtom, Update} = update_data:build_packet([CharDataOther]),
+				player_controller:send(AccountId, OpAtom, Update)
+			end, Players),
+			[NewPlayer|Players]
 	end,
 
 	{reply, ok, State#state{players=NewPlayers}};
-handle_call({remove_from_map, Name}, _From, State = #state{players=Players}) ->
-	NewPlayers = lists:delete(Name, Players),
+handle_call({remove_from_map, RemoveGuid}, _From, State = #state{players=Players}) ->
+	NewPlayers = lists:foldl(fun(Player={_, Guid}, Acc) ->
+		if Guid == RemoveGuid -> Acc;
+			Guid /= RemoveGuid -> [Player|Acc]
+		end
+	end, [], Players),
+	send_to_all_but_player(smsg_destroy_object, <<RemoveGuid?Q>>, RemoveGuid),
 	{reply, ok, State#state{players=NewPlayers}};
-handle_call(get_map_players, _From, State = #state{players=Players}) ->
-	{reply, Players, State};
 handle_call(new_guid, _From, State) ->
 	Guid = world_data:increment_guid(),
 	{reply, Guid, State};
 handle_call(_E, _From, State) ->
 	{noreply, State}.
 
-handle_cast({send_to_all_but_player, OpAtom, Payload, Name}, State = #state{players=Players}) ->
+handle_cast({send_to_all_but_player, OpAtom, Payload, ExcludeGuid}, State = #state{players=Players}) ->
 	% inform other players in list
-	lists:foreach(fun(Player) ->
-		if Player /= Name ->
-				player_controller:send(Player, OpAtom, Payload);
-			Player == Name -> ok
+	lists:foreach(fun({AccountId, Guid}) ->
+		if Guid /= ExcludeGuid ->
+				player_controller:send(AccountId, OpAtom, Payload);
+			Guid == ExcludeGuid -> ok
 		end
 	end, Players),
 	{noreply, State};
