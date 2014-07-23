@@ -8,9 +8,7 @@
 
 
 init() ->
-	ets:new(?acc, [named_table, set, public]),
-
-	dets_store:open(?acc, true),
+	dets_store:open(?acc),
 	ok.
 
 create_dummy_accounts() ->
@@ -18,18 +16,16 @@ create_dummy_accounts() ->
 	account:create("alice2", "password123").
 
 destroy() ->
-	ets:delete(?acc),
-	dets:close(?acc),
+	dets_store:close(?acc),
 	ok.
 
 lookup(I) ->
 	io:format("looking up ~p~n", [I]),
-	Result = ets:lookup(?acc, I),
+	Result = dets_store:lookup(?acc, I),
 	Value = case Result of
 		[] -> false;
 		[{_, Record}] -> Record
 	end,
-	%io:format("ets lookup result: ~p~n", [Value]),
 	Value.
 
 create(Name, Password) when is_list(Name), is_list(Password), length(Name) > 0, length(Password) > 0 ->
@@ -43,8 +39,7 @@ create(Name, Password) when is_list(Name), is_list(Password), length(Name) > 0, 
 	Value = #account{name=BinName, salt=Salt, verifier=Verifier},
 	Key = srp:normalize(BinName),
 	%io:format("storing ~p~n", [Key]),
-	Result = ets:insert_new(?acc, {Key, Value}),
-	dets:insert_new(?acc, {Key, Value}),
+	Result = dets_store:store_new(?acc, {Key, Value}),
 	if Result -> ok;
 		not Result -> {error, name_taken}
 	end;

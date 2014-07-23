@@ -15,16 +15,14 @@
 
 init() ->
 	ets:new(?conn, [named_table, set, public]),
-	ets:new(?char, [named_table, set, public]),
 
 	dets_store:open(?char, true),
 	ok.
 
 cleanup() ->
 	ets:delete(?conn),
-	ets:delete(?char),
-	
-	dets:close(?char),
+
+	dets_store:close(?char, true),
 	ok.
 
 
@@ -48,7 +46,7 @@ enum_chars(AccountId) ->
 	ets:match_object(?char, {'_', '_', AccountId, '_', '_'}).
 
 delete_char(Guid) ->
-	ets:delete(?char, Guid).
+	dets_store:delete(?char, Guid, true).
 
 get_char_record(Guid) ->
 	{_Guid, _CharName, _AccountId, CharRecord, _Values} = get_char_data(Guid),
@@ -63,13 +61,10 @@ get_char_values(Guid) ->
 	Values.
 
 create_char(CharData) ->
-	% just decomposing this because it may change in the future
-	{CharName, AccountId, Guid, CharRecord, Values} = CharData,
-	ets:insert(?char, {Guid, CharName, AccountId, CharRecord, Values}),
-	dets:insert(?char, {Guid, CharName, AccountId, CharRecord, Values}).
+	dets_store:store_new(?char, CharData, true).
 
 get_char_data(Guid) ->
-	case ets:lookup(?char, Guid) of
+	case dets_store:lookup(?char, Guid, true) of
 		[] -> throw(badarg);
 		[All] -> All
 	end.

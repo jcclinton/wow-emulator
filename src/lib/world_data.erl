@@ -6,26 +6,20 @@
 
 
 init() ->
-	Tab = world,
-	ets:new(Tab, [named_table, set, public]),
-
-	dets_store:open(Tab, true),
+	dets_store:open(world, true),
 	ok.
 
 cleanup() ->
-	Tab = world,
-
-	ets:delete(Tab),
-	dets:close(Tab),
+	dets_store:close(world, true),
 	ok.
 
 increment_guid() ->
 	Tab = world,
-	Guid = case ets:lookup(Tab, guid) of
+	Guid = case dets_store:lookup(Tab, guid, true) of
 		[] -> 1;
 		[{guid, Num}] -> Num
 	end,
+	io:format("using guid: ~p~n", [Guid]),
 	StoreGuid = Guid + 1,
-	ets:insert(Tab, {guid, StoreGuid}),
-	dets:insert(Tab, {guid, StoreGuid}),
+	dets_store:store(Tab, {guid, StoreGuid}, true),
 	Guid.

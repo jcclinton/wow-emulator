@@ -44,7 +44,7 @@ create(Data) ->
 	Char = create_char_record(Data, Guid),
 	Values = create_char_values(Data, Char),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	CharData = {Char#char.name, Char#char.account_id, Char#char.id, Char, Values},
+	CharData = {Char#char.id, Char#char.name, Char#char.account_id, Char, Values},
 	char_data:create_char(CharData),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
