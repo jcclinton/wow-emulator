@@ -123,17 +123,15 @@ send_motd(_Data) ->
 	Type = 16#0a,
 	Lang = 0,
 	Guid = 0,
-	ChatMsg = "Hello dude",
-	Len = length(ChatMsg) + 1,
+	ChatMsg = <<"Hello dude">>,
+	Len = byte_size(ChatMsg) + 1,
 	ChatTag = 0,
-	MsgBin = list_to_binary(ChatMsg),
-	Payload = <<Type?B, Lang?L, Guid?Q, Len?L, MsgBin/binary, 0?B, ChatTag?B>>,
+	Payload = <<Type?B, Lang?L, Guid?Q, Len?L, ChatMsg/binary, 0?B, ChatTag?B>>,
 	{smsg_messagechat, Payload}.
 
 account_data_times(_Data) ->
 	% send 32 empty 32 bit words
-	Size = 32 * 32,
-	Payload = <<0:Size/unsigned-little-integer>>,
+	Payload = binary:copy(<<0?L>>, 32),
 	io:format("sending account data times~n"),
 	{smsg_account_data_times, Payload}.
 
@@ -175,8 +173,8 @@ action_buttons(_Data) ->
 	{smsg_action_buttons, Payload}.
 
 initialize_factions(_Data) ->
-	Size = 64 * 5 * 8,
-	Payload = <<16#40?L, 0:Size/unsigned-little-integer>>,
+	Factions = binary:copy(<<0?Q>>, 40),
+	Payload = <<16#40?L, Factions/binary>>,
 	{smsg_initialize_factions, Payload}.
 
 login_settimespeed(_Data) ->
