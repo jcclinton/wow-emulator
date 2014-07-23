@@ -65,12 +65,9 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 			%% todo send error response
 			State;
 		true ->
-			ServerPrivate = srp:generatePrivate(),
 			Verifier = Account#account.verifier,
 			Salt = Account#account.salt,
-			%io:format("LOGIN SERVER verifier: ~p~n", [Verifier]),
-			%io:format("LOGIN SERVER priv: ~p~n", [ServerPrivate]),
-			ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, Verifier),
+			{ServerPublic, ServerPrivate} = srp:getServerPublicPrivate(Generator, Prime, Verifier),
 			MsgOut = build_challenge_response(ServerPublic, Generator, Prime, Salt),
 			%io:format("sending chal resp: ~p~n", [Msg]),
 			gen_tcp:send(Socket, MsgOut),

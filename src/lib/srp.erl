@@ -1,8 +1,11 @@
 -module(srp).
 -export([normalize/1, getGenerator/0, getPrime/0, generatePrivate/0, getServerPublic/4, computeServerKey/5, interleaveHash/1, b_to_l_endian/2, l_to_b_endian/2, getM1/7, getM2/3]).
 -export([getVerifier/3, getDerivedKey/3, getClientPublic/3, computeClientKey/6 ]).
+-export([getServerPublicPrivate/3]).
 
 -include("include/binary.hrl").
+
+-define(sha, 160).
 
 
 getGenerator() -> <<7/integer>>.
@@ -13,12 +16,13 @@ getVersion() -> '6'.
 getMultiplier() -> <<3/integer>>.
 
 
-getSize() -> 256.
+getSize() -> bit_size(getPrime()).
+getBytes() -> getSize() div 8.
 
 % randomly generated 32 byte number
 generatePrivate() ->
-	Size = getSize(),
-	crypto:rand_bytes(Size div 8).
+	Bytes = getBytes(),
+	crypto:rand_bytes(Bytes).
 
 
 %% 32 byte prime number
@@ -26,6 +30,7 @@ generatePrivate() ->
 %% used in arcemu: http://arcemu.org/wiki/Server_Logon_Challenge
 getPrime() ->
 	<<16#894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7?QQB>>.
+
 
 
 
@@ -40,7 +45,7 @@ getDerivedKey(UBin, PwBin, Salt) ->
 	PwNormBin = normalize(PwBin),
 	PassHash = hash([UNormBin, <<$:>>, PwNormBin]),
 	X = hash([Salt, PassHash]),
-	l_to_b_endian(X, 160).
+	l_to_b_endian(X, ?sha).
 
 normalize(BinString) ->
 	S1 = binary_to_list(BinString),
@@ -48,10 +53,11 @@ normalize(BinString) ->
 	list_to_binary(S2).
 
 getScrambler(ClientPublic, ServerPublic) ->
-	ClientPublicL = b_to_l_endian(ClientPublic, 256),
-	ServerPublicL = b_to_l_endian(ServerPublic, 256),
+	Size = getSize(),
+	ClientPublicL = b_to_l_endian(ClientPublic, Size),
+	ServerPublicL = b_to_l_endian(ServerPublic, Size),
 	U = hash([ClientPublicL, ServerPublicL]),
-	l_to_b_endian(U, 160).
+	l_to_b_endian(U, ?sha).
 
 
 %% client public key
@@ -60,11 +66,24 @@ getClientPublic(Generator, Prime, ClientPrivate) ->
 																																															{Pub, ClientPrivate} = crypto:generate_key(srp, {user, [Generator, Prime, Version]}, ClientPrivate),
 	Pub.
 
+%generates a public private key pair
+getServerPublicPrivate(Generator, Prime, Verifier) ->
+	Version = getVersion(),
+	{Pub, ServerPrivate} = crypto:generate_key(srp, {host, [Verifier, Generator, Prime, Version]}),
+	Size = byte_size(Pub),
+	Bytes = getBytes(),
+	%sometimes server pub comes up less than required size and needs to be regenerated
+	if Bytes /= Size ->
+			getServerPublicPrivate(Generator, Prime, Verifier);
+		Bytes == Size -> {Pub, ServerPrivate}
+	end.
+
 %% server public key
+% not used anymore because occasionaly it generates an invalid key
 getServerPublic(Generator, Prime, ServerPrivate, Verifier) ->
 	Version = getVersion(),
-	{Pub, ServerPrivate} = crypto:generate_key(srp, {host, [Verifier, Generator, Prime, Version]}, ServerPrivate),
-Pub.
+	crypto:generate_key(srp, {host, [Verifier, Generator, Prime, Version]}, ServerPrivate).
+
 
 
 %% client session key
@@ -93,52 +112,55 @@ computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier) ->
 	crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}).
 
 getM1(Prime, Generator, UBin, SaltL, ClientPublic, ServerPublic, Key) ->
-	PrimeL = b_to_l_endian(Prime, 256),
+	Size = getSize(),
+	PrimeL = b_to_l_endian(Prime, Size),
 	PhashL = hash(PrimeL),
-	Phash = l_to_b_endian(PhashL, 160),
+	Phash = l_to_b_endian(PhashL, ?sha),
 
 	GhashL = hash(Generator),
-	Ghash = l_to_b_endian(GhashL, 160),
+	Ghash = l_to_b_endian(GhashL, ?sha),
 
 	P1 = crypto:exor(Phash, Ghash),
-	P1L = b_to_l_endian(P1, 160),
+	P1L = b_to_l_endian(P1, ?sha),
 
 	UNorm = normalize(UBin),
 	NameHash = hash(UNorm),
 
-	ServerPublicL = b_to_l_endian(ServerPublic, 256),
-	ClientPublicL = b_to_l_endian(ClientPublic, 256),
-	KeyL = b_to_l_endian(Key, 320),
+	ServerPublicL = b_to_l_endian(ServerPublic, Size),
+	ClientPublicL = b_to_l_endian(ClientPublic, Size),
+	KeyL = b_to_l_endian(Key, 2 * ?sha),
 	L = [P1L, NameHash, SaltL, ClientPublicL, ServerPublicL, KeyL],
 	Ml = hash(L),
-	l_to_b_endian(Ml, 160).
+	l_to_b_endian(Ml, ?sha).
 
 
 getM2(ClientPublic, M1, Key) ->
-	ClientPublicL = b_to_l_endian(ClientPublic, 256),
-	KeyL = b_to_l_endian(Key, 320),
-	M1L = b_to_l_endian(M1, 160),
+	Size = getSize(),
+	ClientPublicL = b_to_l_endian(ClientPublic, Size),
+	KeyL = b_to_l_endian(Key, 2 * ?sha),
+	M1L = b_to_l_endian(M1, ?sha),
 	M2 = hash([ClientPublicL, M1L, KeyL]),
-	l_to_b_endian(M2, 160).
+	l_to_b_endian(M2, ?sha).
 
 
 
 
 
 interleaveHash(Input) ->
-	InputL = b_to_l_endian(Input, 256),
+	Size = getSize(),
+	InputL = b_to_l_endian(Input, Size),
 	%% todo remove all zero bytes from beginning of input
-	{Even, Odd} = getBytes(InputL, {[], []}, 0),
+	{Even, Odd} = separateBytes(InputL, {[], []}, 0),
 	EvenHash = hash(Even),
 	OddHash = hash(Odd),
 	Out = combineHashes(EvenHash, OddHash, []),
 	%io:format("input: ~p~nE: ~p~nF: ~p~nG: ~p~nH: ~p~nout: ~p~n", [Input, E, F, G, H, Out]),
 	OutBin = iolist_to_binary(Out),
-	l_to_b_endian(OutBin, 320).
+	l_to_b_endian(OutBin, 2 * ?sha).
 
 % returns tuple of even bytes and odd bytes
-getBytes(<<>>, Data, _N) -> Data;
-getBytes(<<Byte?B, Rest/binary>>, {Even, Odd}, N) ->
+separateBytes(<<>>, Data, _N) -> Data;
+separateBytes(<<Byte?B, Rest/binary>>, {Even, Odd}, N) ->
 	IsEven = N rem 2 == 0,
 	NewData = if IsEven ->
 			NewEven = Even ++ [Byte],
@@ -147,7 +169,7 @@ getBytes(<<Byte?B, Rest/binary>>, {Even, Odd}, N) ->
 			NewOdd = Odd ++ [Byte],
 			{Even, NewOdd}
 		end,
-	getBytes(Rest, NewData, N+1).
+	separateBytes(Rest, NewData, N+1).
 
 combineHashes(<<>>, <<>>, Data) -> lists:reverse(Data);
 combineHashes(<<Even0?B, EvenRest/binary>>, <<Odd0?B, OddRest/binary>>, Data) ->
