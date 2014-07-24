@@ -1,0 +1,15 @@
+-define(updatetype_values, 0).
+-define(updatetype_movement, 1).
+-define(updatetype_create_object, 2).
+-define(updatetype_create_object2, 3).
+-define(updatetype_out_of_range_objects, 4).
+-define(updatetype_near_objects, 5).
+
+-define(updateflag_none, 16#0000).
+-define(updateflag_self, 16#0001).
+-define(updateflag_transport, 16#0002).
+-define(updateflag_fullguid, 16#0004).
+-define(updateflag_highguid, 16#0008).
+-define(updateflag_all, 16#0010).
+-define(updateflag_living, 16#0020).
+-define(updateflag_has_position, 16#0040).

@@ -5,6 +5,12 @@
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
+-include("include/movement.hrl").
+-include("include/updates.hrl").
+-include("include/types.hrl").
+
+
+
 
 
 build_update_packet(Mask, Values) ->
@@ -32,8 +38,8 @@ build_packet(Block, BlockCount) ->
 
 update_block(Mask, Values) ->
 	Guid = char_values:get(guid, Values),
-	UpdateType = 0,
-	PackedGuid = <<7, Guid?G>>,
+	UpdateType = ?updatetype_values,
+	PackedGuid = pack_guid(Guid),
 	ValuesCount = (byte_size(Values) div 4) - 1,
 	Blocks = (ValuesCount + 31) div 32,
 	ValuesData = build_values_update(Mask, Values, ValuesCount),
@@ -43,23 +49,15 @@ update_block(Mask, Values) ->
 
 
 	create_block(Char, Values, IsSelf) ->
-		UpdateType = if IsSelf ->
-				3; %char_create2
-			not IsSelf ->
-				2 %char_create
+		UpdateType = if IsSelf -> ?updatetype_create_object2;
+			not IsSelf -> ?updatetype_create_object
 		end,
 		Guid = char_values:get(guid, Values),
-		% 7 tells you the size of the guid
-		% eg for a 3 byte guid,
-		% 7 = (1 << 0) bor (1 << 1) bor (1 << 2)
-		% players are always 3 bytes
-		% objects can be a maximum up to 8 bytes
-		%GuidInt2 = GuidInt + 1,
-		PackedGuid = <<7, Guid?G>>,
+		PackedGuid = pack_guid(Guid),
 		%Guid = <<7, 41, 179, 24>>,
 	%io:format("update binary guid: ~p~n", [Guid]),
 
-		TypeId = 4, %type player
+		TypeId = ?typeid_player,
 		MovementData = getMovementData(Char, IsSelf),
 		ValuesCount = (byte_size(Values) div 4) - 1,
 		Blocks = (ValuesCount + 31) div 32,
@@ -84,21 +82,29 @@ update_block(Mask, Values) ->
 
 
 
+		% 7 tells you the size of the guid
+		% eg for a 3 byte guid,
+		% 7 = (1 << 0) bor (1 << 1) bor (1 << 2)
+		% players are always 3 bytes
+		% objects can be a maximum up to 8 bytes
+		%GuidInt2 = GuidInt + 1,
+pack_guid(Guid) ->
+	<<7?B, Guid?G>>.
 
 
 
 
 	getMovementData(Char, IsSelf) ->
-		All = 16#10,
-		Self = 16#01,
-		Living = 16#20,
-		HasPosition = 16#40,
+		All = ?updateflag_all,
+		Self = ?updateflag_self,
+		Living = ?updateflag_living,
+		HasPosition = ?updateflag_has_position,
 		Flags = All bor Living bor HasPosition,
 		UpdateFlags = if IsSelf -> Flags bor Self;
 			not IsSelf -> Flags
 		end,
-		MoveFlags = 0,
-		WorldTime = 1000,
+		MoveFlags = ?moveflag_move_stop,
+		WorldTime = util:game_time(),
         Speeds         = {2.5, 7, 4.5, 4.72, 2.5,
                           7, 4.5, 3.141593, 1.0},
     {W, R, WB, S, SB, _F, _FB, T, _P} = Speeds,

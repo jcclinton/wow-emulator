@@ -3,6 +3,7 @@
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
+-include("include/types.hrl").
 
 
 
@@ -287,7 +288,7 @@ create_char_values(Data, Guid) ->
 		O = CreateInfo#char_create_info.orientation,
 
 
-	ObjectType = 25,
+	ObjectType = ?typemask_object bor ?typemask_unit bor ?typemask_player,
 	Unk3 = 16#08,
 	Unk5 = 16#20,
 	ModelId = CreateInfo#char_create_info.display_id + Gender,
