@@ -39,8 +39,8 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(),
-	{Char, CharCreator} = create_char_record(Data, Guid),
-	Values = create_char_values(CharCreator),
+	%{Char, CharCreator} = create_char_record(Data, Guid),
+	{Char, Values} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	CharData = {Guid, AccountId, Char, Values},
@@ -231,9 +231,9 @@ mapCharData({Char, Values}) ->
 	Y = Char#char.y,
 	Z = Char#char.z,
 	Name = Char#char.name,
+	AtLoginFlags = Char#char.at_login_flags,
 
 	GeneralFlags = 16#10A00040,
-	AtLoginFlags = 16#0,
 
 	PetDisplayId = 0,
 	PetLevel = 0,
@@ -278,52 +278,47 @@ mapCharData({Char, Values}) ->
 	BagInventoryType?B>>.
 	
 
-create_char_values(Char) ->
-	TotalCount = update_fields:get_total_count(player),
-	Values = binary:copy(<<0?L>>, TotalCount),
+create_char_values(Data, Guid) ->
+	Payload = recv_data:get(payload, Data),
+	{Name, NewPayload} = extract_name(Payload),
+    <<Race?B, Class?B, Gender?B, Skin?B,
+      Face?B, HairStyle?B, HairColor?B, FacialHair?B, _?B>> = NewPayload,
+    RaceName    = char_helper:to_race(Race),
+    ClassName   = char_helper:to_class(Class),
+    CreateInfo  = content:char_create_info(RaceName, ClassName),
+		X = CreateInfo#char_create_info.position_x,
+		Y = CreateInfo#char_create_info.position_y,
+		Z = CreateInfo#char_create_info.position_z,
+		O = CreateInfo#char_create_info.orientation,
 
-	Guid = Char#char_creator.id,
-	RaceName = Char#char_creator.race,
-	ClassName = Char#char_creator.class,
-	GenderName = Char#char_creator.gender,
-	Race = char_helper:race(RaceName),
-	Class = char_helper:class(ClassName),
-	Gender = char_helper:gender(GenderName),
 
-	Skin = Char#char_creator.skin,
-	Face = Char#char_creator.face,
-	HairStyle = Char#char_creator.hair_style,
-	HairColor = Char#char_creator.hair_color,
-	FacialHair = Char#char_creator.facial_hair,
-	
 	ObjectType = 25,
 	Unk3 = 16#08,
 	Unk5 = 16#20,
-	ModelId = Char#char_creator.model_id + Gender,
-	NativeModelId = Char#char_creator.model_id + Gender,
-	Scale = Char#char_creator.scale,
+	ModelId = CreateInfo#char_create_info.display_id + Gender,
+	NativeModelId = CreateInfo#char_create_info.display_id + Gender,
+	Scale = CreateInfo#char_create_info.scale,
 
-	Strength = erlang:round(Char#char_creator.strength),
-	Agility = erlang:round(Char#char_creator.agility),
-	Stamina = erlang:round(Char#char_creator.stamina),
-	Intellect = erlang:round(Char#char_creator.intellect),
-	Spirit = erlang:round(Char#char_creator.spirit),
+	Strength = erlang:round(CreateInfo#char_create_info.strength),
+	Agility = erlang:round(CreateInfo#char_create_info.agility),
+	Stamina = erlang:round(CreateInfo#char_create_info.stamina),
+	Intellect = erlang:round(CreateInfo#char_create_info.intellect),
+	Spirit = erlang:round(CreateInfo#char_create_info.spirit),
 
-	Health = Char#char_creator.health,
-	Power = Char#char_creator.power,
-	{Mana, Rage, Energy} = case Char#char_creator.power_type of
+	Health = CreateInfo#char_create_info.health,
+	Power = CreateInfo#char_create_info.power,
+	{Mana, Rage, Energy} = case CreateInfo#char_create_info.power_type of
 		rage -> {0, Power, 0};
 		energy -> {0, 0, Power};
 		_ -> {Power, 0, 0}
 	end,
 
-		%Guid2 = Guid + 1,
-		PackedGuidBin = <<Guid?G, 0>>,
-		%PackedGuidBin = <<41,179,24,0>>,
-	<<PackedGuid?L>> = PackedGuidBin,
-	%io:format("values packed guid: ~p~n", [PackedGuid]),
+
+
+
+	%initial values for this chars values object
 	KeyValues = [
-		{'OBJECT_FIELD_GUID', PackedGuid, uint64},
+		{'OBJECT_FIELD_GUID', Guid, uint64},
 		{'OBJECT_FIELD_TYPE', ObjectType, uint32},
 		{'UNIT_FIELD_BYTES_0', Race, byte_0},
 		{'UNIT_FIELD_BYTES_0', Class, byte_1},
@@ -399,7 +394,24 @@ create_char_values(Char) ->
 		%% ignore spells
 		%% ignore bags
 	],
-	lists:foldl(fun object_values:set_key_values/2, Values, KeyValues).
+
+	% create actual data objects
+
+	TotalCount = update_fields:get_total_count(player),
+	% create initially empty binary values object
+	EmptyValues = binary:copy(<<0?L>>, TotalCount),
+	Values = lists:foldl(fun object_values:set_key_values/2, EmptyValues, KeyValues),
+	Char = #char{
+		x=X,
+		y=Y,
+		z=Z,
+		orient=O,
+		name=Name,
+		zone = CreateInfo#char_create_info.zone_id,
+		map = CreateInfo#char_create_info.map_id,
+		at_login_flags = 0
+	},
+	{Char, Values}.
 
 
 
@@ -424,7 +436,7 @@ create_char_record(Data, Guid) ->
 		Y = CreateInfo#char_create_info.position_y,
 		Z = CreateInfo#char_create_info.position_z,
 		O = CreateInfo#char_create_info.orientation,
-    CharCreator = #char_creator{id               = Guid,
+    #char_creator{id               = Guid,
                  account_id       = AccountId,
                  realm_id         = Realm,
                  name             = Name,
@@ -464,16 +476,6 @@ create_char_record(Data, Guid) ->
                  min_dmg          = CreateInfo#char_create_info.min_dmg,
                  max_dmg          = CreateInfo#char_create_info.max_dmg,
                  scale            = CreateInfo#char_create_info.scale
-								 },
-		Char = #char{
-			x=X,
-			y=Y,
-			z=Z,
-			orient=O,
-			name=Name,
-			zone = CreateInfo#char_create_info.zone_id,
-			map = CreateInfo#char_create_info.map_id
-		},
-		{Char, CharCreator}.
+								 }.
 
 
