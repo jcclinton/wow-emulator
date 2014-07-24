@@ -15,10 +15,7 @@ enum(Data) ->
 	Chars = char_data:enum_chars(AccountId),
 	Num = length(Chars),
 	CharDataOut = if Num > 0 ->
-								CharList1 = lists:map(fun({_Guid, _AccountId, Char, Values}) ->
-									{Char, Values}
-								end, Chars),
-								CharList = lists:map(fun mapCharData/1, CharList1),
+								CharList = lists:map(fun mapCharData/1, Chars),
 								CharData = iolist_to_binary(CharList),
 								CharData;
 							Num == 0 -> <<>>
@@ -42,8 +39,7 @@ create(Data) ->
 	{Char, Values} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	CharData = {Guid, AccountId, Char, Values},
-	char_data:create_char(CharData),
+	char_data:create_char(Guid, AccountId, Char, Values),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
 	{smsg_char_create, Msg}.
@@ -71,7 +67,7 @@ login(Data) ->
 
 
 
-	Char = char_data:get_char_record(Guid),
+	Char = char_data:get_char(Guid),
 	%io:format("logging in ~p~n", [CharName]),
 	X = Char#char.x,
 	Y = Char#char.y,
@@ -142,7 +138,7 @@ set_tutorial_flags(_Data) ->
 
 bind_point_update(Data) ->
 	Guid = recv_data:get(guid, Data),
-	Char = char_data:get_char_record(Guid),
+	Char = char_data:get_char(Guid),
 	Zone = Char#char.zone,
 	Map = Char#char.map,
 	X = Char#char.x,
@@ -180,7 +176,7 @@ login_settimespeed(_Data) ->
 
 init_world_state(Data) ->
 	Guid = recv_data:get(guid, Data),
-	Char = char_data:get_char_record(Guid),
+	Char = char_data:get_char(Guid),
 	MapId = Char#char.map,
 	ZoneId = Char#char.zone,
 	Count = 6,

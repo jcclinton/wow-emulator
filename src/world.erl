@@ -57,7 +57,7 @@ init([]) ->
 
 handle_call({add_to_map, NewPlayer={AccountId, Guid}}, _From, State = #state{players=Players}) ->
 	%login packets to send when player is added to map
-	{Char, Values} = char_data:get_char_record_value(Guid),
+	{Char, Values} = char_data:get_char_values_pair(Guid),
 	{OpAtom1, Update1} = update_data:build_packet({Char, Values, true}),
 	player_controller:send(AccountId, OpAtom1, Update1),
 
@@ -72,7 +72,7 @@ handle_call({add_to_map, NewPlayer={AccountId, Guid}}, _From, State = #state{pla
 		not InList ->
 			% send updates about other players to new player
 			lists:foreach(fun({_, GuidOther}) ->
-				{CharOther, ValuesOther} = char_data:get_char_record_value(GuidOther),
+				{CharOther, ValuesOther} = char_data:get_char_values_pair(GuidOther),
 				{OpAtom, Update} = update_data:build_packet({CharOther, ValuesOther, false}),
 				player_controller:send(AccountId, OpAtom, Update)
 			end, Players),

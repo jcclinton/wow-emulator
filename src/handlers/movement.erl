@@ -25,10 +25,9 @@ move_time_skipped(_Data) ->
 stand_state_change(Data) ->
 	<<AnimState?B, _/binary>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
-	{Guid, CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
+	Values = char_data:get_values(Guid),
 	NewValues = char_values:set_anim_state(AnimState, Values),
-	CharData = {Guid, CharName, AccountId, Char, NewValues},
-	char_data:update_char(CharData),
+	char_data:update_values(Guid, NewValues),
 	{smsg_standstate_update, AnimState}.
 
 

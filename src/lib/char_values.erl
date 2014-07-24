@@ -19,7 +19,7 @@ get(Type, Input) ->
 	Values = if is_binary(Input) -> Input;
 		is_number(Input) ->
 			% input is the guid, lookup the values object
-			char_data:get_char_values(Input)
+			char_data:get_values(Input)
 	end,
 	try ?MODULE:Type(Values) of
 		Val -> Val
