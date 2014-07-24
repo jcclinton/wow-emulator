@@ -24,8 +24,9 @@ tutorial_flag(_Data) ->
 	io:format("received req for tutorial flag~n"),
 	ok.
 
-zone_update(_Data) ->
-	io:format("received req for zone update~n"),
+zone_update(Data) ->
+	Payload = recv_data:get(payload, Data),
+	io:format("received req for zone update: ~p~n", [Payload]),
 	ok.
 
 meetingstone_info(_Data) ->
