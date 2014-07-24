@@ -39,7 +39,6 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(),
-	%{Char, CharCreator} = create_char_record(Data, Guid),
 	{Char, Values} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
@@ -412,70 +411,3 @@ create_char_values(Data, Guid) ->
 		at_login_flags = 0
 	},
 	{Char, Values}.
-
-
-
-
-
-		
-
-
-create_char_record(Data, Guid) ->
-	AccountId = recv_data:get(account_id, Data),
-	Payload = recv_data:get(payload, Data),
-	{Name, NewPayload} = extract_name(Payload),
-    <<Race?B, Class?B, Gender?B, Skin?B,
-      Face?B, HS?B, HC?B, FH?B, _?B>> = NewPayload,
-    RaceName    = char_helper:to_race(Race),
-    ClassName   = char_helper:to_class(Class),
-    CreateInfo  = content:char_create_info(RaceName, ClassName),
-		GenderName = char_helper:to_gender(Gender),
-		Realm = 1,
-    GenderValue = Gender * if Race =:= 10 -> -1; true -> 1 end,
-		X = CreateInfo#char_create_info.position_x,
-		Y = CreateInfo#char_create_info.position_y,
-		Z = CreateInfo#char_create_info.position_z,
-		O = CreateInfo#char_create_info.orientation,
-    #char_creator{id               = Guid,
-                 account_id       = AccountId,
-                 realm_id         = Realm,
-                 name             = Name,
-                 race             = RaceName,
-                 gender           = GenderName,
-                 class            = ClassName,
-                 skin             = Skin,
-                 face             = Face,
-                 hair_style       = HS,
-                 hair_color       = HC,
-                 facial_hair      = FH,
-                 level            = 1,
-                 guild_id         = 0,
-                 general_flags    = 16#10A00040,
-                 at_login_flags   = 0,
-                 model_id = CreateInfo#char_create_info.display_id,
-                 faction_template = CreateInfo#char_create_info.faction_template,
-                 map_id           = CreateInfo#char_create_info.map_id,
-                 zone_id          = CreateInfo#char_create_info.zone_id,
-                 position_x       = X,
-                 position_y       = Y,
-                 position_z       = Z,
-                 orientation      = O,
-                 display_id       = CreateInfo#char_create_info.display_id + GenderValue,
-                 strength         = CreateInfo#char_create_info.strength,
-                 agility          = CreateInfo#char_create_info.agility,
-                 stamina          = CreateInfo#char_create_info.stamina,
-                 intellect        = CreateInfo#char_create_info.intellect,
-                 spirit           = CreateInfo#char_create_info.spirit,
-                 health           = CreateInfo#char_create_info.health,
-                 mana             = CreateInfo#char_create_info.mana,
-                 focus            = CreateInfo#char_create_info.focus,
-                 power            = CreateInfo#char_create_info.power,
-                 power_type       = CreateInfo#char_create_info.power_type,
-                 intro            = CreateInfo#char_create_info.intro,
-                 attack_power     = CreateInfo#char_create_info.attack_power,
-                 min_dmg          = CreateInfo#char_create_info.min_dmg,
-                 max_dmg          = CreateInfo#char_create_info.max_dmg,
-                 scale            = CreateInfo#char_create_info.scale
-								 }.
-
-

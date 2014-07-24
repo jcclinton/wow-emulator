@@ -48,9 +48,6 @@ init({AccountId, Guid}) ->
 	io:format("char SERVER: started~n"),
 	char_data:init_session(Guid),
 
-	% init bit mask
-	char_data:clear_mask(Guid),
-
 	{ok, TRef} = timer:apply_interval(50, ?MODULE, update, [AccountId]),
 	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef}}.
 

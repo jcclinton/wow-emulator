@@ -47,7 +47,8 @@ get_session_key(AccountId) ->
 
 % session data
 init_session(Guid) ->
-	ets:insert_new(?char_sess, {Guid, #char_sess{}}).
+	EmptyMask = update_mask:empty(),
+	ets:insert_new(?char_sess, {Guid, #char_sess{update_mask=EmptyMask}}).
 
 close_session(Guid) ->
 	ets:delete(?char_sess, Guid).
@@ -67,8 +68,7 @@ get_mask(Guid) ->
 	Sess#char_sess.update_mask.
 
 clear_mask(Guid) ->
-	TotalCount = update_fields:get_total_count(player),
-	EmptyMask = update_mask:empty(TotalCount - 1),
+	EmptyMask = update_mask:empty(),
 	store_mask(Guid, EmptyMask).
 
 
