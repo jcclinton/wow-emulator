@@ -36,10 +36,11 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(),
-	Char = create_char_record(Data, Guid),
-	Values = create_char_values(Data, Char),
+	{Char, CharCreator} = create_char_record(Data, Guid),
+	Values = create_char_values(CharCreator),
+	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	CharData = {Char#char.id, Char#char.name, Char#char.account_id, Char, Values},
+	CharData = {Guid, AccountId, Char, Values},
 	char_data:create_char(CharData),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
@@ -246,39 +247,40 @@ mapCharData({_, _CharName, _AccountName, #char{id=Guid, name=Name, race=RaceName
 	BagInventoryType?B>>.
 	
 
-create_char_values(_Data, Char) ->
+create_char_values(Char) ->
 	TotalCount = update_fields:get_total_count(player),
 	Values = binary:copy(<<0?L>>, TotalCount),
 
-	Guid = Char#char.id,
-	RaceName = Char#char.race,
-	ClassName = Char#char.class,
-	GenderName = Char#char.gender,
+	Guid = Char#char_creator.id,
+	RaceName = Char#char_creator.race,
+	ClassName = Char#char_creator.class,
+	GenderName = Char#char_creator.gender,
 	Race = char_helper:race(RaceName),
 	Class = char_helper:class(ClassName),
 	Gender = char_helper:gender(GenderName),
 
-	Skin = Char#char.skin,
-	Face = Char#char.face,
-	HairStyle = Char#char.hair_style,
-	HairColor = Char#char.hair_color,
-	FacialHair = Char#char.facial_hair,
+	Skin = Char#char_creator.skin,
+	Face = Char#char_creator.face,
+	HairStyle = Char#char_creator.hair_style,
+	HairColor = Char#char_creator.hair_color,
+	FacialHair = Char#char_creator.facial_hair,
 	
 	ObjectType = 25,
 	Unk3 = 16#08,
 	Unk5 = 16#20,
-	ModelId = Char#char.model_id + Gender,
-	NativeModelId = Char#char.model_id + Gender,
+	ModelId = Char#char_creator.model_id + Gender,
+	NativeModelId = Char#char_creator.model_id + Gender,
+	Scale = Char#char_creator.scale,
 
-	Strength = erlang:round(Char#char.strength),
-	Agility = erlang:round(Char#char.agility),
-	Stamina = erlang:round(Char#char.stamina),
-	Intellect = erlang:round(Char#char.intellect),
-	Spirit = erlang:round(Char#char.spirit),
+	Strength = erlang:round(Char#char_creator.strength),
+	Agility = erlang:round(Char#char_creator.agility),
+	Stamina = erlang:round(Char#char_creator.stamina),
+	Intellect = erlang:round(Char#char_creator.intellect),
+	Spirit = erlang:round(Char#char_creator.spirit),
 
-	Health = Char#char.health,
-	Power = Char#char.power,
-	{Mana, Rage, Energy} = case Char#char.power_type of
+	Health = Char#char_creator.health,
+	Power = Char#char_creator.power,
+	{Mana, Rage, Energy} = case Char#char_creator.power_type of
 		rage -> {0, Power, 0};
 		energy -> {0, 0, Power};
 		_ -> {Power, 0, 0}
@@ -298,7 +300,7 @@ create_char_values(_Data, Char) ->
     {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, byte_1},
     {'UNIT_FIELD_LEVEL', 1, uint32},
     {'PLAYER_EXPLORED_ZONES_1', 0, uint64},
-    {'OBJECT_FIELD_SCALE_X', Char#char.scale, float},
+    {'OBJECT_FIELD_SCALE_X', Scale, float},
     {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
     {'UNIT_FIELD_NATIVEDISPLAYID', NativeModelId, uint32},
     {'PLAYER_FIELD_COINAGE', 0, uint32},
@@ -386,7 +388,11 @@ create_char_record(Data, Guid) ->
     CreateInfo  = content:char_create_info(RaceName, ClassName),
 		Realm = 1,
     GenderValue = Gender * if Race =:= 10 -> -1; true -> 1 end,
-    Char = #char{id               = Guid,
+		X = CreateInfo#char_create_info.position_x,
+		Y = CreateInfo#char_create_info.position_y,
+		Z = CreateInfo#char_create_info.position_z,
+		O = CreateInfo#char_create_info.orientation,
+    CharCreator = #char_creator{id               = Guid,
                  account_id       = AccountId,
                  realm_id         = Realm,
                  name             = Name,
@@ -406,10 +412,10 @@ create_char_record(Data, Guid) ->
                  faction_template = CreateInfo#char_create_info.faction_template, 
                  map_id           = CreateInfo#char_create_info.map_id, 
                  zone_id          = CreateInfo#char_create_info.zone_id, 
-                 position_x       = CreateInfo#char_create_info.position_x, 
-                 position_y       = CreateInfo#char_create_info.position_y, 
-                 position_z       = CreateInfo#char_create_info.position_z, 
-                 orientation      = CreateInfo#char_create_info.orientation, 
+                 position_x       = X,
+                 position_y       = Y,
+                 position_z       = Z,
+                 orientation      = O,
                  display_id       = CreateInfo#char_create_info.display_id + GenderValue, 
                  strength         = CreateInfo#char_create_info.strength, 
                  agility          = CreateInfo#char_create_info.agility,
@@ -428,6 +434,7 @@ create_char_record(Data, Guid) ->
                  scale            = CreateInfo#char_create_info.scale,
 								 target = 0
 								 },
-		Char.
+		Char = #char{x=X, y=Y, z=Z, orient=O, name=Name},
+		{Char, CharCreator}.
 
 
