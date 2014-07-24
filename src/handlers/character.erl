@@ -431,8 +431,7 @@ create_char_record(Data, Guid) ->
                  attack_power     = CreateInfo#char_create_info.attack_power, 
                  min_dmg          = CreateInfo#char_create_info.min_dmg, 
                  max_dmg          = CreateInfo#char_create_info.max_dmg, 
-                 scale            = CreateInfo#char_create_info.scale,
-								 target = 0
+                 scale            = CreateInfo#char_create_info.scale
 								 },
 		Char = #char{x=X, y=Y, z=Z, orient=O, name=Name},
 		{Char, CharCreator}.

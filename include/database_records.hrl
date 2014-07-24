@@ -16,7 +16,7 @@
 -record(pet,     {id, owner}).
 
 %char session is not persistent
--record(char_sess, {target=0}).
+-record(char_sess, {target=0, update_mask=0}).
 
 -record(char_create_info, {faction_template, map_id, zone_id, position_x, 
                            position_y, position_z, orientation, display_id, 

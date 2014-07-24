@@ -26,7 +26,7 @@ stand_state_change(Data) ->
 	<<AnimState?B, _/binary>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
 	{Guid, CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
-	NewValues = object_values:set_byte_value('UNIT_FIELD_BYTES_1', AnimState, Values, 0),
+	NewValues = char_values:set_anim_state(AnimState, Values),
 	CharData = {Guid, CharName, AccountId, Char, NewValues},
 	char_data:update_char(CharData),
 	{smsg_standstate_update, AnimState}.
@@ -47,7 +47,7 @@ handle_movement(Data) ->
 			OpAtom = recv_data:get(op_atom, Data),
 			Guid = recv_data:get(guid, Data),
 
-	char_data:update_char(Guid, fun(Char) -> Char#char{position_x = X, position_y = Y, position_z = Z, orientation = O} end),
+			char_data:update_coords(Guid, X, Y, Z, O),
 
 			PackGuid = <<7?B, Guid?G>>,
 			Time = move_info:get_value(time, MoveData),

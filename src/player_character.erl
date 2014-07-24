@@ -3,13 +3,14 @@
 
 -record(state, {
 	account_id,
-	guid
+	guid,
+	update_timer
 }).
 
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([get_pid/1, send/3, handle_packet/5]).
+-export([get_pid/1, send/3, handle_packet/5, update/1]).
 
 
 -include("include/binary.hrl").
@@ -29,6 +30,11 @@ handle_packet(AccountId, OpAtom, M, F, Payload) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {packet_rcvd, OpAtom, M, F, Payload}).
 
+update(AccountId) ->
+	Pid = get_pid(AccountId),
+	gen_server:cast(Pid, update).
+
+
 
 
 %% behavior callbacks
@@ -41,8 +47,26 @@ init({AccountId, Guid}) ->
 	process_flag(trap_exit, true),
 	io:format("char SERVER: started~n"),
 	char_data:init_session(Guid),
-	{ok, #state{account_id=AccountId, guid=Guid}}.
 
+	% init bit mask
+	char_data:clear_mask(Guid),
+
+	{ok, TRef} = timer:apply_interval(50, ?MODULE, update, [AccountId]),
+	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef}}.
+
+
+handle_cast(update, State = #state{guid=Guid}) ->
+	Mask = char_data:get_mask(Guid),
+	IsEmpty = update_mask:is_empty(Mask),
+	if not IsEmpty ->
+			%build update object
+
+			%world:send_to_all_but_player(OpAtom, Msg, Guid),
+			char_data:clear_mask(Guid),
+			ok;
+		true -> ok
+	end,
+	{noreply, State};
 handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
 	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}],
 	util:call(M, F, Args, AccountId),
@@ -64,7 +88,8 @@ code_change(_OldVsn, State, _Extra) ->
 	io:format("code change~n"),
 	{ok, State}.
 
-terminate(_Reason, State) ->
-	char_data:close_session(State#state.guid),
-	io:format("WORLD: shutting down char~n"),
+terminate(_Reason, #state{guid=Guid, update_timer=Timer}) ->
+	char_data:close_session(Guid),
+	timer:cancel(Timer),
+	io:format("WORLD: shutting down char: ~p~n", [Guid]),
 	ok.
