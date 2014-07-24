@@ -1,16 +1,15 @@
 -module(update_data).
 
 -export([compress/1, decompress/1]).
--export([block/3]).
--export([build_packet/1]).
+-export([build_create_packet/1]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
 
 
 
-build_packet({Char, Values, IsSelf}) ->
-	Block = update_data:block(Char, Values, IsSelf),
+build_create_packet({Char, Values, IsSelf}) ->
+	Block = create_block(Char, Values, IsSelf),
 	BlockCount = 1,
 
 	HasTransport = 0,
@@ -25,7 +24,7 @@ build_packet({Char, Values, IsSelf}) ->
 
 
 
-	block(Char, Values, IsSelf) ->
+	create_block(Char, Values, IsSelf) ->
 		UpdateType = if IsSelf ->
 				3; %char_create2
 			not IsSelf ->

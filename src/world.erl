@@ -58,11 +58,11 @@ init([]) ->
 handle_call({add_to_map, NewPlayer={AccountId, Guid}}, _From, State = #state{players=Players}) ->
 	%login packets to send when player is added to map
 	{Char, Values} = char_data:get_char_values_pair(Guid),
-	{OpAtom1, Update1} = update_data:build_packet({Char, Values, true}),
+	{OpAtom1, Update1} = update_data:build_create_packet({Char, Values, true}),
 	player_controller:send(AccountId, OpAtom1, Update1),
 
 	% send update to other players
-	{OpAtom2, Update2} = update_data:build_packet({Char, Values, false}),
+	{OpAtom2, Update2} = update_data:build_create_packet({Char, Values, false}),
 	send_to_all_but_player(OpAtom2, Update2, Guid),
 
 
@@ -73,7 +73,7 @@ handle_call({add_to_map, NewPlayer={AccountId, Guid}}, _From, State = #state{pla
 			% send updates about other players to new player
 			lists:foreach(fun({_, GuidOther}) ->
 				{CharOther, ValuesOther} = char_data:get_char_values_pair(GuidOther),
-				{OpAtom, Update} = update_data:build_packet({CharOther, ValuesOther, false}),
+				{OpAtom, Update} = update_data:build_create_packet({CharOther, ValuesOther, false}),
 				player_controller:send(AccountId, OpAtom, Update)
 			end, Players),
 			[NewPlayer|Players]
