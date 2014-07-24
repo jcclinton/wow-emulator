@@ -5,23 +5,28 @@
 -export([enum_chars/1, delete_char/1, create_char/1, get_char_data/1]).
 -export([get_char_name/1, get_char_values/1, get_char_record/1, get_char_record_value/1]).
 -export([update_char/1, update_char/2]).
+-export([init_session/1, close_session/1]).
+-export([store_selection/2]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
 
 -define(conn, connected_clients).
+-define(char_sess, characters_session).
 -define(char, characters).
 
 
 
 init() ->
 	ets:new(?conn, [named_table, set, public]),
+	ets:new(?char_sess, [named_table, set, public]),
 
 	dets_store:open(?char, true),
 	ok.
 
 cleanup() ->
 	ets:delete(?conn),
+	ets:delete(?char_sess),
 
 	dets_store:close(?char, true),
 	ok.
@@ -39,9 +44,21 @@ get_session_key(AccountId) ->
 	Key.
 
 
+% session data
+init_session(Guid) ->
+	ets:insert_new(?char_sess, {Guid, #char_sess{}}).
+
+close_session(Guid) ->
+	ets:delete(?char_sess, Guid).
+
+store_selection(Guid, Target) ->
+	[{Guid, Sess}] = ets:lookup(?char_sess, Guid),
+	NewSess = Sess#char_sess{target=Target},
+	ets:insert(?char_sess, {Guid, NewSess}).
 
 
-%char data
+
+% persistent char data
 
 enum_chars(AccountId) ->
 	ets:match_object(?char, {'_', '_', AccountId, '_', '_'}).

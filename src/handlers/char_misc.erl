@@ -17,7 +17,7 @@ far_sight(Data) ->
 set_selection(Data) ->
 	<<TargetGuid?Q>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
-	char_data:update_char(Guid, fun(Char) -> Char#char{target=TargetGuid} end),
+	char_data:store_selection(Guid, TargetGuid),
 	ok.
 
 tutorial_flag(_Data) ->

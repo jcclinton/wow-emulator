@@ -38,8 +38,9 @@ start_link(AccountId, Guid) ->
 	gen_server:start_link(Pid, ?MODULE, {AccountId, Guid}, []).
 
 init({AccountId, Guid}) ->
+	process_flag(trap_exit, true),
 	io:format("char SERVER: started~n"),
-	{Guid, CharName, AccountId, CharRecord, Values} = char_data:get_char_data(Guid),
+	char_data:init_session(Guid),
 	{ok, #state{account_id=AccountId, guid=Guid}}.
 
 handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
@@ -63,6 +64,7 @@ code_change(_OldVsn, State, _Extra) ->
 	io:format("code change~n"),
 	{ok, State}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+	char_data:close_session(State#state.guid),
 	io:format("WORLD: shutting down char~n"),
 	ok.
