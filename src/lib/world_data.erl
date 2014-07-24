@@ -19,7 +19,6 @@ increment_guid() ->
 		[] -> 1;
 		[{guid, Num}] -> Num
 	end,
-	io:format("using guid: ~p~n", [Guid]),
 	StoreGuid = Guid + 1,
 	dets_store:store(Tab, {guid, StoreGuid}, true),
 	Guid.

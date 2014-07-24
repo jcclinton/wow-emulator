@@ -14,13 +14,16 @@ enum(Data) ->
 	AccountId = recv_data:get(account_id, Data),
 	Chars = char_data:enum_chars(AccountId),
 	Num = length(Chars),
-	CharDataOut2 = if Num > 0 ->
-								CharList = lists:map(fun mapCharData/1, Chars),
+	CharDataOut = if Num > 0 ->
+								CharList1 = lists:map(fun({_Guid, _AccountId, Char, Values}) ->
+									{Char, Values}
+								end, Chars),
+								CharList = lists:map(fun mapCharData/1, CharList1),
 								CharData = iolist_to_binary(CharList),
 								CharData;
-							true -> <<>>
+							Num == 0 -> <<>>
 						end,
-	Msg = <<Num?B, CharDataOut2/binary>>,
+	Msg = <<Num?B, CharDataOut/binary>>,
 	{smsg_char_enum, Msg}.
 
 
@@ -71,11 +74,11 @@ login(Data) ->
 
 	Char = char_data:get_char_record(Guid),
 	%io:format("logging in ~p~n", [CharName]),
-	X = Char#char.position_x,
-	Y = Char#char.position_y,
-	Z = Char#char.position_z,
-	MapId = Char#char.map_id,
-	Orientation = Char#char.orientation,
+	X = Char#char.x,
+	Y = Char#char.y,
+	Z = Char#char.z,
+	MapId = Char#char.map,
+	Orientation = Char#char.orient,
 	Payload = <<MapId?L, X?f, Y?f, Z?f, Orientation?f>>,
 	%io:format("login payload: ~p~n", [Payload]),
 	player_controller:send(AccountId, smsg_login_verify_world, Payload),
@@ -141,11 +144,11 @@ set_tutorial_flags(_Data) ->
 bind_point_update(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Char = char_data:get_char_record(Guid),
-	Zone = Char#char.zone_id,
-	Map = Char#char.map_id,
-	X = Char#char.position_x,
-	Y = Char#char.position_y,
-	Z = Char#char.position_z,
+	Zone = Char#char.zone,
+	Map = Char#char.map,
+	X = Char#char.x,
+	Y = Char#char.y,
+	Z = Char#char.z,
 	Payload = <<X?f, Y?f, Z?f, Map?L, Zone?L>>,
 	{smsg_bindpointupdate, Payload}.
 
@@ -179,8 +182,8 @@ login_settimespeed(_Data) ->
 init_world_state(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Char = char_data:get_char_record(Guid),
-	MapId = Char#char.map_id,
-	ZoneId = Char#char.zone_id,
+	MapId = Char#char.map,
+	ZoneId = Char#char.zone,
 	Count = 6,
 	%Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
 	Rest = <<16#d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:384/unsigned-big-integer>>,
@@ -206,43 +209,71 @@ extract_name(<<Char?B, Rest/binary>>, Name) ->
 	extract_name(Rest, [Char|Name]).
 	
 
-mapCharData({_, _CharName, _AccountName, #char{id=Guid, name=Name, race=RaceName, class=ClassName, gender=GenderName, skin=Skin, face=Face, hair_style=HairStyle, hair_color=HairColor, facial_hair=FacialHair, level=Level, zone_id=Zone, map_id=Map, position_x=X, position_y=Y, position_z=Z, guild_id=GuildId, general_flags=GeneralFlags, at_login_flags=AtLoginFlags}, _Values}) ->
-	Race = char_helper:race(RaceName),
-	Class = char_helper:class(ClassName),
-	Gender = char_helper:gender(GenderName),
+mapCharData({Char, Values}) ->
+
+	Guid = char_values:get(guid, Values),
+	Race = char_values:get(race, Values),
+	Class = char_values:get(class, Values),
+	Gender = char_values:get(gender, Values),
+
+	Skin = char_values:get(skin, Values),
+	Face = char_values:get(face, Values),
+	HairStyle = char_values:get(hair_style, Values),
+	HairColor = char_values:get(hair_color, Values),
+	FacialHair = char_values:get(facial_hair, Values),
+	Level = char_values:get(level, Values),
+
+	GuildId = char_values:get(guild_id, Values),
+
+	Zone = Char#char.zone,
+	Map = Char#char.map,
+	X = Char#char.x,
+	Y = Char#char.y,
+	Z = Char#char.z,
+	Name = Char#char.name,
+
+	GeneralFlags = 16#10A00040,
+	AtLoginFlags = 16#0,
+
 	PetDisplayId = 0,
 	PetLevel = 0,
 	PetFamily = 0,
+
 	EQUIPMENT_SLOT_END = 19,
-	SlotDataSize = EQUIPMENT_SLOT_END * 40,
+	ItemSlotData = binary:copy(<<0?B>>, 5 * EQUIPMENT_SLOT_END),
+
 	BagDisplayId = 0,
 	BagInventoryType = 0,
-	NameSize = size(Name) * 8,
-	<<NameNum:NameSize/unsigned-big-integer>> = Name,
+
 	<<Guid?Q,
-	NameNum:NameSize/unsigned-big-integer,
+	Name/binary,
 	0?B,
 	Race?B,
 	Class?B,
 	Gender?B,
+
 	Skin?B,
 	Face?B,
 	HairStyle?B,
 	HairColor?B,
 	FacialHair?B,
+
 	Level?B,
+
 	Zone?L,
 	Map?L,
 	X?f,
 	Y?f,
 	Z?f,
+
 	GuildId?L,
 	GeneralFlags?L,
 	AtLoginFlags?B,
+
 	PetDisplayId?L,
 	PetLevel?L,
 	PetFamily?L,
-	0:SlotDataSize/unsigned-little-integer,
+	ItemSlotData/binary,
 	BagDisplayId?L,
 	BagInventoryType?B>>.
 	
@@ -298,7 +329,7 @@ create_char_values(Char) ->
 		{'UNIT_FIELD_BYTES_0', Class, byte_1},
 		{'UNIT_FIELD_BYTES_0', Gender, byte_2},
     {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, byte_1},
-    {'UNIT_FIELD_LEVEL', 1, uint32},
+    {'UNIT_FIELD_LEVEL', 1, uint32}, % level
     {'PLAYER_EXPLORED_ZONES_1', 0, uint64},
     {'OBJECT_FIELD_SCALE_X', Scale, float},
     {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
@@ -317,7 +348,7 @@ create_char_values(Char) ->
     {'UNIT_FIELD_FACTIONTEMPLATE', 35, uint32}, %not sure what this should be
     {'UNIT_FIELD_CHARM', 0, uint64}, %not sure what this should be
     {'PLAYER_CHARACTER_POINTS2', 2, uint32}, %num primary trade professions
-    {'UNIT_FIELD_CHANNEL_OBJECT', Guid, uint64},
+    {'UNIT_FIELD_CHANNEL_OBJECT', 0, uint64},
     {'UNIT_CHANNEL_SPELL', 0, uint32},
     {'UNIT_FIELD_SUMMON', 0, uint64}, %pet
     {'UNIT_FIELD_TARGET', 0, uint64},
@@ -329,7 +360,7 @@ create_char_values(Char) ->
     {'PLAYER_TRACK_RESOURCES', 0, uint32},
     {'PLAYER_DUEL_ARBITER', 0, uint64},
     {'PLAYER_DUEL_TEAM', 0, uint32},
-    {'PLAYER_NEXT_LEVEL_XP', 10, uint32}, %dont know what this value is supposed to be
+    {'PLAYER_NEXT_LEVEL_XP', 10, uint32}, % xp to next level
     {'UNIT_FIELD_AURASTATE', 0, uint32},
     {'UNIT_FIELD_STAT0', Strength, uint32},
     {'UNIT_FIELD_STAT1', Agility, uint32},
@@ -386,6 +417,7 @@ create_char_record(Data, Guid) ->
     RaceName    = char_helper:to_race(Race),
     ClassName   = char_helper:to_class(Class),
     CreateInfo  = content:char_create_info(RaceName, ClassName),
+		GenderName = char_helper:to_gender(Gender),
 		Realm = 1,
     GenderValue = Gender * if Race =:= 10 -> -1; true -> 1 end,
 		X = CreateInfo#char_create_info.position_x,
@@ -396,44 +428,52 @@ create_char_record(Data, Guid) ->
                  account_id       = AccountId,
                  realm_id         = Realm,
                  name             = Name,
-                 race             = RaceName, 
-                 gender           = char_helper:to_gender(Gender),
+                 race             = RaceName,
+                 gender           = GenderName,
                  class            = ClassName,
-                 skin             = Skin, 
-                 face             = Face, 
-                 hair_style       = HS, 
+                 skin             = Skin,
+                 face             = Face,
+                 hair_style       = HS,
                  hair_color       = HC,
-                 facial_hair      = FH, 
+                 facial_hair      = FH,
                  level            = 1,
                  guild_id         = 0,
                  general_flags    = 16#10A00040,
                  at_login_flags   = 0,
-                 model_id = CreateInfo#char_create_info.display_id, 
-                 faction_template = CreateInfo#char_create_info.faction_template, 
-                 map_id           = CreateInfo#char_create_info.map_id, 
-                 zone_id          = CreateInfo#char_create_info.zone_id, 
+                 model_id = CreateInfo#char_create_info.display_id,
+                 faction_template = CreateInfo#char_create_info.faction_template,
+                 map_id           = CreateInfo#char_create_info.map_id,
+                 zone_id          = CreateInfo#char_create_info.zone_id,
                  position_x       = X,
                  position_y       = Y,
                  position_z       = Z,
                  orientation      = O,
-                 display_id       = CreateInfo#char_create_info.display_id + GenderValue, 
-                 strength         = CreateInfo#char_create_info.strength, 
+                 display_id       = CreateInfo#char_create_info.display_id + GenderValue,
+                 strength         = CreateInfo#char_create_info.strength,
                  agility          = CreateInfo#char_create_info.agility,
-                 stamina          = CreateInfo#char_create_info.stamina, 
-                 intellect        = CreateInfo#char_create_info.intellect, 
-                 spirit           = CreateInfo#char_create_info.spirit, 
-                 health           = CreateInfo#char_create_info.health, 
-                 mana             = CreateInfo#char_create_info.mana, 
-                 focus            = CreateInfo#char_create_info.focus, 
-                 power            = CreateInfo#char_create_info.power, 
-                 power_type       = CreateInfo#char_create_info.power_type, 
+                 stamina          = CreateInfo#char_create_info.stamina,
+                 intellect        = CreateInfo#char_create_info.intellect,
+                 spirit           = CreateInfo#char_create_info.spirit,
+                 health           = CreateInfo#char_create_info.health,
+                 mana             = CreateInfo#char_create_info.mana,
+                 focus            = CreateInfo#char_create_info.focus,
+                 power            = CreateInfo#char_create_info.power,
+                 power_type       = CreateInfo#char_create_info.power_type,
                  intro            = CreateInfo#char_create_info.intro,
-                 attack_power     = CreateInfo#char_create_info.attack_power, 
-                 min_dmg          = CreateInfo#char_create_info.min_dmg, 
-                 max_dmg          = CreateInfo#char_create_info.max_dmg, 
+                 attack_power     = CreateInfo#char_create_info.attack_power,
+                 min_dmg          = CreateInfo#char_create_info.min_dmg,
+                 max_dmg          = CreateInfo#char_create_info.max_dmg,
                  scale            = CreateInfo#char_create_info.scale
 								 },
-		Char = #char{x=X, y=Y, z=Z, orient=O, name=Name},
+		Char = #char{
+			x=X,
+			y=Y,
+			z=Z,
+			orient=O,
+			name=Name,
+			zone = CreateInfo#char_create_info.zone_id,
+			map = CreateInfo#char_create_info.map_id
+		},
 		{Char, CharCreator}.
 
 

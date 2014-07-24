@@ -60,7 +60,8 @@ request_raid_info(_Data) ->
 
 name_query(Data) ->
 	<<Guid?Q>> = recv_data:get(payload, Data),
-	Name = char_data:get_char_name(Guid),
+	Char = char_data:get_char_record(Guid),
+	Name = Char#char.name,
 	Values = char_data:get_char_values(Guid),
 	Null = <<"\0">>,
 	Race = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 0),

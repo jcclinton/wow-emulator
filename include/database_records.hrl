@@ -11,7 +11,7 @@
                   max_dmg, scale, model_id}).
 
 % char is the persistent data store
--record(char, {x, y, z, orient, name}).
+-record(char, {x, y, z, orient, name, zone, map}).
 
 -record(pet,     {id, owner}).
 

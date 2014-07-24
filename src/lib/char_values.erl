@@ -2,9 +2,11 @@
 
 
 -export([set_anim_state/2]).
--export([get_guid/1]).
+-export([get/2]).
+-compile([export_all]). % needed to call functions through get/1
 
 
+% sets
 
 set_anim_state(AnimState, Values) ->
 	Field = 'UNIT_FIELD_BYTES_1',
@@ -12,17 +14,64 @@ set_anim_state(AnimState, Values) ->
 	object_values:set_byte_value(Field, AnimState, Values, 0).
 
 
-get_guid(Values) ->
-	Field = 'OBJECT_FIELD_GUID',
-	mark_update(Field, Values),
-	object_values:get_uint32_value(Field, Values).
+%% gets
+get(Type, Input) ->
+	Values = if is_binary(Input) -> Input;
+		is_number(Input) ->
+			% input is the guid, lookup the values object
+			char_data:get_char_values(Input)
+	end,
+	try ?MODULE:Type(Values) of
+		Val -> Val
+	catch
+		Error ->
+			io:format("ERROR trying to get char_value: ~p~n", [Error]),
+			0
+	end.
+
+
+% private get functions
+
+guid(Values) ->
+	object_values:get_uint64_value( 'OBJECT_FIELD_GUID', Values).
+
+guild_id(Values) ->
+	object_values:get_uint32_value('PLAYER_GUILDID', Values).
+
+level(Values) ->
+	object_values:get_uint32_value('UNIT_FIELD_LEVEL', Values).
+
+skin(Values) ->
+	object_values:get_byte_value('PLAYER_BYTES', Values, 0).
+
+face(Values) ->
+	object_values:get_byte_value('PLAYER_BYTES', Values, 1).
+
+hair_style(Values) ->
+	object_values:get_byte_value('PLAYER_BYTES', Values, 2).
+
+hair_color(Values) ->
+	object_values:get_byte_value('PLAYER_BYTES', Values, 3).
+
+facial_hair(Values) ->
+	object_values:get_byte_value('PLAYER_BYTES_2', Values, 0).
+
+race(Values) ->
+	object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 0).
+
+class(Values) ->
+	object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 1).
+
+gender(Values) ->
+	object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 2).
+
 
 
 
 %% private
 
 mark_update(Field, Values) ->
-	Guid = get_guid(Values),
+	Guid = get(guid, Values),
 	AccountId = char_data:get_account_id(Guid),
 	player_character:mark_update(AccountId, Field),
 	Mask = char_data:get_mask(Guid),

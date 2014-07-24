@@ -3,7 +3,7 @@
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
 -export([enum_chars/1, delete_char/1, create_char/1, get_char_data/1]).
--export([get_char_name/1, get_char_values/1, get_char_record/1, get_char_record_value/1, get_account_id/1]).
+-export([get_char_values/1, get_char_record/1, get_char_record_value/1, get_account_id/1]).
 -export([update_char/1, update_coords/5]).
 -export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
@@ -76,29 +76,25 @@ clear_mask(Guid) ->
 % persistent char data
 
 enum_chars(AccountId) ->
-	ets:match_object(?char, {'_', '_', AccountId, '_', '_'}).
+	ets:match_object(?char, {'_', AccountId, '_', '_'}).
 
 delete_char(Guid) ->
 	dets_store:delete(?char, Guid, true).
 
 get_char_record(Guid) ->
-	{_Guid, _CharName, _AccountId, CharRecord, _Values} = get_char_data(Guid),
+	{_Guid, _AccountId, CharRecord, _Values} = get_char_data(Guid),
 	CharRecord.
 
 get_account_id(Guid) ->
-	{_Guid, _CharName, AccountId, _CharRecord, _Values} = get_char_data(Guid),
+	{_Guid, AccountId, _CharRecord, _Values} = get_char_data(Guid),
 	AccountId.
 
-get_char_name(Guid) ->
-	{_Guid, CharName, _AccountId, _CharRecord, _Values} = get_char_data(Guid),
-	CharName.
-
 get_char_values(Guid) ->
-	{_Guid, _CharName, _AccountId, _CharRecord, Values} = get_char_data(Guid),
+	{_Guid, _AccountId, _CharRecord, Values} = get_char_data(Guid),
 	Values.
 
 get_char_record_value(Guid) ->
-	{_Guid, _CharName, _AccountId, CharRecord, Values} = get_char_data(Guid),
+	{_Guid, _AccountId, CharRecord, Values} = get_char_data(Guid),
 	{CharRecord, Values}.
 
 get_char_data(Guid) ->
@@ -115,7 +111,7 @@ update_char(CharData) ->
 	dets_store:store(?char, CharData, true).
 
 update_coords(Guid, X, Y, Z, O) ->
-	{Guid, CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
+	{Guid, AccountId, Char, Values} = char_data:get_char_data(Guid),
 	NewChar = Char#char{x=X, y=Y, z=Z, orient=O},
-	CharData = {Guid, CharName, AccountId, NewChar, Values},
+	CharData = {Guid, AccountId, NewChar, Values},
 	char_data:update_char(CharData).

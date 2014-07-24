@@ -31,14 +31,14 @@ build_packet({Char, Values, IsSelf}) ->
 			not IsSelf ->
 				2 %char_create
 		end,
-		GuidInt = Char#char.id,
+		Guid = char_values:get(guid, Values),
 		% 7 tells you the size of the guid
 		% eg for a 3 byte guid,
 		% 7 = (1 << 0) bor (1 << 1) bor (1 << 2)
 		% players are always 3 bytes
 		% objects can be a maximum up to 8 bytes
 		%GuidInt2 = GuidInt + 1,
-		Guid = <<7, GuidInt?G>>,
+		PackedGuid = <<7, Guid?G>>,
 		%Guid = <<7, 41, 179, 24>>,
 	%io:format("update binary guid: ~p~n", [Guid]),
 
@@ -52,7 +52,7 @@ build_packet({Char, Values, IsSelf}) ->
 		ValuesData = build_values_update(MaskBits, Values, ValuesCount),
 		%io:format("value bits: ~p~n", [ValuesData]),
 
-		<<UpdateType?B, Guid/binary, TypeId?B, MovementData/binary, Blocks?B, MaskBits/binary, ValuesData/binary>>.
+		<<UpdateType?B, PackedGuid/binary, TypeId?B, MovementData/binary, Blocks?B, MaskBits/binary, ValuesData/binary>>.
 
 
 	build_values_update(MaskBits, Values, Count) ->
@@ -85,10 +85,10 @@ build_packet({Char, Values, IsSelf}) ->
         Speeds         = {2.5, 7, 4.5, 4.72, 2.5,
                           7, 4.5, 3.141593, 1.0},
     {W, R, WB, S, SB, _F, _FB, T, _P} = Speeds,
-		X = Char#char.position_x,
-		Y = Char#char.position_y,
-		Z = Char#char.position_z,
-		O = Char#char.orientation,
+		X = Char#char.x,
+		Y = Char#char.y,
+		Z = Char#char.z,
+		O = Char#char.orient,
 		<<UpdateFlags?B, MoveFlags?L, WorldTime?L, X?f, Y?f, Z?f, O?f, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f, 1?L>>.
 
 
