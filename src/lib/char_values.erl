@@ -10,8 +10,12 @@
 
 set_anim_state(AnimState, Values) ->
 	Field = 'UNIT_FIELD_BYTES_1',
-	mark_update(Field, Values),
-	object_values:set_byte_value(Field, AnimState, Values, 0).
+	Value = object_values:get_byte_value(Field, AnimState, Values, 0),
+	if Value /= AnimState ->
+			object_values:set_byte_value(Field, AnimState, Values, 0),
+			mark_update(Field, Values);
+		true -> ok
+	end.
 
 
 %% gets
@@ -72,7 +76,6 @@ gender(Values) ->
 
 mark_update(Field, Values) ->
 	Guid = get(guid, Values),
-	AccountId = char_data:get_account_id(Guid),
 	Mask = char_data:get_mask(Guid),
 	NewMask = update_mask:set_bit(Field, Mask),
 	char_data:store_mask(Guid, NewMask),
