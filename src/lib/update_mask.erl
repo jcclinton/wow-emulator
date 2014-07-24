@@ -6,6 +6,9 @@
 -include("include/binary.hrl").
 
 
+set_bit(Field, Mask) when is_atom(Field) ->
+	Index = update_fields:fields(Field),
+	set_bit(Index, Mask);
 set_bit(Index, Mask) ->
 	set_bit(Index, 1, Mask).
 

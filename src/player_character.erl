@@ -56,6 +56,7 @@ handle_cast(update, State = #state{guid=Guid}) ->
 	Mask = char_data:get_mask(Guid),
 	IsEmpty = update_mask:is_empty(Mask),
 	if not IsEmpty ->
+		io:format("actual update of ~p~n", [Guid]),
 			%build update object
 
 			%world:send_to_all_but_player(OpAtom, Msg, Guid),

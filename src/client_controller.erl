@@ -4,14 +4,16 @@
 -record(state, {
 	account_id,
   send_pid
-							 }).
+ }).
 
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([tcp_packet_received/3]).
--export([move/0, logout/0]).
--export([move/1, logout/1]).
+-export([move/0, move/1]).
+-export([logout/0, logout/1]).
+-export([sit/0, sit/1]).
+-export([stand/0, stand/1]).
 -export([get_dummy_account/0]).
 
 
@@ -22,6 +24,18 @@
 get_dummy_account() ->
 	"ALICE2".
 
+stand() ->
+	AccountId = get_dummy_account(),
+	sit(AccountId).
+stand(AccountId) ->
+	Pid = get_pid(AccountId),
+	gen_server:cast(Pid, stand).
+sit() ->
+	AccountId = get_dummy_account(),
+	sit(AccountId).
+sit(AccountId) ->
+	Pid = get_pid(AccountId),
+	gen_server:cast(Pid, sit).
 move() ->
 	AccountId = get_dummy_account(),
 	move(AccountId).
@@ -64,6 +78,19 @@ init({AccountId, SendPid}) ->
 
 handle_cast(stop, State) ->
 	{stop, done, State};
+handle_cast(stand, State) ->
+	OpAtom = cmsg_standstatechange,
+	AnimState = 0,
+	Payload = <<AnimState?L>>,
+	io:format("payload: ~p~n", [Payload]),
+	gen_server:cast(self(), {send_to_server, {OpAtom, Payload}}),
+	{noreply, State};
+handle_cast(sit, State) ->
+	OpAtom = cmsg_standstatechange,
+	AnimState = 1,
+	Payload = <<AnimState?L>>,
+	gen_server:cast(self(), {send_to_server, {OpAtom, Payload}}),
+	{noreply, State};
 handle_cast(logout, State) ->
 	OpAtom = cmsg_logout_request,
 	Payload = <<>>,

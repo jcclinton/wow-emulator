@@ -73,7 +73,6 @@ gender(Values) ->
 mark_update(Field, Values) ->
 	Guid = get(guid, Values),
 	AccountId = char_data:get_account_id(Guid),
-	player_character:mark_update(AccountId, Field),
 	Mask = char_data:get_mask(Guid),
 	NewMask = update_mask:set_bit(Field, Mask),
 	char_data:store_mask(Guid, NewMask),
