@@ -4,7 +4,7 @@
 -export([store_connected_client/2, get_session_key/1]).
 -export([enum_chars/1, delete_char/1, create_char/1, get_char_data/1]).
 -export([get_char_name/1, get_char_values/1, get_char_record/1, get_char_record_value/1]).
--export([update_char/1]).
+-export([update_char/1, update_char/2]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -77,3 +77,9 @@ create_char(CharData) ->
 
 update_char(CharData) ->
 	dets_store:store(?char, CharData, true).
+
+update_char(Guid, Fn) ->
+	{Guid, CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
+	NewChar = Fn(Char),
+	CharData = {Guid, CharName, AccountId, NewChar, Values},
+	char_data:update_char(CharData).

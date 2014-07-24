@@ -1,7 +1,7 @@
 -module(char_misc).
 -export([request_raid_info/1, name_query/1, cancel_trade/1, gmticket_getticket/1]).
 -export([query_next_mail_time/1, battlefield_status/1, meetingstone_info/1, zone_update/1]).
--export([tutorial_flag/1, far_sight/1]).
+-export([tutorial_flag/1, far_sight/1, set_selection/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -12,6 +12,12 @@ far_sight(Data) ->
 	% dont need to do anything
 	io:format("received req to set far sight: ~p~n", [Payload]),
 	% do nothing and camera stays on main char
+	ok.
+
+set_selection(Data) ->
+	<<TargetGuid?Q>> = recv_data:get(payload, Data),
+	Guid = recv_data:get(guid, Data),
+	char_data:update_char(Guid, fun(Char) -> Char#char{target=TargetGuid} end),
 	ok.
 
 tutorial_flag(_Data) ->
@@ -53,7 +59,7 @@ request_raid_info(_Data) ->
 
 
 name_query(Data) ->
-	Guid = recv_data:get(guid, Data),
+	<<Guid?Q>> = recv_data:get(payload, Data),
 	Name = char_data:get_char_name(Guid),
 	Values = char_data:get_char_values(Guid),
 	Null = <<"\0">>,

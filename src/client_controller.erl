@@ -62,6 +62,8 @@ init({AccountId, SendPid}) ->
 	{ok, #state{send_pid=SendPid, account_id=AccountId}}.
 
 
+handle_cast(stop, State) ->
+	{stop, done, State};
 handle_cast(logout, State) ->
 	OpAtom = cmsg_logout_request,
 	Payload = <<>>,
@@ -132,7 +134,13 @@ handle_response(Opcode, Payload) ->
 
 lookup_opcode(smsg_char_enum) -> fun player_login/1;
 lookup_opcode(smsg_auth_response) -> fun send_char_enum/1;
+lookup_opcode(smsg_logout_complete) -> fun player_logout/1;
 lookup_opcode(_) -> false.
+
+
+player_logout(_) ->
+	gen_server:cast(self(), stop),
+ok.
 
 
 player_login(Payload) ->

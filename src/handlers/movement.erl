@@ -23,7 +23,7 @@ move_time_skipped(_Data) ->
 	ok.
 
 stand_state_change(Data) ->
-	<<AnimState?B>> = recv_data:get(payload, Data),
+	<<AnimState?B, _/binary>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
 	{Guid, CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
 	NewValues = object_values:set_byte_value('UNIT_FIELD_BYTES_1', AnimState, Values, 0),
@@ -46,10 +46,8 @@ handle_movement(Data) ->
 	if Allowable ->
 			OpAtom = recv_data:get(op_atom, Data),
 			Guid = recv_data:get(guid, Data),
-			{Guid, CharName, AccountId, Char, Values} = char_data:get_char_data(Guid),
-			NewChar = Char#char{position_x = X, position_y = Y, position_z = Z, orientation = O},
-			CharData = {Guid, CharName, AccountId, NewChar, Values},
-			char_data:update_char(CharData),
+
+	char_data:update_char(Guid, fun(Char) -> Char#char{position_x = X, position_y = Y, position_z = Z, orientation = O} end),
 
 			PackGuid = <<7?B, Guid?G>>,
 			Time = move_info:get_value(time, MoveData),

@@ -8,24 +8,19 @@
 
 update_account_data(_Data) ->
 	% dont need to do anything
-	%io:format("received req to update account~n"),
 	ok.
 
 enum(Data) ->
 	AccountId = recv_data:get(account_id, Data),
 	Chars = char_data:enum_chars(AccountId),
-	%io:format("looking up player name: ~p~n", [AccountId]),
-	%io:format("matched: ~p~n", [Chars]),
 	Num = length(Chars),
 	CharDataOut2 = if Num > 0 ->
 								CharList = lists:map(fun mapCharData/1, Chars),
 								CharData = iolist_to_binary(CharList),
-	%io:format("mapped char data: ~p~n", [CharData]),
 								CharData;
 							true -> <<>>
 						end,
 	Msg = <<Num?B, CharDataOut2/binary>>,
-	%io:format("msg: ~p~n", [Msg]),
 	{smsg_char_enum, Msg}.
 
 
@@ -130,7 +125,6 @@ send_motd(_Data) ->
 account_data_times(_Data) ->
 	% send 32 empty 32 bit words
 	Payload = binary:copy(<<0?L>>, 32),
-	io:format("sending account data times~n"),
 	{smsg_account_data_times, Payload}.
 
 set_rest_start(_Data) ->
@@ -324,14 +318,14 @@ create_char_values(_Data, Char) ->
     {'UNIT_FIELD_CHANNEL_OBJECT', Guid, uint64},
     {'UNIT_CHANNEL_SPELL', 0, uint32},
     {'UNIT_FIELD_SUMMON', 0, uint64}, %pet
-    {'UNIT_FIELD_TARGET', Guid, uint64},
-    {'UNIT_FIELD_CHARMEDBY', Guid, uint64},
-    {'UNIT_FIELD_SUMMONEDBY', Guid, uint64},
-    {'UNIT_FIELD_CREATEDBY', Guid, uint64},
+    {'UNIT_FIELD_TARGET', 0, uint64},
+    {'UNIT_FIELD_CHARMEDBY', 0, uint64},
+    {'UNIT_FIELD_SUMMONEDBY', 0, uint64},
+    {'UNIT_FIELD_CREATEDBY', 0, uint64},
     {'PLAYER_FARSIGHT', 0, uint64},
     {'PLAYER_TRACK_CREATURES', 0, uint32},
     {'PLAYER_TRACK_RESOURCES', 0, uint32},
-    {'PLAYER_DUEL_ARBITER', Guid, uint64},
+    {'PLAYER_DUEL_ARBITER', 0, uint64},
     {'PLAYER_DUEL_TEAM', 0, uint32},
     {'PLAYER_NEXT_LEVEL_XP', 10, uint32}, %dont know what this value is supposed to be
     {'UNIT_FIELD_AURASTATE', 0, uint32},
@@ -431,7 +425,9 @@ create_char_record(Data, Guid) ->
                  attack_power     = CreateInfo#char_create_info.attack_power, 
                  min_dmg          = CreateInfo#char_create_info.min_dmg, 
                  max_dmg          = CreateInfo#char_create_info.max_dmg, 
-                 scale            = CreateInfo#char_create_info.scale},
+                 scale            = CreateInfo#char_create_info.scale,
+								 target = 0
+								 },
 		Char.
 
 

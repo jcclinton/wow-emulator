@@ -109,7 +109,14 @@ computeClientKey(ClientPrivate, ServerPublic, ClientPublic, Generator, Prime, De
 computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier) ->
 	U = getScrambler(ClientPublic, ServerPublic),
 	Version = getVersion(),
-	crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}).
+	Key = crypto:compute_key(srp, ClientPublic, {ServerPublic, ServerPrivate}, {host, [Verifier, Prime, Version, U]}),
+	Size = byte_size(Key),
+	Bytes = getBytes(),
+	%sometimes server key comes up less than required size and needs to be regenerated
+	if Bytes /= Size ->
+		computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier);
+		Bytes == Size -> Key
+	end.
 
 getM1(Prime, Generator, UBin, SaltL, ClientPublic, ServerPublic, Key) ->
 	Size = getSize(),

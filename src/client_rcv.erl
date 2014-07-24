@@ -92,7 +92,6 @@ store_dummy_session_key(Account) ->
 	Skey = srp:computeServerKey(Private, Public, Public, Prime, Verifier),
 	Key = srp:interleaveHash(Skey),
 	KeyL = srp:b_to_l_endian(Key, 320),
-	io:format("inserting ~p with key ~p~n", [KeyL, Account]),
 	char_data:store_connected_client(Account, KeyL),
   {0, 0, binary_to_list(KeyL)}.
 

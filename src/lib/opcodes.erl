@@ -21,6 +21,7 @@ get_callback_by_num(cmsg_meetingstone_info) -> {character, char_misc, meetingsto
 get_callback_by_num(cmsg_request_raid_info) -> {character, char_misc, request_raid_info};
 get_callback_by_num(cmsg_battlefield_status) -> {character, char_misc, battlefield_status};
 get_callback_by_num(cmsg_far_sight) -> {character, char_misc, far_sight};
+get_callback_by_num(cmsg_set_selection) -> {character, char_misc, set_selection};
 
 get_callback_by_num(cmsg_messagechat) -> {character, chat, message_chat};
 get_callback_by_num(cmsg_join_channel) -> {character, chat, join_channel};
