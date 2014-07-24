@@ -120,15 +120,15 @@ delete_char(Guid) ->
 	dets_store:delete(?char_acc, Guid, true),
 	dets_store:delete(?char_rec, Guid, true).
 
-create_char(Guid, AccountId, Char, Values) ->
+create_char(Guid, AccountId, Char, Values) when is_binary(Values), is_record(Char, char), is_list(AccountId) ->
 	dets_store:store_new(?char_val, {Guid, Values}, true),
 	dets_store:store_new(?char_rec, {Guid, Char}, true),
 	dets_store:store_new(?char_acc, {Guid, AccountId}, true).
 
-update_values(Guid, Values) ->
+update_values(Guid, Values) when is_binary(Values) ->
 	dets_store:store(?char_val, {Guid, Values}, true).
 
-update_char(Guid, Char) ->
+update_char(Guid, Char) when is_record(Char, char) ->
 	dets_store:store(?char_rec, {Guid, Char}, true).
 
 update_coords(Guid, X, Y, Z, O) ->

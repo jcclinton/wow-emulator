@@ -26,7 +26,7 @@ get_dummy_account() ->
 
 stand() ->
 	AccountId = get_dummy_account(),
-	sit(AccountId).
+	stand(AccountId).
 stand(AccountId) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, stand).
@@ -82,7 +82,6 @@ handle_cast(stand, State) ->
 	OpAtom = cmsg_standstatechange,
 	AnimState = 0,
 	Payload = <<AnimState?L>>,
-	io:format("payload: ~p~n", [Payload]),
 	gen_server:cast(self(), {send_to_server, {OpAtom, Payload}}),
 	{noreply, State};
 handle_cast(sit, State) ->

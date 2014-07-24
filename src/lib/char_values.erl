@@ -10,12 +10,22 @@
 
 set_anim_state(AnimState, Values) ->
 	Field = 'UNIT_FIELD_BYTES_1',
-	Value = object_values:get_byte_value(Field, AnimState, Values, 0),
+	Offset = 0,
+	set_byte_mark_if_needed(Field, AnimState, Values, Offset).
+
+
+
+% private helpers
+
+set_byte_mark_if_needed(Field, AnimState, Values, Offset) ->
+	Value = object_values:get_byte_value(Field, Values, Offset),
 	if Value /= AnimState ->
-			object_values:set_byte_value(Field, AnimState, Values, 0),
-			mark_update(Field, Values);
-		true -> ok
+			mark_update(Field, Values),
+			object_values:set_byte_value(Field, AnimState, Values, Offset);
+		true -> Values
 	end.
+
+
 
 
 %% gets

@@ -1,17 +1,23 @@
 -module(update_data).
 
 -export([compress/1, decompress/1]).
--export([build_create_packet/1]).
+-export([build_create_packet/1, build_update_packet/2]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
 
 
+build_update_packet(Mask, Values) ->
+	Block = update_block(Mask, Values),
+	BlockCount = 1,
+	build_packet(Block, BlockCount).
 
 build_create_packet({Char, Values, IsSelf}) ->
 	Block = create_block(Char, Values, IsSelf),
 	BlockCount = 1,
+	build_packet(Block, BlockCount).
 
+build_packet(Block, BlockCount) ->
 	HasTransport = 0,
 	Payload = <<BlockCount?L, HasTransport?B, Block/binary>>,
 	PayloadSize = byte_size(Payload),
@@ -21,6 +27,18 @@ build_create_packet({Char, Values, IsSelf}) ->
 		true ->
 			{smsg_update_object, Payload}
 	end.
+
+
+
+update_block(Mask, Values) ->
+	Guid = char_values:get(guid, Values),
+	UpdateType = 0,
+	PackedGuid = <<7, Guid?G>>,
+	ValuesCount = (byte_size(Values) div 4) - 1,
+	Blocks = (ValuesCount + 31) div 32,
+	ValuesData = build_values_update(Mask, Values, ValuesCount),
+
+	<<UpdateType?B, PackedGuid/binary, Blocks?B, Mask/binary, ValuesData/binary>>.
 
 
 
