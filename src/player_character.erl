@@ -58,7 +58,7 @@ handle_cast(update, State = #state{guid=Guid}) ->
 	if not IsEmpty ->
 			Values = char_data:get_values(Guid),
 			{OpAtom, Msg} = update_data:build_update_packet(Mask, Values),
-			world:send_to_all_but_player(OpAtom, Msg, Guid),
+			world:send_to_all(OpAtom, Msg),
 			char_data:clear_mask(Guid),
 			ok;
 		true -> ok

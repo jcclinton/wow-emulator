@@ -12,7 +12,7 @@
 -export([get_pid/1]).
 -export([build_pid/1, build_pid/2]).
 -export([add_to_map/1, remove_from_map/1]).
--export([send_to_all_but_player/3]).
+-export([send_to_all_but_player/3, send_to_all/2]).
 
 
 -include("include/binary.hrl").
@@ -30,6 +30,9 @@ remove_from_map(Guid) ->
 
 send_to_all_but_player(OpAtom, Payload, Guid) ->
 	gen_server:cast(?MODULE, {send_to_all_but_player, OpAtom, Payload, Guid}).
+
+send_to_all(OpAtom, Payload) ->
+	gen_server:cast(?MODULE, {send_to_all_but_player, OpAtom, Payload, 0}).
 
 
 get_pid(Pid) when is_pid(Pid) -> Pid;

@@ -1,12 +1,17 @@
 -module(char_values).
 
 
--export([set_anim_state/2]).
+-export([set_anim_state/2, set_sheathed/2]).
 -export([get/2]).
 -compile([export_all]). % needed to call functions through get/1
 
 
 % sets
+
+set_sheathed(Value, Values) ->
+	Field = 'UNIT_FIELD_BYTES_2',
+	Offset = 0,
+	set_byte_mark_if_needed(Field, Value, Values, Offset).
 
 set_anim_state(AnimState, Values) ->
 	Field = 'UNIT_FIELD_BYTES_1',

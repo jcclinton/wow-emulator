@@ -54,6 +54,9 @@ get_callback_by_num(cmsg_standstatechange) -> {character, movement, stand_state_
 get_callback_by_num(cmsg_set_active_mover) -> {character, movement, set_active_mover};
 get_callback_by_num(cmsg_move_time_skipped) -> {character, movement, move_time_skipped};
 
+get_callback_by_num(cmsg_setsheathed) -> {character, combat, set_sheathed};
+
+
 get_callback_by_num(cmsg_query_time) -> {account, server, query_time};
 get_callback_by_num(cmsg_ping) -> {account, server, pong};
 get_callback_by_num(cmsg_auth_session) -> {account, server, accept_challenge};

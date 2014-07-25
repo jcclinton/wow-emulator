@@ -301,6 +301,8 @@ create_char_values(Data, Guid) ->
 	Intellect = erlang:round(CreateInfo#char_create_info.intellect),
 	Spirit = erlang:round(CreateInfo#char_create_info.spirit),
 
+	FactionTemplate = CreateInfo#char_create_info.faction_template,
+
 	Health = CreateInfo#char_create_info.health,
 	Power = CreateInfo#char_create_info.power,
 	{Mana, Rage, Energy} = case CreateInfo#char_create_info.power_type of
@@ -308,6 +310,9 @@ create_char_values(Data, Guid) ->
 		energy -> {0, 0, Power};
 		_ -> {Power, 0, 0}
 	end,
+
+	% ffa
+	PlayerFlags = 16#80,
 
 
 
@@ -333,10 +338,10 @@ create_char_values(Data, Guid) ->
     {'PLAYER_BYTES_2', FacialHair, byte_0},
     {'PLAYER_BYTES_2', 2, byte_3}, %rest state
     {'PLAYER_BYTES_3', 0, uint16_0}, %drunk
-    {'PLAYER_FLAGS', 0, uint32},
+    {'PLAYER_FLAGS', PlayerFlags, uint32},
     {'PLAYER_FIELD_WATCHED_FACTION_INDEX', 16#ffff, uint32},
     {'PLAYER_FIELD_BYTES', 0, byte_2},
-    {'UNIT_FIELD_FACTIONTEMPLATE', 35, uint32}, %not sure what this should be
+    {'UNIT_FIELD_FACTIONTEMPLATE', FactionTemplate, uint32}, %not sure what this should be
     {'UNIT_FIELD_CHARM', 0, uint64}, %not sure what this should be
     {'PLAYER_CHARACTER_POINTS2', 2, uint32}, %num primary trade professions
     {'UNIT_FIELD_CHANNEL_OBJECT', 0, uint64},
