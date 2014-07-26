@@ -63,7 +63,7 @@ get_callback_by_num(cmsg_auth_session) -> {account, server, accept_challenge};
 
 get_callback_by_num(Unk) ->
 	io:format("unknown callbacks for opcode by num: ~p~n", [Unk]),
-	{account, server, null}.
+	none.
 
 
 get_num_by_atom(msg_null_action) -> 16#000;

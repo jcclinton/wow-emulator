@@ -56,12 +56,15 @@ handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId}
 	%io:format("looking up opcode ~p for ~p~n", [Opcode, AccountId]),
 	OpAtom = opcodes:get_atom_by_num(Opcode),
 
-	{Type, M, F} = opcodes:get_callback_by_num(OpAtom),
-	case Type of
-		account ->
-			player_account:handle_packet(AccountId, OpAtom, M, F, Payload);
-		character ->
-			player_character:handle_packet(AccountId, OpAtom, M, F, Payload)
+	case opcodes:get_callback_by_num(OpAtom) of
+		none -> ok;
+		{Type, M, F} ->
+			case Type of
+				account ->
+					player_account:handle_packet(AccountId, OpAtom, M, F, Payload);
+				character ->
+					player_character:handle_packet(AccountId, OpAtom, M, F, Payload)
+			end
 	end,
 	{noreply, State};
 handle_cast({send_to_client, OpAtom, Payload}, State=#state{send_pid = SendPid}) ->
