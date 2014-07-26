@@ -8,10 +8,11 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([get_pid/1, send/3, handle_packet/5]).
+-export([get_pid/1, send/3, handle_packet/4]).
 
 
 -include("include/binary.hrl").
+-include("include/shared_defines.hrl").
 
 
 %% public api
@@ -24,9 +25,9 @@ get_pid(AccountId) ->
 	world:build_pid(AccountId, "account").
 
 
-handle_packet(AccountId, OpAtom, M, F, Payload) ->
+handle_packet(AccountId, OpAtom, Callback, Payload) ->
 	Pid = get_pid(AccountId),
-	gen_server:cast(Pid, {packet_rcvd, OpAtom, M, F, Payload}).
+	gen_server:cast(Pid, {packet_rcvd, OpAtom, Callback, Payload}).
 
 
 
@@ -40,9 +41,9 @@ init({AccountId}) ->
 	io:format("account SERVER: started~n"),
 	{ok, #state{account_id=AccountId}}.
 
-handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId}) ->
+handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId}) ->
 	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}],
-	player_workers_sup:start_worker({M, F, Args}, AccountId),
+	player_workers_sup:start_worker({Callback, Args}, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->
 	io:format("unknown casted message: ~p~n", [Msg]),

@@ -10,10 +10,11 @@
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([get_pid/1, send/3, handle_packet/5, update/1]).
+-export([get_pid/1, send/3, handle_packet/4, update/1]).
 
 
 -include("include/binary.hrl").
+-include("include/shared_defines.hrl").
 
 
 %% public api
@@ -26,9 +27,9 @@ get_pid(AccountId) ->
 	world:build_pid(AccountId, "char").
 
 
-handle_packet(AccountId, OpAtom, M, F, Payload) ->
+handle_packet(AccountId, OpAtom, Callback, Payload) ->
 	Pid = get_pid(AccountId),
-	gen_server:cast(Pid, {packet_rcvd, OpAtom, M, F, Payload}).
+	gen_server:cast(Pid, {packet_rcvd, OpAtom, Callback, Payload}).
 
 update(AccountId) ->
 	Pid = get_pid(AccountId),
@@ -64,9 +65,9 @@ handle_cast(update, State = #state{guid=Guid}) ->
 		true -> ok
 	end,
 	{noreply, State};
-handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
+handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
 	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}],
-	player_workers_sup:start_worker({M, F, Args}, AccountId),
+	player_workers_sup:start_worker({Callback, Args}, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->
 	io:format("unknown casted message: ~p~n", [Msg]),

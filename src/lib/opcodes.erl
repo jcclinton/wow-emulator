@@ -2,68 +2,122 @@
 
 -export([get_callback_by_num/1, get_num_by_atom/1, get_atom_by_num/1]).
 
-
-get_callback_by_num(cmsg_char_create) -> {account, character, create};
-get_callback_by_num(cmsg_char_enum) -> {account, character, enum};
-get_callback_by_num(cmsg_char_delete) -> {account, character, delete};
-get_callback_by_num(cmsg_player_login) -> {account, character, login};
-get_callback_by_num(cmsg_update_account_data) -> {account, character, update_account_data};
-
-get_callback_by_num(cmsg_logout_request) -> {character, character, logout};
-
-get_callback_by_num(cmsg_name_query) -> {character, char_misc, name_query};
-get_callback_by_num(cmsg_tutorial_flag) -> {character, char_misc, tutorial_flag};
-get_callback_by_num(cmsg_cancel_trade) -> {character, char_misc, cancel_trade};
-get_callback_by_num(cmsg_zoneupdate) -> {character, char_misc, zone_update};
-get_callback_by_num(cmsg_gmticket_getticket) -> {character, char_misc, gmticket_getticket};
-get_callback_by_num(msg_query_next_mail_time) -> {character, char_misc, query_next_mail_time};
-get_callback_by_num(cmsg_meetingstone_info) -> {character, char_misc, meetingstone_info};
-get_callback_by_num(cmsg_request_raid_info) -> {character, char_misc, request_raid_info};
-get_callback_by_num(cmsg_battlefield_status) -> {character, char_misc, battlefield_status};
-get_callback_by_num(cmsg_far_sight) -> {character, char_misc, far_sight};
-get_callback_by_num(cmsg_set_selection) -> {character, char_misc, set_selection};
-
-get_callback_by_num(cmsg_messagechat) -> {character, chat, message_chat};
-get_callback_by_num(cmsg_join_channel) -> {character, chat, join_channel};
-
-get_callback_by_num(msg_move_start_forward) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_start_backward) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_stop) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_start_strafe_left) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_start_strafe_right) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_stop_strafe) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_start_turn_left) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_start_turn_right) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_stop_turn) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_jump) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_start_pitch_up) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_start_pitch_down) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_stop_pitch) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_set_run_mode) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_set_walk_mode) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_fall_land) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_start_swim) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_stop_swim) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_set_facing) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_set_pitch) -> {character, movement, handle_movement};
-get_callback_by_num(msg_move_heartbeat) -> {character, movement, handle_movement};
-get_callback_by_num(cmsg_move_fall_reset) -> {character, movement, handle_movement};
-get_callback_by_num(cmsg_move_chng_transport) -> {character, movement, handle_movement};
-
-get_callback_by_num(cmsg_standstatechange) -> {character, movement, stand_state_change};
-get_callback_by_num(cmsg_set_active_mover) -> {character, movement, set_active_mover};
-get_callback_by_num(cmsg_move_time_skipped) -> {character, movement, move_time_skipped};
-
-get_callback_by_num(cmsg_setsheathed) -> {character, combat, set_sheathed};
+-include("include/shared_defines.hrl").
 
 
-get_callback_by_num(cmsg_query_time) -> {account, server, query_time};
-get_callback_by_num(cmsg_ping) -> {account, server, pong};
-get_callback_by_num(cmsg_auth_session) -> {account, server, accept_challenge};
+get_callback_by_num(cmsg_char_create) ->
+	#callback{type=account, module=character, function=create};
+get_callback_by_num(cmsg_char_enum) ->
+	#callback{type=account, module=character, function=enum};
+get_callback_by_num(cmsg_char_delete) ->
+	#callback{type=account, module=character, function=delete};
+get_callback_by_num(cmsg_player_login) ->
+	#callback{type=account, module=character, function=login};
+get_callback_by_num(cmsg_update_account_data) ->
+	#callback{type=account, module=character, function=update_account_data};
 
-get_callback_by_num(Unk) ->
-	io:format("unknown callbacks for opcode by num: ~p~n", [Unk]),
+get_callback_by_num(cmsg_logout_request) ->
+	#callback{type=character, module=character, function=logout};
+
+get_callback_by_num(cmsg_name_query) ->
+	#callback{type=character, module=char_misc, function=name_query};
+get_callback_by_num(cmsg_tutorial_flag) ->
+	#callback{type=character, module=char_misc, function=tutorial_flag};
+get_callback_by_num(cmsg_cancel_trade) ->
+	#callback{type=character, module=char_misc, function=cancel_trade};
+get_callback_by_num(cmsg_zoneupdate) ->
+	#callback{type=character, module=char_misc, function=zone_update};
+get_callback_by_num(cmsg_gmticket_getticket) ->
+	#callback{type=character, module=char_misc, function=gmticket_getticket};
+get_callback_by_num(msg_query_next_mail_time) ->
+	#callback{type=character, module=char_misc, function=query_next_mail_time};
+get_callback_by_num(cmsg_meetingstone_info) ->
+	#callback{type=character, module=char_misc, function=meetingstone_info};
+get_callback_by_num(cmsg_request_raid_info) ->
+	#callback{type=character, module=char_misc, function=request_raid_info};
+get_callback_by_num(cmsg_battlefield_status) ->
+	#callback{type=character, module=char_misc, function=battlefield_status};
+get_callback_by_num(cmsg_far_sight) ->
+	#callback{type=character, module=char_misc, function=far_sight};
+get_callback_by_num(cmsg_set_selection) ->
+	#callback{type=character, module=char_misc, function=set_selection};
+
+get_callback_by_num(cmsg_messagechat) ->
+	#callback{type=character, module=chat, function=message_chat};
+get_callback_by_num(cmsg_join_channel) ->
+	#callback{type=character, module=chat, function=join_channel};
+
+get_callback_by_num(msg_move_start_forward) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_start_backward) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_stop) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_start_strafe_left) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_start_strafe_right) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_stop_strafe) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_start_turn_left) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_start_turn_right) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_stop_turn) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_jump) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_start_pitch_up) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_start_pitch_down) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_stop_pitch) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_set_run_mode) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_set_walk_mode) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_fall_land) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_start_swim) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_stop_swim) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_set_facing) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_set_pitch) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(msg_move_heartbeat) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(cmsg_move_fall_reset) ->
+	#callback{type=character, module=movement, function=handle_movement};
+get_callback_by_num(cmsg_move_chng_transport) ->
+	#callback{type=character, module=movement, function=handle_movement};
+
+get_callback_by_num(cmsg_standstatechange) ->
+	#callback{type=character, module=movement, function=stand_state_change};
+get_callback_by_num(cmsg_set_active_mover) ->
+	#callback{type=character, module=movement, function=set_active_mover};
+get_callback_by_num(cmsg_move_time_skipped) ->
+	#callback{type=character, module=movement, function=move_time_skipped};
+
+get_callback_by_num(cmsg_setsheathed) ->
+	#callback{type=character, module=combat, function=set_sheathed};
+
+
+get_callback_by_num(cmsg_query_time) ->
+	#callback{type=account, module=server, function=query_time};
+get_callback_by_num(cmsg_ping) ->
+	#callback{type=account, module=server, function=pong};
+get_callback_by_num(cmsg_auth_session) ->
+	#callback{type=account, module=server, function=accept_challenge};
+
+get_callback_by_num(_) ->
 	none.
+
+
+
+
 
 
 get_num_by_atom(msg_null_action) -> 16#000;

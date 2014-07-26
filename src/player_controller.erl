@@ -14,6 +14,7 @@
 
 
 -include("include/binary.hrl").
+-include("include/shared_defines.hrl").
 
 
 %% public api
@@ -57,13 +58,15 @@ handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId}
 	OpAtom = opcodes:get_atom_by_num(Opcode),
 
 	case opcodes:get_callback_by_num(OpAtom) of
-		none -> ok;
-		{Type, M, F} ->
-			case Type of
+		none ->
+			io:format("unknown callback: ~p~n", [OpAtom]),
+			ok;
+		Callback ->
+			case Callback#callback.type of
 				account ->
-					player_account:handle_packet(AccountId, OpAtom, M, F, Payload);
+					player_account:handle_packet(AccountId, OpAtom, Callback, Payload);
 				character ->
-					player_character:handle_packet(AccountId, OpAtom, M, F, Payload)
+					player_character:handle_packet(AccountId, OpAtom, Callback, Payload)
 			end
 	end,
 	{noreply, State};
