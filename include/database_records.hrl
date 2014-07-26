@@ -13,3 +13,10 @@
                            strength, agility, stamina, intellect, spirit, 
                            health, mana, focus, power, power_type, intro,
                            attack_power, min_dmg, max_dmg, scale}).
+
+
+
+% static object stores
+
+%area
+-record(area_store, {id, map_id, zone_id, explore_flag, flags, area_level, area_name, team, liqueid_type_override}).
