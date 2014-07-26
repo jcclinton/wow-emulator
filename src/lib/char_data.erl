@@ -2,15 +2,16 @@
 
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
--export([enum_chars/1, delete_char/1, create_char/5]).
--export([get_values/1, get_char/1, get_char_values_pair/1, get_account_id/1, get_char_spells/1]).
--export([update_char/2, update_coords/5, update_values/2, add_spell/2]).
+-export([enum_chars/1, delete_char/1, create_char/6]).
+-export([get_values/1, get_char/1, get_char_values_pair/1, get_account_id/1, get_char_spells/1, get_action_buttons/1]).
+-export([update_char/2, update_coords/5, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
 -export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
 -export([get_mask/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
+-include("include/shared_defines.hrl").
 
 -define(conn, connected_clients).
 -define(char_sess, characters_session).
@@ -19,6 +20,7 @@
 -define(char_rec, characters_record).
 -define(char_acc, characters_account).
 -define(char_spells, characters_spells).
+-define(char_btns, characters_btns).
 
 
 
@@ -30,6 +32,7 @@ init() ->
 	dets_store:open(?char_rec, true),
 	dets_store:open(?char_acc, true),
 	dets_store:open(?char_spells, true),
+	dets_store:open(?char_btns, true),
 	ok.
 
 cleanup() ->
@@ -40,6 +43,7 @@ cleanup() ->
 	dets_store:close(?char_rec, true),
 	dets_store:close(?char_acc, true),
 	dets_store:close(?char_spells, true),
+	dets_store:close(?char_btns, true),
 	ok.
 
 
@@ -102,6 +106,9 @@ get_char(Guid) ->
 get_char_spells(Guid) ->
 	get_char_data(Guid, ?char_spells).
 
+get_action_buttons(Guid) ->
+	get_char_data(Guid, ?char_btns).
+
 get_account_id(Guid) ->
 	get_char_data(Guid, ?char_acc).
 
@@ -125,13 +132,17 @@ delete_char(Guid) ->
 	dets_store:delete(?char_val, Guid, true),
 	dets_store:delete(?char_acc, Guid, true),
 	dets_store:delete(?char_rec, Guid, true),
-	dets_store:delete(?char_spells, Guid, true).
+	dets_store:delete(?char_btns, Guid, true),
+	dets_store:delete(?char_spells, Guid, true),
+	ok.
 
-create_char(Guid, AccountId, Char, Values, Spells) when is_integer(Guid), is_binary(Values), is_record(Char, char), is_list(AccountId), is_record(Spells, char_spells) ->
+create_char(Guid, AccountId, Char, Values, Spells, ActionButtons) when is_integer(Guid), is_binary(Values), is_record(Char, char), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons) ->
 	dets_store:store_new(?char_val, {Guid, Values}, true),
 	dets_store:store_new(?char_rec, {Guid, Char}, true),
 	dets_store:store_new(?char_acc, {Guid, AccountId}, true),
-	dets_store:store_new(?char_spells, {Guid, Spells}, true).
+	dets_store:store_new(?char_btns, {Guid, ActionButtons}, true),
+	dets_store:store_new(?char_spells, {Guid, Spells}, true),
+	ok.
 
 update_values(Guid, Values) when is_binary(Values) ->
 	dets_store:store(?char_val, {Guid, Values}, true).
@@ -143,6 +154,28 @@ update_coords(Guid, X, Y, Z, O) ->
 	Char = get_char(Guid),
 	NewChar = Char#char{x=X, y=Y, z=Z, orient=O},
 	update_char(Guid, NewChar).
+
+create_action_buttons(ActionButtonData) ->
+	Data = init_action_buttons(),
+	lists:foldl(fun(ActionButtonDatum, ActionButtons) ->
+		insert_action_button(ActionButtonDatum, ActionButtons)
+	end, Data, ActionButtonData).
+
+update_action_button(Guid, ActionButtonDatum) ->
+	ActionButtons = get_action_buttons(Guid),
+	NewActionButtons = insert_action_button(ActionButtonDatum, ActionButtons),
+	dets_store:store(?char_btns, {Guid, NewActionButtons}, true).
+
+insert_action_button({Button, Action, Type}, ActionButtons) ->
+	% each button is store as 4 bytes
+	Offset = Button * 4,
+	<<Head:Offset/binary, _?L, Rest/binary>> = ActionButtons,
+	NewActionButton = Action bor (Type bsl 24),
+	<<Head/binary, NewActionButton?L, Rest/binary>>.
+
+init_action_buttons() ->
+	binary:copy(<<0?L>>, ?max_action_buttons).
+
 
 add_spell(Guid, SpellId) ->
 	Record = get_char_spells(Guid),

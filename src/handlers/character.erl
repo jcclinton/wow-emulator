@@ -37,10 +37,10 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(),
-	{Char, Values, Spells} = create_char_values(Data, Guid),
+	{Char, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	char_data:create_char(Guid, AccountId, Char, Values, Spells),
+	char_data:create_char(Guid, AccountId, Char, Values, Spells, ActionButtons),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
 	{smsg_char_create, Msg}.
@@ -164,9 +164,9 @@ initial_spells(Data) ->
 	%Payload = <<0?L>>,
 	%{smsg_send_unlearn_spells, Payload}.
 
-action_buttons(_Data) ->
-	Size = 120,
-	Payload = binary:copy(<<0?L>>, Size),
+action_buttons(Data) ->
+	Guid = recv_data:get(guid, Data),
+	Payload = char_data:get_action_buttons(Guid),
 	{smsg_action_buttons, Payload}.
 
 initialize_factions(_Data) ->
@@ -419,4 +419,8 @@ create_char_values(Data, Guid) ->
 	},
 
 	Spells = #char_spells{ids=CreateInfo#char_create_info.initial_spells},
-	{Char, Values, Spells}.
+
+	ActionButtons = CreateInfo#char_create_info.initial_action_bars,
+	ActionButtonsBin = char_data:create_action_buttons(ActionButtons),
+
+	{Char, Values, Spells, ActionButtonsBin}.
