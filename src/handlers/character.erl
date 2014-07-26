@@ -150,9 +150,12 @@ bind_point_update(Data) ->
 
 initial_spells(_Data) ->
 	Unk = 0,
-	NumSpells = 0,
+	NumSpells = 10,
+	Spells = lists:foldl(fun(I, Acc) ->
+		<<Acc/binary, I?W, 0?W>>
+	end, <<>>, lists:seq(1, NumSpells)),
 	NumSpellsOnCooldown = 0,
-	Payload = <<Unk?B, NumSpells?W, NumSpellsOnCooldown?W>>,
+	Payload = <<Unk?B, NumSpells?W, Spells/binary, NumSpellsOnCooldown?W>>,
 	{smsg_initial_spells, Payload}.
 
 %send_unlearn_spells(_Data) ->
