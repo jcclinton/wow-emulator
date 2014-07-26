@@ -2,8 +2,9 @@
 
 -export([init/0, cleanup/0]).
 -export([store_new/2]).
--export([area_lookup/1]).
+-export([item_class_lookup/1]).
 
+-include("include/database_records.hrl").
 
 init() ->
 	Tabs = get_tabs(),
@@ -23,21 +24,21 @@ cleanup() ->
 
 
 store_new(Tab, Data) ->
-	ets:store_new(Tab, Data).
+	ets:insert_new(Tab, Data).
 
 
 % public api
 
-area_lookup(Id) ->
-	ets:lookup(area_store, Id).
+item_class_lookup(Id) ->
+	case ets:lookup(item_class_store, Id) of
+		[{Id, Record}] -> Record;
+		[] -> nil
+	end.
 
 
 
 % private
 get_tabs() ->
 	[
-		area_store,
-		area_trigger_store,
-		auction_house_store,
-		bank_bag_slot_prices_store
+		item_class_store
 	].

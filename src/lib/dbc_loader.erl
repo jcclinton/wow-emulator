@@ -1,6 +1,6 @@
 -module(dbc_loader).
 
--export([test/0]).
+-export([load_all/0]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -17,7 +17,7 @@ load_all() ->
 load(Filename, Fun) ->
 	File = get_path() ++ Filename,
 	Fd = file_open(File, [read, binary]),
-	Header = 16#43424457,
+	Header = 16#43424457, %WDBC
 	Size = 4,
 	SizeOffset = Size * 5,
 	<<Header?L, RecordCount?L, FieldCount?L, RecordSize?L, StringSize?L>> = file_pread(Fd, 0, SizeOffset),
@@ -31,60 +31,38 @@ load(Filename, Fun) ->
 	ByteSize = byte_size(Data),
 	io:format("data size: ~p~n", [ByteSize]),
 
-	{Tab, Id, Record} = Fun(Data, RecordCount),
-	object_store:store_new(Tab, {Id, Record}),
-	%test_char_start_outfit(Data, RecordCount, RecordSize),
-	%test_items(Data, RecordCount, RecordSize),
-
 	StringOffset = SizeOffset + DataSize,
-	StringsBin = file_pread(Fd, StringOffset, StringSize),
-	%Strings = binary:split(StringsBin, <<0>>, [global]),
-	%io:format("strings: ~p~n", [Strings]),
+	Strings = file_pread(Fd, StringOffset, StringSize),
+
+	lists:foldl(fun(_, RestIn) ->
+		{Tab, Id, Record, RestOut} = Fun(RestIn, Strings),
+		object_store:store_new(Tab, {Id, Record}),
+		RestOut
+	end, Data, lists:seq(1, RecordCount)),
 
 	file_close(Fd).
 
 
+lookup_string(Offset, Strings) ->
+	<<"hi">>.
 
-
-
-test() ->
-	%Filename = "CharStartOutfit.dbc",
-	Filename = "ItemClass.dbc",
-	File = get_path() ++ Filename,
-	load(File).
-
-
-load(File) ->
-	Fd = file_open(File, [read, binary]),
-	Header = 16#43424457,
-	Size = 4,
-	SizeOffset = Size * 5,
-	<<Header?L, RecordCount?L, FieldCount?L, RecordSize?L, StringSize?L>> = file_pread(Fd, 0, SizeOffset),
-	io:format("header: ~p~nrecord count: ~p~nfield count: ~p~nrecord size: ~p~nstring size: ~p~n",[Header, RecordCount, FieldCount, RecordSize, StringSize]),
-
-
-	RecordTotal = RecordSize * RecordCount,
-	%TotalSize = RecordTotal + StringSize,
-	DataSize = RecordTotal,
-
-	Data = file_pread(Fd, SizeOffset, DataSize),
-	ByteSize = byte_size(Data),
-	io:format("data size: ~p~n", [ByteSize]),
-
-	%test_char_start_outfit(Data, RecordCount, RecordSize),
-	test_items(Data, RecordCount, RecordSize),
-
-	StringOffset = SizeOffset + DataSize,
-	StringsBin = file_pread(Fd, StringOffset, StringSize),
-	Strings = binary:split(StringsBin, <<0>>, [global]),
-	io:format("strings: ~p~n", [Strings]),
-
-	file_close(Fd).
 
 
 	%% specific load functions
-load_item_class(Data, RecordCount) ->
-	ok.
+load_item_class(Data, Strings) ->
+	<<Id?L, _Unk1?L, _Unk2?L, NameOffset?Q, _Unk3?QH, _Unk4?Q, _Flags?L, Rest/binary>> = Data,
+	Name = lookup_string(NameOffset, Strings),
+	Record = #item_class_store{id=Id, name=Name},
+	{item_class_store, Id, Record, Rest}.
+
+
+
+
+
+
+
+
+% test functions
 
 
 test_items(Data, RecordCount, RecordSize) ->
@@ -168,3 +146,39 @@ file_close(Fd) ->
 		{error, Error} -> throw(Error);
 		ok -> ok
 	end.
+
+
+
+test() ->
+	%Filename = "CharStartOutfit.dbc",
+	Filename = "ItemClass.dbc",
+	File = get_path() ++ Filename,
+	load(File).
+
+
+load(File) ->
+	Fd = file_open(File, [read, binary]),
+	Header = 16#43424457,
+	Size = 4,
+	SizeOffset = Size * 5,
+	<<Header?L, RecordCount?L, FieldCount?L, RecordSize?L, StringSize?L>> = file_pread(Fd, 0, SizeOffset),
+	io:format("header: ~p~nrecord count: ~p~nfield count: ~p~nrecord size: ~p~nstring size: ~p~n",[Header, RecordCount, FieldCount, RecordSize, StringSize]),
+
+
+	RecordTotal = RecordSize * RecordCount,
+	%TotalSize = RecordTotal + StringSize,
+	DataSize = RecordTotal,
+
+	Data = file_pread(Fd, SizeOffset, DataSize),
+	ByteSize = byte_size(Data),
+	io:format("data size: ~p~n", [ByteSize]),
+
+	%test_char_start_outfit(Data, RecordCount, RecordSize),
+	test_items(Data, RecordCount, RecordSize),
+
+	StringOffset = SizeOffset + DataSize,
+	StringsBin = file_pread(Fd, StringOffset, StringSize),
+	Strings = binary:split(StringsBin, <<0>>, [global]),
+	io:format("strings: ~p~n", [Strings]),
+
+	file_close(Fd).

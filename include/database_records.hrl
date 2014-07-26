@@ -19,4 +19,4 @@
 % static object stores
 
 %area
--record(area_store, {id, map_id, zone_id, explore_flag, flags, area_level, area_name, team, liqueid_type_override}).
+-record(item_class_store, {id, name}).
