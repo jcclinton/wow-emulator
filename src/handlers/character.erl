@@ -37,10 +37,10 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(),
-	{Char, Values} = create_char_values(Data, Guid),
+	{Char, Values, Spells} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	char_data:create_char(Guid, AccountId, Char, Values),
+	char_data:create_char(Guid, AccountId, Char, Values, Spells),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
 	{smsg_char_create, Msg}.
@@ -148,14 +148,16 @@ bind_point_update(Data) ->
 	Payload = <<X?f, Y?f, Z?f, Map?L, Zone?L>>,
 	{smsg_bindpointupdate, Payload}.
 
-initial_spells(_Data) ->
-	Unk = 0,
-	NumSpells = 10,
-	Spells = lists:foldl(fun(I, Acc) ->
-		<<Acc/binary, I?W, 0?W>>
-	end, <<>>, lists:seq(1, NumSpells)),
+initial_spells(Data) ->
+	Guid = recv_data:get(guid, Data),
+	Record = char_data:get_char_spells(Guid),
+	SpellIds = Record#char_spells.ids,
+	NumSpells = length(SpellIds),
+	Spells = lists:foldl(fun(Id, Acc) ->
+		<<Acc/binary, Id?W, 0?W>>
+	end, <<>>, SpellIds),
 	NumSpellsOnCooldown = 0,
-	Payload = <<Unk?B, NumSpells?W, Spells/binary, NumSpellsOnCooldown?W>>,
+	Payload = <<0?B, NumSpells?W, Spells/binary, NumSpellsOnCooldown?W>>,
 	{smsg_initial_spells, Payload}.
 
 %send_unlearn_spells(_Data) ->
@@ -415,4 +417,6 @@ create_char_values(Data, Guid) ->
 		map = CreateInfo#char_create_info.map_id,
 		at_login_flags = 0
 	},
-	{Char, Values}.
+
+	Spells = #char_spells{ids=CreateInfo#char_create_info.initial_spells},
+	{Char, Values, Spells}.

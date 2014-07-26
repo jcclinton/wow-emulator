@@ -4,6 +4,8 @@
 % char is the persistent data store
 -record(char, {x, y, z, orient, name, zone, map, at_login_flags}).
 
+-record(char_spells, {ids=[]}).
+
 %char session is not persistent
 -record(char_sess, {target=0, update_mask}).
 
@@ -12,7 +14,7 @@
                            position_y, position_z, orientation, display_id, 
                            strength, agility, stamina, intellect, spirit, 
                            health, mana, focus, power, power_type, intro,
-                           attack_power, min_dmg, max_dmg, scale}).
+                           attack_power, min_dmg, max_dmg, scale, initial_spells}).
 
 
 

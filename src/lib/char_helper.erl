@@ -25,8 +25,7 @@ race(night_elf) -> 4;
 race(undead)    -> 5;
 race(tauren)    -> 6;
 race(gnome)     -> 7;
-race(troll)     -> 8;
-race(goblin)     -> 9.
+race(troll)     -> 8.
 
 %% @spec to_race(int()) -> race().
 to_race(1)  -> human;
@@ -36,8 +35,7 @@ to_race(4)  -> night_elf;
 to_race(5)  -> undead;
 to_race(6)  -> tauren;
 to_race(7)  -> gnome;
-to_race(8)  -> troll;
-to_race(9)  -> goblin.
+to_race(8)  -> troll.
 
 %% @type class() = warrior | paladin | hunter | rogue |
 %%                 priest | death_knight | shaman |
