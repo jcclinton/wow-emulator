@@ -43,8 +43,16 @@ load(Filename, Fun) ->
 	file_close(Fd).
 
 
+
+
 lookup_string(Offset, Strings) ->
-	<<"hi">>.
+	StringSize = byte_size(Strings),
+	if StringSize > Offset ->
+			<<_:Offset/binary, Rest/binary>> = Strings,
+			[String|_] = binary:split(Rest, <<0>>),
+			String;
+		StringSize =< Offset -> <<"">>
+	end.
 
 
 
