@@ -66,7 +66,7 @@ handle_cast(update, State = #state{guid=Guid}) ->
 	{noreply, State};
 handle_cast({packet_rcvd, OpAtom, M, F, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
 	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}],
-	util:call(M, F, Args, AccountId),
+	player_workers_sup:start_worker({M, F, Args}, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->
 	io:format("unknown casted message: ~p~n", [Msg]),
