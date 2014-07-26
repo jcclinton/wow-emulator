@@ -13,3 +13,10 @@
                            strength, agility, stamina, intellect, spirit, 
                            health, mana, focus, power, power_type, intro,
                            attack_power, min_dmg, max_dmg, scale}).
+
+
+
+% static object stores
+
+%area
+-record(item_class_store, {id, name}).

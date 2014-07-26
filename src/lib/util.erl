@@ -1,8 +1,9 @@
 -module(util).
 
+-export([has_flag/2]).
 -export([game_time/0, game_speed/0]).
 -export([call/4]).
--export([has_flag/2]).
+-export([file_pread/3, file_open/2, file_close/1]).
 
 
 has_flag(Flags, Flag) ->
@@ -40,3 +41,23 @@ call(M, F, Args, AccountId) ->
 				io:format("error in char: ~p~n", [Error]),
 				ok
 		end.
+
+
+file_pread(Fd, Offset, Size) ->
+	case file:pread(Fd, Offset, Size) of
+		{error, Error} -> throw(Error);
+		{ok, Result} -> Result
+	end.
+
+file_open(Filename, Options) ->
+	case file:open(Filename, Options) of
+		{error, Error} -> throw(Error);
+		{ok, Fd} -> Fd
+	end.
+
+% wrapper around file:close to simplify code
+file_close(Fd) ->
+	case file:close(Fd) of
+		{error, Error} -> throw(Error);
+		ok -> ok
+	end.
