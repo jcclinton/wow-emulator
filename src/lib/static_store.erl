@@ -1,4 +1,4 @@
--module(object_store).
+-module(static_store).
 
 -export([init/0, cleanup/0]).
 -export([store_new/2]).

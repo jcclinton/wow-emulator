@@ -12,12 +12,12 @@ start(normal, _Args) ->
 	world_data:init(),
 	char_data:init(),
 	account:init(),
-	object_store:init(),
+	static_store:init(),
 	emulator_sup:start_link().
 
 stop(_State) ->
 	account:destroy(),
 	world_data:cleanup(),
 	char_data:cleanup(),
-	object_store:cleanup(),
+	static_store:cleanup(),
 	ok.

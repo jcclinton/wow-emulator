@@ -36,7 +36,7 @@ load(Filename, Fun) ->
 
 	lists:foldl(fun(_, RestIn) ->
 		{Tab, Id, Record, RestOut} = Fun(RestIn, Strings),
-		object_store:store_new(Tab, {Id, Record}),
+		static_store:store_new(Tab, {Id, Record}),
 		RestOut
 	end, Data, lists:seq(1, RecordCount)),
 
