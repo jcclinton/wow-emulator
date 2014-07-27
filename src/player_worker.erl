@@ -6,7 +6,8 @@
 
 
 start_link(WorkerData) ->
-	spawn_link(?MODULE, call, [WorkerData]).
+	Pid = spawn_link(?MODULE, call, [WorkerData]),
+	{ok, Pid}.
 
 
 
