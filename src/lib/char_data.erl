@@ -2,8 +2,8 @@
 
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
--export([enum_chars/1, delete_char/1, create_char/7]).
--export([get_values/1, get_char_misc/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1]).
+-export([enum_char_guids/1, delete_char/1, create_char/8]).
+-export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1]).
 -export([update_char_misc/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
 -export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
@@ -17,6 +17,7 @@
 -define(char_sess, characters_session).
 
 -define(char_val, characters_values).
+-define(char_name, characters_names).
 -define(char_misc, characters_miscellaneous).
 -define(char_acc, characters_account).
 -define(char_spells, characters_spells).
@@ -27,6 +28,7 @@
 get_char_tabs() ->
 	[
 		?char_val,
+		?char_name,
 		?char_misc,
 		?char_mv,
 		?char_acc,
@@ -101,18 +103,16 @@ get_sess(Guid) ->
 
 % persistent char data
 
-enum_chars(AccountId) ->
-	Chars = ets:match_object(?char_acc, {'_', AccountId}),
-	lists:map(fun({Guid, _}) ->
-		CharMove = get_char_move(Guid),
-		CharMisc = get_char_misc(Guid),
-		Values = get_values(Guid),
-		{CharMisc, CharMove, Values}
-	end, Chars).
+enum_char_guids(AccountId) ->
+	CharsGuids = ets:match_object(?char_acc, {'_', AccountId}),
+	lists:map(fun({Guid, _}) -> Guid end, CharsGuids).
 
 
 get_char_misc(Guid) ->
 	get_char_data(Guid, ?char_misc).
+
+get_char_name(Guid) ->
+	get_char_data(Guid, ?char_name).
 
 get_char_move(Guid) ->
 	get_char_data(Guid, ?char_mv).
@@ -144,8 +144,9 @@ delete_char(Guid) ->
 	ok.
 
 
-create_char(Guid, AccountId, CharMisc, CharMv, Values, Spells, ActionButtons) when is_integer(Guid), is_binary(Values), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons) ->
+create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons) when is_integer(Guid), is_binary(Values), is_binary(CharName), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons) ->
 	dets_store:store_new(?char_val, {Guid, Values}, true),
+	dets_store:store_new(?char_name, {Guid, CharName}, true),
 	dets_store:store_new(?char_misc, {Guid, CharMisc}, true),
 	dets_store:store_new(?char_mv, {Guid, CharMv}, true),
 	dets_store:store_new(?char_acc, {Guid, AccountId}, true),

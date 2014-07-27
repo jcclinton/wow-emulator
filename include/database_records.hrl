@@ -4,7 +4,7 @@
 % char is the namespace of a characters persistent data store
 -record(char_move, {x, y, z, orient, zone, map, movement_info}).
 
--record(char_misc, {name, at_login_flags}).
+-record(char_misc, {at_login_flags}).
 
 -record(char_spells, {ids=[]}).
 

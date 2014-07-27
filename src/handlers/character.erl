@@ -13,12 +13,11 @@ update_account_data(_Data) ->
 
 enum(Data) ->
 	AccountId = recv_data:get(account_id, Data),
-	Chars = char_data:enum_chars(AccountId),
-	Num = length(Chars),
+	CharGuids = char_data:enum_char_guids(AccountId),
+	Num = length(CharGuids),
 	CharDataOut = if Num > 0 ->
-								CharList = lists:map(fun mapCharData/1, Chars),
-								CharData = iolist_to_binary(CharList),
-								CharData;
+								CharList = lists:map(fun mapCharGuids/1, CharGuids),
+								iolist_to_binary(CharList);
 							Num == 0 -> <<>>
 						end,
 	Msg = <<Num?B, CharDataOut/binary>>,
@@ -37,10 +36,10 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(),
-	{CharMisc, CharMv, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
+	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	char_data:create_char(Guid, AccountId, CharMisc, CharMv, Values, Spells, ActionButtons),
+	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
 	{smsg_char_create, Msg}.
@@ -202,15 +201,17 @@ init_world_state(Data) ->
 
 
 extract_name(Payload) ->
-	extract_name(Payload, []).
-extract_name(<<0?B, Rest/binary>>, Name) ->
-	NameBin = iolist_to_binary(lists:reverse(Name)),
-	{NameBin, Rest};
+	extract_name(Payload, <<>>).
+extract_name(<<0?B, Rest/binary>>, Name) -> {Name, Rest};
 extract_name(<<Char?B, Rest/binary>>, Name) ->
-	extract_name(Rest, [Char|Name]).
+	extract_name(Rest, <<Name/binary, Char?B>>).
 	
 
-mapCharData({CharMisc, CharMove, Values}) ->
+mapCharGuids(Guid) ->
+	CharMove = char_data:get_char_move(Guid),
+	CharMisc = char_data:get_char_misc(Guid),
+	Values = char_data:get_values(Guid),
+	Name = char_data:get_char_name(Guid),
 
 	Guid = char_values:get(guid, Values),
 	Race = char_values:get(race, Values),
@@ -232,7 +233,6 @@ mapCharData({CharMisc, CharMove, Values}) ->
 	Y = CharMove#char_move.y,
 	Z = CharMove#char_move.z,
 
-	Name = CharMisc#char_misc.name,
 	AtLoginFlags = CharMisc#char_misc.at_login_flags,
 
 	GeneralFlags = 16#10A00040,
@@ -409,7 +409,6 @@ create_char_values(Data, Guid) ->
 	EmptyValues = binary:copy(<<0?L>>, TotalCount),
 	Values = lists:foldl(fun object_values:set_key_values/2, EmptyValues, KeyValues),
 	CharMisc = #char_misc{
-		name=Name,
 		at_login_flags = 0
 	},
 	CharMv = #char_move{
@@ -426,4 +425,4 @@ create_char_values(Data, Guid) ->
 	ActionButtons = CreateInfo#char_create_info.initial_action_bars,
 	ActionButtonsBin = char_data:create_action_buttons(ActionButtons),
 
-	{CharMisc, CharMv, Values, Spells, ActionButtonsBin}.
+	{Name, CharMisc, CharMv, Values, Spells, ActionButtonsBin}.
