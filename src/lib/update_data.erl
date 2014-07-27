@@ -94,12 +94,10 @@ create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag) ->
 
 
 
-		% 7 tells you the size of the guid
+		% first byte is a mask that tells you the size of the guid
 		% eg for a 3 byte guid,
 		% 7 = (1 << 0) bor (1 << 1) bor (1 << 2)
-		% players are always 3 bytes
 		% objects can be a maximum up to 8 bytes
-		%GuidInt2 = GuidInt + 1,
 pack_guid(Guid) ->
 	%<<7?B, Guid?G>>.
 	<<16#FF?B, Guid?Q>>.

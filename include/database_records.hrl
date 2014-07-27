@@ -20,6 +20,8 @@
 													 initial_spells, initial_action_bars}).
 
 
+% item record
+-record(item_proto, {id, max_durability, display_info_id, inventory_type}).
 
 % static object stores
 

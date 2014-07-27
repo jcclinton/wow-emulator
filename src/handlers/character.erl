@@ -242,7 +242,12 @@ mapCharGuids(Guid) ->
 	PetFamily = 0,
 
 	EQUIPMENT_SLOT_END = 19,
-	ItemSlotData = binary:copy(<<0?B>>, 5 * EQUIPMENT_SLOT_END),
+	ItemProto = content:lookup_item(25),
+	DisplayInfoId = ItemProto#item_proto.display_info_id,
+	InvType = ItemProto#item_proto.inventory_type,
+	io:format("item: ~p~n", [ItemProto]),
+	SlotData = <<DisplayInfoId?L, InvType?B>>,
+	ItemSlotData = binary:copy(SlotData, EQUIPMENT_SLOT_END),
 
 	BagDisplayId = 0,
 	BagInventoryType = 0,
@@ -425,8 +430,8 @@ create_char_values(Data, Guid) ->
 	ActionButtons = CreateInfo#char_create_info.initial_action_bars,
 	ActionButtonsBin = char_data:create_action_buttons(ActionButtons),
 
-	%StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
-	StartingItemIds = [],
+	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
+	%StartingItemIds = [],
 	StartingItemValues = lists:map(fun(Id) ->
 		item:create(Id, Guid)
 	end, StartingItemIds),
