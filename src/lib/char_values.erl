@@ -13,6 +13,9 @@ set_sheathed(Value, Values) ->
 	Offset = 0,
 	set_byte_mark_if_needed(Field, Value, Values, Offset).
 
+
+% sitting 1
+% standing 0
 set_anim_state(AnimState, Values) ->
 	Field = 'UNIT_FIELD_BYTES_1',
 	Offset = 0,

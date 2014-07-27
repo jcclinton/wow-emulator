@@ -41,6 +41,8 @@ get_callback_by_num(cmsg_far_sight) ->
 	#callback{type=character, module=char_misc, function=far_sight};
 get_callback_by_num(cmsg_set_selection) ->
 	#callback{type=character, module=char_misc, function=set_selection};
+get_callback_by_num(cmsg_areatrigger) ->
+	#callback{type=character, module=char_misc, function=area_trigger};
 
 get_callback_by_num(cmsg_messagechat) ->
 	#callback{type=character, module=chat, function=message_chat};

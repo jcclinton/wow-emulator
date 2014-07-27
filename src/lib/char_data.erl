@@ -4,7 +4,7 @@
 -export([store_connected_client/2, get_session_key/1]).
 -export([enum_char_guids/1, delete_char/1, create_char/8]).
 -export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1]).
--export([update_char_misc/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
+-export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
 -export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
 -export([get_mask/1]).
@@ -162,6 +162,9 @@ update_values(Guid, Values) when is_binary(Values) ->
 update_char_misc(Guid, CharMisc) when is_record(CharMisc, char_misc) ->
 	dets_store:store(?char_misc, {Guid, CharMisc}, true).
 
+
+update_char_move(Guid, CharMove) ->
+	dets_store:store(?char_mv, {Guid, CharMove}, true).
 
 update_coords(Guid, X, Y, Z, O, MovementInfo) ->
 	CharMv = get_char_move(Guid),

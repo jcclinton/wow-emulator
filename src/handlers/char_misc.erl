@@ -1,11 +1,14 @@
 -module(char_misc).
 -export([request_raid_info/1, name_query/1, cancel_trade/1, gmticket_getticket/1]).
 -export([query_next_mail_time/1, battlefield_status/1, meetingstone_info/1, zone_update/1]).
--export([tutorial_flag/1, far_sight/1, set_selection/1]).
+-export([tutorial_flag/1, far_sight/1, set_selection/1, area_trigger/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
 
+
+area_trigger(_Data) ->
+	ok.
 
 far_sight(Data) ->
 	Payload = recv_data:get(payload, Data),
@@ -25,8 +28,14 @@ tutorial_flag(_Data) ->
 	ok.
 
 zone_update(Data) ->
-	Payload = recv_data:get(payload, Data),
-	io:format("received req for zone update: ~p~n", [Payload]),
+	<<Zone?L>> = recv_data:get(payload, Data),
+	Guid = recv_data:get(guid, Data),
+	CharMv = char_data:get_char_move(Guid),
+	if CharMv#char_move.zone /= Zone ->
+			NewCharMv = CharMv#char_move{zone=Zone},
+			char_data:update_char_move(Guid, NewCharMv);
+		true -> ok
+	end,
 	ok.
 
 meetingstone_info(_Data) ->
@@ -62,10 +71,9 @@ request_raid_info(_Data) ->
 name_query(Data) ->
 	<<Guid?Q>> = recv_data:get(payload, Data),
 	Name = char_data:get_char_name(Guid),
-	Values = char_data:get_values(Guid),
 	Null = <<"\0">>,
-	Race = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 0),
-	Gender = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 1),
-	Class = object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 2),
+	Race = char_values:get(race, Guid),
+	Gender = char_values:get(gender, Guid),
+	Class = char_values:get(class, Guid),
 	Payload = <<Guid?Q, Name/binary, Null/binary, Race?L, Gender?L, Class?L>>,
 	{smsg_name_query_response, Payload}.
