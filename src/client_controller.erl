@@ -97,11 +97,11 @@ handle_cast(logout, State) ->
 	{noreply, State};
 handle_cast(move, State) ->
 	OpAtom = msg_move_start_forward,
-	Char = #char{ x = -8949.95, y = -132.493, z = 83.5312, orient = 0},
-	X = Char#char.x,
-	Y = Char#char.y,
-	Z = Char#char.z,
-	O = Char#char.orient,
+	Char = #char_move{ x = -8949.95, y = -132.493, z = 83.5312, orient = 0},
+	X = Char#char_move.x,
+	Y = Char#char_move.y,
+	Z = Char#char_move.z,
+	O = Char#char_move.orient,
 	Time = util:game_time(),
 	Fall = 0,
 	MoveFlags = 1,

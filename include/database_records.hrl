@@ -1,8 +1,10 @@
 % account is used to store a users account data
 -record(account, {name, salt, verifier}).
 
-% char is the persistent data store
--record(char, {x, y, z, orient, name, zone, map, at_login_flags}).
+% char is the namespace of a characters persistent data store
+-record(char_move, {x, y, z, orient, zone, map, movement_info}).
+
+-record(char_misc, {name, at_login_flags}).
 
 -record(char_spells, {ids=[]}).
 

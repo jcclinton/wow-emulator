@@ -18,8 +18,8 @@ build_update_packet(Mask, Values) ->
 	BlockCount = 1,
 	build_packet(Block, BlockCount).
 
-build_create_packet({Char, Values, IsSelf}) ->
-	Block = create_block(Char, Values, IsSelf),
+build_create_packet({CharMove, Values, IsSelf}) ->
+	Block = create_block(CharMove, Values, IsSelf),
 	BlockCount = 1,
 	build_packet(Block, BlockCount).
 
@@ -48,26 +48,26 @@ update_block(Mask, Values) ->
 
 
 
-	create_block(Char, Values, IsSelf) ->
-		UpdateType = if IsSelf -> ?updatetype_create_object2;
-			not IsSelf -> ?updatetype_create_object
-		end,
-		Guid = char_values:get(guid, Values),
-		PackedGuid = pack_guid(Guid),
-		%Guid = <<7, 41, 179, 24>>,
-	%io:format("update binary guid: ~p~n", [Guid]),
+create_block(CharMove, Values, IsSelf) ->
+	UpdateType = if IsSelf -> ?updatetype_create_object2;
+		not IsSelf -> ?updatetype_create_object
+	end,
+	Guid = char_values:get(guid, Values),
+	PackedGuid = pack_guid(Guid),
+	%Guid = <<7, 41, 179, 24>>,
+%io:format("update binary guid: ~p~n", [Guid]),
 
-		TypeId = ?typeid_player,
-		MovementData = getMovementData(Char, IsSelf),
-		ValuesCount = (byte_size(Values) div 4) - 1,
-		Blocks = (ValuesCount + 31) div 32,
-		EmptyMaskBits = update_mask:empty(ValuesCount),
-		MaskBits = update_mask:set_bits(ValuesCount, EmptyMaskBits, Values),
-		%io:format("maskbits: ~p~n", [MaskBits]),
-		ValuesData = build_values_update(MaskBits, Values, ValuesCount),
-		%io:format("value bits: ~p~n", [ValuesData]),
+	TypeId = ?typeid_player,
+	MovementData = getMovementData(CharMove, IsSelf),
+	ValuesCount = (byte_size(Values) div 4) - 1,
+	Blocks = (ValuesCount + 31) div 32,
+	EmptyMaskBits = update_mask:empty(ValuesCount),
+	MaskBits = update_mask:set_bits(ValuesCount, EmptyMaskBits, Values),
+	%io:format("maskbits: ~p~n", [MaskBits]),
+	ValuesData = build_values_update(MaskBits, Values, ValuesCount),
+	%io:format("value bits: ~p~n", [ValuesData]),
 
-		<<UpdateType?B, PackedGuid/binary, TypeId?B, MovementData/binary, Blocks?B, MaskBits/binary, ValuesData/binary>>.
+	<<UpdateType?B, PackedGuid/binary, TypeId?B, MovementData/binary, Blocks?B, MaskBits/binary, ValuesData/binary>>.
 
 
 	build_values_update(MaskBits, Values, Count) ->
@@ -94,25 +94,25 @@ pack_guid(Guid) ->
 
 
 
-	getMovementData(Char, IsSelf) ->
-		All = ?updateflag_all,
-		Self = ?updateflag_self,
-		Living = ?updateflag_living,
-		HasPosition = ?updateflag_has_position,
-		Flags = All bor Living bor HasPosition,
-		UpdateFlags = if IsSelf -> Flags bor Self;
-			not IsSelf -> Flags
-		end,
-		MoveFlags = ?moveflag_move_stop,
-		WorldTime = util:game_time(),
-        Speeds         = {2.5, 7, 4.5, 4.72, 2.5,
-                          7, 4.5, 3.141593, 1.0},
-    {W, R, WB, S, SB, _F, _FB, T, _P} = Speeds,
-		X = Char#char.x,
-		Y = Char#char.y,
-		Z = Char#char.z,
-		O = Char#char.orient,
-		<<UpdateFlags?B, MoveFlags?L, WorldTime?L, X?f, Y?f, Z?f, O?f, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f, 1?L>>.
+getMovementData(CharMove, IsSelf) ->
+	All = ?updateflag_all,
+	Self = ?updateflag_self,
+	Living = ?updateflag_living,
+	HasPosition = ?updateflag_has_position,
+	Flags = All bor Living bor HasPosition,
+	UpdateFlags = if IsSelf -> Flags bor Self;
+		not IsSelf -> Flags
+	end,
+	MoveFlags = ?moveflag_move_stop,
+	WorldTime = util:game_time(),
+
+	{W, R, WB, S, SB, _F, _FB, T, _P} = {2.5, 7, 4.5, 4.72, 2.5, 7, 4.5, 3.141593, 1.0},
+
+	X = CharMove#char_move.x,
+	Y = CharMove#char_move.y,
+	Z = CharMove#char_move.z,
+	O = CharMove#char_move.orient,
+	<<UpdateFlags?B, MoveFlags?L, WorldTime?L, X?f, Y?f, Z?f, O?f, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f, 1?L>>.
 
 
 

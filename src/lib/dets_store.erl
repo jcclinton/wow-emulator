@@ -60,4 +60,4 @@ store(Tab, Data, HasEts) ->
 
 
 get_dets_file(Tab) ->
-	"./db/"++ atom_to_list(Tab) ++ ".dets".
+	"./db/dets/"++ atom_to_list(Tab) ++ ".dets".

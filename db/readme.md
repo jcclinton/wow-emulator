@@ -1,1 +1,1 @@
-directory used to store persistent dets data
+directory used to store data

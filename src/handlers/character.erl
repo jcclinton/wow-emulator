@@ -37,10 +37,10 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(),
-	{Char, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
+	{CharMisc, CharMv, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	char_data:create_char(Guid, AccountId, Char, Values, Spells, ActionButtons),
+	char_data:create_char(Guid, AccountId, CharMisc, CharMv, Values, Spells, ActionButtons),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
 	{smsg_char_create, Msg}.
@@ -68,13 +68,13 @@ login(Data) ->
 
 
 
-	Char = char_data:get_char(Guid),
+	Char = char_data:get_char_move(Guid),
 	%io:format("logging in ~p~n", [CharName]),
-	X = Char#char.x,
-	Y = Char#char.y,
-	Z = Char#char.z,
-	MapId = Char#char.map,
-	Orientation = Char#char.orient,
+	X = Char#char_move.x,
+	Y = Char#char_move.y,
+	Z = Char#char_move.z,
+	MapId = Char#char_move.map,
+	Orientation = Char#char_move.orient,
 	Payload = <<MapId?L, X?f, Y?f, Z?f, Orientation?f>>,
 	%io:format("login payload: ~p~n", [Payload]),
 	player_controller:send(AccountId, smsg_login_verify_world, Payload),
@@ -139,12 +139,12 @@ set_tutorial_flags(_Data) ->
 
 bind_point_update(Data) ->
 	Guid = recv_data:get(guid, Data),
-	Char = char_data:get_char(Guid),
-	Zone = Char#char.zone,
-	Map = Char#char.map,
-	X = Char#char.x,
-	Y = Char#char.y,
-	Z = Char#char.z,
+	Char = char_data:get_char_move(Guid),
+	Zone = Char#char_move.zone,
+	Map = Char#char_move.map,
+	X = Char#char_move.x,
+	Y = Char#char_move.y,
+	Z = Char#char_move.z,
 	Payload = <<X?f, Y?f, Z?f, Map?L, Zone?L>>,
 	{smsg_bindpointupdate, Payload}.
 
@@ -182,9 +182,9 @@ login_settimespeed(_Data) ->
 
 init_world_state(Data) ->
 	Guid = recv_data:get(guid, Data),
-	Char = char_data:get_char(Guid),
-	MapId = Char#char.map,
-	ZoneId = Char#char.zone,
+	Char = char_data:get_char_move(Guid),
+	MapId = Char#char_move.map,
+	ZoneId = Char#char_move.zone,
 	Count = 6,
 	%Payload = <<MapId?L, ZoneId?L, Count?W, 16#8d8?L, 0?L, 16#8d7?L, 0?L, 16#8d6?L, 0?L, 16#8d5?L, 0?L, 16#8d4?L, 0?L, 16#8d3?L, 0?L>>,
 	Rest = <<16#d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:384/unsigned-big-integer>>,
@@ -210,7 +210,7 @@ extract_name(<<Char?B, Rest/binary>>, Name) ->
 	extract_name(Rest, [Char|Name]).
 	
 
-mapCharData({Char, Values}) ->
+mapCharData({CharMisc, CharMove, Values}) ->
 
 	Guid = char_values:get(guid, Values),
 	Race = char_values:get(race, Values),
@@ -226,13 +226,14 @@ mapCharData({Char, Values}) ->
 
 	GuildId = char_values:get(guild_id, Values),
 
-	Zone = Char#char.zone,
-	Map = Char#char.map,
-	X = Char#char.x,
-	Y = Char#char.y,
-	Z = Char#char.z,
-	Name = Char#char.name,
-	AtLoginFlags = Char#char.at_login_flags,
+	Zone = CharMove#char_move.zone,
+	Map = CharMove#char_move.map,
+	X = CharMove#char_move.x,
+	Y = CharMove#char_move.y,
+	Z = CharMove#char_move.z,
+
+	Name = CharMisc#char_misc.name,
+	AtLoginFlags = CharMisc#char_misc.at_login_flags,
 
 	GeneralFlags = 16#10A00040,
 
@@ -407,15 +408,17 @@ create_char_values(Data, Guid) ->
 	% create initially empty binary values object
 	EmptyValues = binary:copy(<<0?L>>, TotalCount),
 	Values = lists:foldl(fun object_values:set_key_values/2, EmptyValues, KeyValues),
-	Char = #char{
+	CharMisc = #char_misc{
+		name=Name,
+		at_login_flags = 0
+	},
+	CharMv = #char_move{
 		x=X,
 		y=Y,
 		z=Z,
 		orient=O,
-		name=Name,
 		zone = CreateInfo#char_create_info.zone_id,
-		map = CreateInfo#char_create_info.map_id,
-		at_login_flags = 0
+		map = CreateInfo#char_create_info.map_id
 	},
 
 	Spells = #char_spells{ids=CreateInfo#char_create_info.initial_spells},
@@ -423,4 +426,4 @@ create_char_values(Data, Guid) ->
 	ActionButtons = CreateInfo#char_create_info.initial_action_bars,
 	ActionButtonsBin = char_data:create_action_buttons(ActionButtons),
 
-	{Char, Values, Spells, ActionButtonsBin}.
+	{CharMisc, CharMv, Values, Spells, ActionButtonsBin}.

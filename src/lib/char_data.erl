@@ -2,9 +2,9 @@
 
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
--export([enum_chars/1, delete_char/1, create_char/6]).
--export([get_values/1, get_char/1, get_char_values_pair/1, get_account_id/1, get_char_spells/1, get_action_buttons/1]).
--export([update_char/2, update_coords/5, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
+-export([enum_chars/1, delete_char/1, create_char/7]).
+-export([get_values/1, get_char_misc/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1]).
+-export([update_char_misc/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
 -export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
 -export([get_mask/1]).
@@ -17,10 +17,22 @@
 -define(char_sess, characters_session).
 
 -define(char_val, characters_values).
--define(char_rec, characters_record).
+-define(char_misc, characters_miscellaneous).
 -define(char_acc, characters_account).
 -define(char_spells, characters_spells).
 -define(char_btns, characters_btns).
+-define(char_mv, characters_movement).
+
+
+get_char_tabs() ->
+	[
+		?char_val,
+		?char_misc,
+		?char_mv,
+		?char_acc,
+		?char_spells,
+		?char_btns
+	].
 
 
 
@@ -28,22 +40,18 @@ init() ->
 	ets:new(?conn, [named_table, set, public]),
 	ets:new(?char_sess, [named_table, set, public]),
 
-	dets_store:open(?char_val, true),
-	dets_store:open(?char_rec, true),
-	dets_store:open(?char_acc, true),
-	dets_store:open(?char_spells, true),
-	dets_store:open(?char_btns, true),
+	lists:foreach(fun(Tab) ->
+		dets_store:open(Tab, true)
+	end, get_char_tabs()),
 	ok.
 
 cleanup() ->
 	ets:delete(?conn),
 	ets:delete(?char_sess),
 
-	dets_store:close(?char_val, true),
-	dets_store:close(?char_rec, true),
-	dets_store:close(?char_acc, true),
-	dets_store:close(?char_spells, true),
-	dets_store:close(?char_btns, true),
+	lists:foreach(fun(Tab) ->
+		dets_store:close(Tab, true)
+	end, get_char_tabs()),
 	ok.
 
 
@@ -96,12 +104,18 @@ get_sess(Guid) ->
 enum_chars(AccountId) ->
 	Chars = ets:match_object(?char_acc, {'_', AccountId}),
 	lists:map(fun({Guid, _}) ->
-		get_char_values_pair(Guid)
+		CharMove = get_char_move(Guid),
+		CharMisc = get_char_misc(Guid),
+		Values = get_values(Guid),
+		{CharMisc, CharMove, Values}
 	end, Chars).
 
 
-get_char(Guid) ->
-	get_char_data(Guid, ?char_rec).
+get_char_misc(Guid) ->
+	get_char_data(Guid, ?char_misc).
+
+get_char_move(Guid) ->
+	get_char_data(Guid, ?char_mv).
 
 get_char_spells(Guid) ->
 	get_char_data(Guid, ?char_spells).
@@ -115,11 +129,6 @@ get_account_id(Guid) ->
 get_values(Guid) ->
 	get_char_data(Guid, ?char_val).
 
-get_char_values_pair(Guid) ->
-	Char = get_char(Guid),
-	Values = get_values(Guid),
-	{Char, Values}.
-
 get_char_data(Guid, Tab) ->
 	case dets_store:lookup(Tab, Guid, true) of
 		[] -> throw(badarg);
@@ -129,37 +138,42 @@ get_char_data(Guid, Tab) ->
 
 
 delete_char(Guid) ->
-	dets_store:delete(?char_val, Guid, true),
-	dets_store:delete(?char_acc, Guid, true),
-	dets_store:delete(?char_rec, Guid, true),
-	dets_store:delete(?char_btns, Guid, true),
-	dets_store:delete(?char_spells, Guid, true),
+	lists:foreach(fun(Tab) ->
+		dets_store:delete(Tab, Guid, true)
+	end, get_char_tabs()),
 	ok.
 
-create_char(Guid, AccountId, Char, Values, Spells, ActionButtons) when is_integer(Guid), is_binary(Values), is_record(Char, char), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons) ->
+
+create_char(Guid, AccountId, CharMisc, CharMv, Values, Spells, ActionButtons) when is_integer(Guid), is_binary(Values), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons) ->
 	dets_store:store_new(?char_val, {Guid, Values}, true),
-	dets_store:store_new(?char_rec, {Guid, Char}, true),
+	dets_store:store_new(?char_misc, {Guid, CharMisc}, true),
+	dets_store:store_new(?char_mv, {Guid, CharMv}, true),
 	dets_store:store_new(?char_acc, {Guid, AccountId}, true),
 	dets_store:store_new(?char_btns, {Guid, ActionButtons}, true),
 	dets_store:store_new(?char_spells, {Guid, Spells}, true),
 	ok.
 
+
 update_values(Guid, Values) when is_binary(Values) ->
 	dets_store:store(?char_val, {Guid, Values}, true).
 
-update_char(Guid, Char) when is_record(Char, char) ->
-	dets_store:store(?char_rec, {Guid, Char}, true).
 
-update_coords(Guid, X, Y, Z, O) ->
-	Char = get_char(Guid),
-	NewChar = Char#char{x=X, y=Y, z=Z, orient=O},
-	update_char(Guid, NewChar).
+update_char_misc(Guid, CharMisc) when is_record(CharMisc, char_misc) ->
+	dets_store:store(?char_misc, {Guid, CharMisc}, true).
+
+
+update_coords(Guid, X, Y, Z, O, MovementInfo) ->
+	CharMv = get_char_move(Guid),
+	NewCharMv = CharMv#char_move{x=X, y=Y, z=Z, orient=O, movement_info=MovementInfo},
+	dets_store:store(?char_mv, {Guid, NewCharMv}, true).
+
 
 create_action_buttons(ActionButtonData) ->
 	Data = init_action_buttons(),
 	lists:foldl(fun(ActionButtonDatum, ActionButtons) ->
 		insert_action_button(ActionButtonDatum, ActionButtons)
 	end, Data, ActionButtonData).
+
 
 update_action_button(Guid, ActionButtonDatum) ->
 	ActionButtons = get_action_buttons(Guid),
@@ -175,6 +189,7 @@ insert_action_button({Button, Action, Type}, ActionButtons) ->
 
 init_action_buttons() ->
 	binary:copy(<<0?L>>, ?max_action_buttons).
+
 
 
 add_spell(Guid, SpellId) ->
