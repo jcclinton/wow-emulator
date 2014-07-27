@@ -3,9 +3,9 @@
 -export([init/0, cleanup/0]).
 -export([store_new/2]).
 -export([
-	item_class_lookup/1,
-	spell_lookup/1,
-	start_outfit_lookup/3
+	lookup_item_class/1,
+	lookup_spell/1,
+	lookup_start_outfit/3
 ]).
 
 -include("include/database_records.hrl").
@@ -43,28 +43,19 @@ store_new(Tab, Data) ->
 
 % public api
 
-spell_lookup(Id) ->
+lookup_spell(Id) ->
 	Tab = spell_store,
 	lookup(Tab, Id).
 
-item_class_lookup(Id) ->
+lookup_item_class(Id) ->
 	Tab = item_class_store,
 	lookup(Tab, Id).
 
-start_outfit_lookup(Race, Class, Gender) ->
-	All = ets:match_object(char_start_outfit_store, {'_', '_'}),
-	start_outfit_lookup(Race, Class, Gender, All).
-
-start_outfit_lookup(_, _, _, []) -> throw(badarg);
-start_outfit_lookup(Race, Class, Gender, [{_, Record}|Rest]) ->
-		RaceVal =  Record#char_start_outfit_store.race,
-		ClassVal =  Record#char_start_outfit_store.class,
-		GenderVal =  Record#char_start_outfit_store.gender,
-		if RaceVal == Race andalso ClassVal == Class andalso GenderVal == Gender ->
-				Record#char_start_outfit_store.item_ids;
-			true ->
-				start_outfit_lookup(Race, Class, Gender, Rest)
-		end.
+lookup_start_outfit(Race, Class, Gender) ->
+	case lookup(char_start_outfit_store, {Race, Class, Gender}) of
+		nil -> [];
+		List -> List
+	end.
 
 
 

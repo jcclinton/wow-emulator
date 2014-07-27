@@ -268,7 +268,7 @@ load_spells(Data, Strings) ->
 
 
 load_char_start_outfit(RestIn, _Strings) ->
-		<<Id?L,
+		<<_Id?L,
 			Race?B,
 			Class?B,
 			Gender?B,
@@ -286,7 +286,7 @@ load_char_start_outfit(RestIn, _Strings) ->
 				{RestIds, [ItemId| Acc]}
 			end, {ItemIdsIn, []}, lists:seq(1, 12)),
 			ItemIdsOut = lists:reverse(ItemIdsOutRev),
-			Record = #char_start_outfit_store{race=Race, class=Class, gender=Gender, item_ids=ItemIdsOut},
+			%Record = #char_start_outfit_store{race=Race, class=Class, gender=Gender, item_ids=ItemIdsOut},
 
 			%lists:foldl(fun(I, <<ItemDisplayId?L, RestIds/binary>>) ->
 				%io:format("item display id ~p: ~p~n", [I, ItemDisplayId]),
@@ -300,7 +300,7 @@ load_char_start_outfit(RestIn, _Strings) ->
 
 			%io:format("unk1: ~p unk2: ~p unk3: ~p~n", [Unk1, Unk2, Unk3]),
 			%io:format("~n"),
-			{char_start_outfit_store, Id, Record, RestOut}.
+			{char_start_outfit_store, {Race, Class, Gender}, ItemIdsOut, RestOut}.
 
 
 % old unused functions, can be used to test new stores
