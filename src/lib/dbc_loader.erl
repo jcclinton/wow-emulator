@@ -21,7 +21,7 @@ load_all() ->
 		{"CharStartOutfit.dbc", fun load_char_start_outfit/2}
 	],
 	lists:foreach(fun({Filename, Fun}) ->
-		load(Filename, Fun)
+		catch load(Filename, Fun)
 	end, Dbcs),
 	ok.
 
