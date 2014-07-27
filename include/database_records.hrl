@@ -23,8 +23,10 @@
 
 % static object stores
 
-%area
 -record(item_class_store, {id, name}).
+
+-record(char_start_outfit_store, {race, class, gender, item_ids}).
+
 -record(spell_store, {
 	id,
 	school,

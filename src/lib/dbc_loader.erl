@@ -17,7 +17,8 @@ get_path() -> "./db/dbcs/DBFilesClient/".
 load_all() ->
 	Dbcs = [
 		{"ItemClass.dbc", fun load_item_class/2},
-		{"Spell.dbc", fun load_spells/2}
+		{"Spell.dbc", fun load_spells/2},
+		{"CharStartOutfit.dbc", fun load_char_start_outfit/2}
 	],
 	lists:foreach(fun({Filename, Fun}) ->
 		load(Filename, Fun)
@@ -266,46 +267,48 @@ load_spells(Data, Strings) ->
 
 
 
-test_char_start_outfit(RestIn, _Strings) ->
+load_char_start_outfit(RestIn, _Strings) ->
 		<<Id?L,
 			Race?B,
 			Class?B,
 			Gender?B,
 			_Unk?B,
-			ItemIds:48/binary,
-			ItemDisplayIds:48/binary,
-			ItemInvSlots:48/binary,
+			ItemIdsIn:48/binary,
+			_ItemDisplayIds:48/binary,
+			_ItemInvSlots:48/binary,
 			RestOut/binary>> = RestIn,
 
-			ByteSizeIn =byte_size(RestIn) - byte_size(RestOut),
-			io:format("size: ~p~nid: ~p~nRace: ~p~nClass: ~p~nGender: ~p~n", [ByteSizeIn, Id, Race, Class, Gender]),
+			%ByteSizeIn =byte_size(RestIn) - byte_size(RestOut),
+			%io:format("size: ~p~nid: ~p~nRace: ~p~nClass: ~p~nGender: ~p~n", [ByteSizeIn, Id, Race, Class, Gender]),
 
-			lists:foldl(fun(I, <<ItemId?L, RestIds/binary>>) ->
-				io:format("item id ~p: ~p~n", [I, ItemId]),
-				RestIds
-			end, ItemIds, lists:seq(1, 12)),
+			{_, ItemIdsOutRev} = lists:foldl(fun(_I, {<<ItemId?L, RestIds/binary>>, Acc}) ->
+				%io:format("item id ~p: ~p~n", [I, ItemId]),
+				{RestIds, [ItemId| Acc]}
+			end, {ItemIdsIn, []}, lists:seq(1, 12)),
+			ItemIdsOut = lists:reverse(ItemIdsOutRev),
+			Record = #char_start_outfit_store{race=Race, class=Class, gender=Gender, item_ids=ItemIdsOut},
 
-			lists:foldl(fun(I, <<ItemDisplayId?L, RestIds/binary>>) ->
-				io:format("item display id ~p: ~p~n", [I, ItemDisplayId]),
-				RestIds
-			end, ItemDisplayIds, lists:seq(1, 12)),
+			%lists:foldl(fun(I, <<ItemDisplayId?L, RestIds/binary>>) ->
+				%io:format("item display id ~p: ~p~n", [I, ItemDisplayId]),
+				%RestIds
+			%end, ItemDisplayIds, lists:seq(1, 12)),
 
-			lists:foldl(fun(I, <<ItemInvId?L, RestIds/binary>>) ->
-				io:format("item inv slot ~p: ~p~n", [I, ItemInvId]),
-				RestIds
-			end, ItemInvSlots, lists:seq(1, 12)),
+			%lists:foldl(fun(I, <<ItemInvId?L, RestIds/binary>>) ->
+				%io:format("item inv slot ~p: ~p~n", [I, ItemInvId]),
+				%RestIds
+			%end, ItemInvSlots, lists:seq(1, 12)),
 
 			%io:format("unk1: ~p unk2: ~p unk3: ~p~n", [Unk1, Unk2, Unk3]),
-			io:format("~n"),
-			RestOut.
+			%io:format("~n"),
+			{char_start_outfit_store, Id, Record, RestOut}.
 
 
 % old unused functions, can be used to test new stores
 
 
 test() ->
-	Filename = "Spell.dbc",
-	Fun = fun load_spells/2,
+	Filename = "CharStartOutfit.dbc",
+	Fun = fun load_char_start_outfit/2,
 	load_test(Filename, Fun).
 
 
