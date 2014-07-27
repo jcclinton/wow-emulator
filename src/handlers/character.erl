@@ -425,7 +425,8 @@ create_char_values(Data, Guid) ->
 	ActionButtons = CreateInfo#char_create_info.initial_action_bars,
 	ActionButtonsBin = char_data:create_action_buttons(ActionButtons),
 
-	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
+	%StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
+	StartingItemIds = [],
 	StartingItemValues = lists:map(fun(Id) ->
 		item:create(Id, Guid)
 	end, StartingItemIds),

@@ -1,7 +1,7 @@
 -module(update_data).
 
 -export([compress/1, decompress/1]).
--export([build_create_packet/1, build_update_packet/2]).
+-export([build_create_update_packet_for_player/1, build_update_packet/2]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
@@ -11,21 +11,34 @@
 
 
 
+build_create_update_packet_for_player(Guid) ->
+	CharMove = char_data:get_char_move(Guid),
+	Values = char_data:get_values(Guid),
+	ItemValuesList = char_data:get_item_values(Guid),
+	ItemTypeId = ?typeid_item,
+	ItemUpdateFlag = ?updateflag_all,
+	{ItemBlocks, ItemBlockCount} = lists:foldl(fun(ItemValues, {Blocks, Count}) ->
+		Block = create_block(CharMove, ItemValues, false, ItemTypeId, ItemUpdateFlag),
+		NewBlocks = <<Blocks/binary, Block/binary>>,
+		{NewBlocks, Count+1}
+	end, {<<>>, 0}, ItemValuesList),
+
+	PlayerTypeId = ?typeid_player,
+	PlayerUpdateFlags = ?updateflag_living bor ?updateflag_all bor ?updateflag_has_position,
+	PlayerBlock = create_block(CharMove, Values, true, PlayerTypeId, PlayerUpdateFlags),
+	TotalCount = ItemBlockCount + 1,
+	build_packet(<<ItemBlocks/binary, PlayerBlock/binary>>, TotalCount).
+
 
 
 build_update_packet(Mask, Values) ->
-	Block = update_block(Mask, Values),
+	Blocks = update_block(Mask, Values),
 	BlockCount = 1,
-	build_packet(Block, BlockCount).
+	build_packet(Blocks, BlockCount).
 
-build_create_packet({CharMove, Values, IsSelf}) ->
-	Block = create_block(CharMove, Values, IsSelf),
-	BlockCount = 1,
-	build_packet(Block, BlockCount).
-
-build_packet(Block, BlockCount) ->
+build_packet(Blocks, BlockCount) ->
 	HasTransport = 0,
-	Payload = <<BlockCount?L, HasTransport?B, Block/binary>>,
+	Payload = <<BlockCount?L, HasTransport?B, Blocks/binary>>,
 	PayloadSize = byte_size(Payload),
 	if PayloadSize > 100 ->
 			CompressedPayload = update_data:compress(Payload),
@@ -48,7 +61,7 @@ update_block(Mask, Values) ->
 
 
 
-create_block(CharMove, Values, IsSelf) ->
+create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag) ->
 	UpdateType = if IsSelf -> ?updatetype_create_object2;
 		not IsSelf -> ?updatetype_create_object
 	end,
@@ -57,8 +70,7 @@ create_block(CharMove, Values, IsSelf) ->
 	%Guid = <<7, 41, 179, 24>>,
 %io:format("update binary guid: ~p~n", [Guid]),
 
-	TypeId = ?typeid_player,
-	MovementData = getMovementData(CharMove, IsSelf),
+	MovementData = getMovementData(CharMove, IsSelf, UpdateFlag),
 	ValuesCount = (byte_size(Values) div 4) - 1,
 	Blocks = (ValuesCount + 31) div 32,
 	EmptyMaskBits = update_mask:empty(ValuesCount),
@@ -89,30 +101,60 @@ create_block(CharMove, Values, IsSelf) ->
 		% objects can be a maximum up to 8 bytes
 		%GuidInt2 = GuidInt + 1,
 pack_guid(Guid) ->
-	<<7?B, Guid?G>>.
+	%<<7?B, Guid?G>>.
+	<<16#FF?B, Guid?Q>>.
 
 
 
 
-getMovementData(CharMove, IsSelf) ->
-	All = ?updateflag_all,
+getMovementData(CharMove, IsSelf, Flags) ->
 	Self = ?updateflag_self,
-	Living = ?updateflag_living,
-	HasPosition = ?updateflag_has_position,
-	Flags = All bor Living bor HasPosition,
 	UpdateFlags = if IsSelf -> Flags bor Self;
 		not IsSelf -> Flags
 	end,
 	MoveFlags = ?moveflag_move_stop,
 	WorldTime = util:game_time(),
-
-	{W, R, WB, S, SB, _F, _FB, T, _P} = {2.5, 7, 4.5, 4.72, 2.5, 7, 4.5, 3.141593, 1.0},
-
 	X = CharMove#char_move.x,
 	Y = CharMove#char_move.y,
 	Z = CharMove#char_move.z,
 	O = CharMove#char_move.orient,
-	<<UpdateFlags?B, MoveFlags?L, WorldTime?L, X?f, Y?f, Z?f, O?f, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f, 1?L>>.
+	{W, R, WB, S, SB, _F, _FB, T, _P} = {2.5, 7, 4.5, 4.72, 2.5, 7, 4.5, 3.141593, 1.0},
+
+	FunList = [
+		fun(Acc) ->
+			HasFlag = util:has_flag(UpdateFlags, ?updateflag_living),
+			if HasFlag -> <<Acc/binary, MoveFlags?L, WorldTime?L>>;
+				not HasFlag -> Acc
+			end
+		end,
+
+		fun(Acc) ->
+			HasFlag = util:has_flag(UpdateFlags, ?updateflag_has_position),
+			if HasFlag -> <<Acc/binary, X?f, Y?f, Z?f, O?f>>;
+				not HasFlag -> Acc
+			end
+		end,
+
+		fun(Acc) ->
+			HasFlag = util:has_flag(UpdateFlags, ?updateflag_living),
+			if HasFlag -> <<Acc/binary, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f>>;
+				not HasFlag -> Acc
+			end
+		end,
+
+		fun(Acc) ->
+			HasFlag = util:has_flag(UpdateFlags, ?updateflag_all),
+			if HasFlag -> <<Acc/binary, 1?L>>;
+				not HasFlag -> Acc
+			end
+		end
+	],
+
+	lists:foldl(fun(Fun, Bin) ->
+		Fun(Bin)
+	end, <<UpdateFlags?B>>, FunList).
+
+	%<<UpdateFlags?B, MoveFlags?L, WorldTime?L, X?f, Y?f, Z?f, O?f, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f, 1?L>>.
 
 
 
