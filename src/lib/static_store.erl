@@ -5,7 +5,7 @@
 -export([
 	lookup_item_class/1,
 	lookup_spell/1,
-	lookup_start_outfit/3
+	lookup_start_outfit/3, lookup_start_outfit/4
 ]).
 
 -include("include/database_records.hrl").
@@ -52,9 +52,17 @@ lookup_item_class(Id) ->
 	lookup(Tab, Id).
 
 lookup_start_outfit(Race, Class, Gender) ->
-	case lookup(char_start_outfit_store, {Race, Class, Gender}) of
+	lookup_start_outfit(Race, Class, Gender, false).
+lookup_start_outfit(Race, Class, Gender, Filter) ->
+	Ids = case lookup(char_start_outfit_store, {Race, Class, Gender}) of
 		nil -> [];
 		List -> List
+	end,
+	if Filter ->
+			lists:filter(fun(Id) ->
+				Id /= 0 andalso Id /= 16#FFFFFFFF
+			end, Ids);
+		not Filter -> Ids
 	end.
 
 

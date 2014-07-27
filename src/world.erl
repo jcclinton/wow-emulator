@@ -8,7 +8,7 @@
 
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([get_guid/0]).
+-export([get_guid/2]).
 -export([get_pid/1]).
 -export([build_pid/1, build_pid/2]).
 -export([add_to_map/1, remove_from_map/1]).
@@ -19,8 +19,8 @@
 -include("include/database_records.hrl").
 
 %%% public api
-get_guid() ->
-	gen_server:call(?MODULE, new_guid).
+get_guid(HighGuid, Entry) ->
+	gen_server:call(?MODULE, {new_guid, HighGuid, Entry}).
 
 add_to_map(Player) ->
 	gen_server:call(?MODULE, {add_to_map, Player}).
@@ -93,8 +93,9 @@ handle_call({remove_from_map, RemoveGuid}, _From, State = #state{players=Players
 	end, [], Players),
 	send_to_all_but_player(smsg_destroy_object, <<RemoveGuid?Q>>, RemoveGuid),
 	{reply, ok, State#state{players=NewPlayers}};
-handle_call(new_guid, _From, State) ->
-	Guid = world_data:increment_guid(),
+handle_call({new_guid, HighGuid, Entry}, _From, State) ->
+	LowGuid = world_data:increment_guid(),
+	Guid = LowGuid bor (Entry bsl 24) bor (HighGuid bsl 48),
 	{reply, Guid, State};
 handle_call(_E, _From, State) ->
 	{noreply, State}.

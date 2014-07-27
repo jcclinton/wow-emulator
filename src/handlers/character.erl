@@ -35,11 +35,11 @@ delete(Data) ->
 
 
 create(Data) ->
-	Guid = world:get_guid(),
-	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
+	Guid = world:get_guid(?highguid_player, 0),
+	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons, StartingItemValues} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons),
+	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons, StartingItemValues),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
 	{smsg_char_create, Msg}.
@@ -327,29 +327,16 @@ create_char_values(Data, Guid) ->
 	KeyValues = [
 		{'OBJECT_FIELD_GUID', Guid, uint64},
 		{'OBJECT_FIELD_TYPE', ObjectType, uint32},
+    {'OBJECT_FIELD_SCALE_X', Scale, float},
 		{'UNIT_FIELD_BYTES_0', Race, byte_0},
 		{'UNIT_FIELD_BYTES_0', Class, byte_1},
 		{'UNIT_FIELD_BYTES_0', Gender, byte_2},
     {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, byte_1},
     {'UNIT_FIELD_LEVEL', 1, uint32}, % level
-    {'PLAYER_EXPLORED_ZONES_1', 0, uint64},
-    {'OBJECT_FIELD_SCALE_X', Scale, float},
     {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
     {'UNIT_FIELD_NATIVEDISPLAYID', NativeModelId, uint32},
-    {'PLAYER_FIELD_COINAGE', 0, uint32},
-    {'PLAYER_BYTES', Skin, byte_0},
-    {'PLAYER_BYTES', Face, byte_1},
-    {'PLAYER_BYTES', HairStyle, byte_2},
-    {'PLAYER_BYTES', HairColor, byte_3},
-    {'PLAYER_BYTES_2', FacialHair, byte_0},
-    {'PLAYER_BYTES_2', 2, byte_3}, %rest state
-    {'PLAYER_BYTES_3', 0, uint16_0}, %drunk
-    {'PLAYER_FLAGS', PlayerFlags, uint32},
-    {'PLAYER_FIELD_WATCHED_FACTION_INDEX', 16#ffff, uint32},
-    {'PLAYER_FIELD_BYTES', 0, byte_2},
     {'UNIT_FIELD_FACTIONTEMPLATE', FactionTemplate, uint32}, %not sure what this should be
     {'UNIT_FIELD_CHARM', 0, uint64}, %not sure what this should be
-    {'PLAYER_CHARACTER_POINTS2', 2, uint32}, %num primary trade professions
     {'UNIT_FIELD_CHANNEL_OBJECT', 0, uint64},
     {'UNIT_CHANNEL_SPELL', 0, uint32},
     {'UNIT_FIELD_SUMMON', 0, uint64}, %pet
@@ -357,12 +344,6 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_CHARMEDBY', 0, uint64},
     {'UNIT_FIELD_SUMMONEDBY', 0, uint64},
     {'UNIT_FIELD_CREATEDBY', 0, uint64},
-    {'PLAYER_FARSIGHT', 0, uint64},
-    {'PLAYER_TRACK_CREATURES', 0, uint32},
-    {'PLAYER_TRACK_RESOURCES', 0, uint32},
-    {'PLAYER_DUEL_ARBITER', 0, uint64},
-    {'PLAYER_DUEL_TEAM', 0, uint32},
-    {'PLAYER_NEXT_LEVEL_XP', 10, uint32}, % xp to next level
     {'UNIT_FIELD_AURASTATE', 0, uint32},
     {'UNIT_FIELD_STAT0', Strength, uint32},
     {'UNIT_FIELD_STAT1', Agility, uint32},
@@ -372,13 +353,6 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_BASE_HEALTH', Health, uint32},
     {'UNIT_FIELD_BASE_MANA', Power, uint32},
     {'UNIT_FIELD_RESISTANCES', 0, uint32},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, float},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 1}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 2}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 3}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 4}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 5}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 6}},
     {'UNIT_FIELD_BASEATTACKTIME', 2000.0, float},
     {'UNIT_FIELD_BASEATTACKTIME', 2000.0, {float, 1}},
     {'UNIT_FIELD_RANGEDATTACKTIME', 2000.0, float},
@@ -395,7 +369,33 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_MAXHEALTH', Health, uint32},
     {'UNIT_FIELD_FLAGS', 16#0008, uint32},
     {'UNIT_FIELD_HEALTH', Health, uint32},
-    {'UNIT_FIELD_BYTES_1', 16#EE, byte_1}
+    {'UNIT_FIELD_BYTES_1', 16#EE, byte_1},
+    {'PLAYER_EXPLORED_ZONES_1', 0, uint64},
+    {'PLAYER_FIELD_COINAGE', 0, uint32},
+    {'PLAYER_BYTES', Skin, byte_0},
+    {'PLAYER_BYTES', Face, byte_1},
+    {'PLAYER_BYTES', HairStyle, byte_2},
+    {'PLAYER_BYTES', HairColor, byte_3},
+    {'PLAYER_BYTES_2', FacialHair, byte_0},
+    {'PLAYER_BYTES_2', 2, byte_3}, %rest state
+    {'PLAYER_BYTES_3', 0, uint16_0}, %drunk
+    {'PLAYER_FLAGS', PlayerFlags, uint32},
+    {'PLAYER_FIELD_WATCHED_FACTION_INDEX', 16#ffff, uint32},
+    {'PLAYER_FIELD_BYTES', 0, byte_2},
+    {'PLAYER_CHARACTER_POINTS2', 2, uint32}, %num primary trade professions
+    {'PLAYER_FARSIGHT', 0, uint64},
+    {'PLAYER_TRACK_CREATURES', 0, uint32},
+    {'PLAYER_TRACK_RESOURCES', 0, uint32},
+    {'PLAYER_DUEL_ARBITER', 0, uint64},
+    {'PLAYER_DUEL_TEAM', 0, uint32},
+    {'PLAYER_NEXT_LEVEL_XP', 10, uint32}, % xp to next level
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, float},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 1}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 2}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 3}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 4}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 5}},
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 6}}
 
 		%% ignore skills for now
 		%% ignore spells
@@ -425,4 +425,10 @@ create_char_values(Data, Guid) ->
 	ActionButtons = CreateInfo#char_create_info.initial_action_bars,
 	ActionButtonsBin = char_data:create_action_buttons(ActionButtons),
 
-	{Name, CharMisc, CharMv, Values, Spells, ActionButtonsBin}.
+	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
+	StartingItemValues = lists:map(fun(Id) ->
+		item:create(Id, Guid)
+	end, StartingItemIds),
+	
+
+	{Name, CharMisc, CharMv, Values, Spells, ActionButtonsBin, StartingItemValues}.

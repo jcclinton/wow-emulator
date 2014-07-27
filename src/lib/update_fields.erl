@@ -8,7 +8,7 @@ get_total_count(player) ->
 get_total_count(object) ->
 	update_fields:fields('OBJECT_END');
 get_total_count(item) ->
-	update_fields:fields('OBJECT_ITEM');
+	update_fields:fields('ITEM_END');
 get_total_count(container) ->
 	update_fields:fields('CONTAINER_END');
 get_total_count(unit) ->

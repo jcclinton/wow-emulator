@@ -2,8 +2,8 @@
 
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
--export([enum_char_guids/1, delete_char/1, create_char/8]).
--export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1]).
+-export([enum_char_guids/1, delete_char/1, create_char/9]).
+-export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_item_values/1]).
 -export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
 -export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
@@ -23,6 +23,7 @@
 -define(char_spells, characters_spells).
 -define(char_btns, characters_btns).
 -define(char_mv, characters_movement).
+-define(char_items, characters_items).
 
 
 get_char_tabs() ->
@@ -33,7 +34,8 @@ get_char_tabs() ->
 		?char_mv,
 		?char_acc,
 		?char_spells,
-		?char_btns
+		?char_btns,
+		?char_items
 	].
 
 
@@ -126,6 +128,9 @@ get_action_buttons(Guid) ->
 get_account_id(Guid) ->
 	get_char_data(Guid, ?char_acc).
 
+get_item_values(Guid) ->
+	get_char_data(Guid, ?char_items).
+
 get_values(Guid) ->
 	get_char_data(Guid, ?char_val).
 
@@ -144,7 +149,7 @@ delete_char(Guid) ->
 	ok.
 
 
-create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons) when is_integer(Guid), is_binary(Values), is_binary(CharName), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons) ->
+create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons, ItemValues) when is_integer(Guid), is_binary(Values), is_binary(CharName), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons), is_list(ItemValues) ->
 	dets_store:store_new(?char_val, {Guid, Values}, true),
 	dets_store:store_new(?char_name, {Guid, CharName}, true),
 	dets_store:store_new(?char_misc, {Guid, CharMisc}, true),
@@ -152,6 +157,7 @@ create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionB
 	dets_store:store_new(?char_acc, {Guid, AccountId}, true),
 	dets_store:store_new(?char_btns, {Guid, ActionButtons}, true),
 	dets_store:store_new(?char_spells, {Guid, Spells}, true),
+	dets_store:store_new(?char_items, {Guid, ItemValues}, true),
 	ok.
 
 
