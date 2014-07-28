@@ -149,7 +149,7 @@ delete_char(Guid) ->
 	ok.
 
 
-create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons, ItemValues) when is_integer(Guid), is_binary(Values), is_binary(CharName), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons), is_list(ItemValues) ->
+create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons, SlotValues) when is_integer(Guid), is_binary(Values), is_binary(CharName), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons), is_binary(SlotValues) ->
 	dets_store:store_new(?char_val, {Guid, Values}, true),
 	dets_store:store_new(?char_name, {Guid, CharName}, true),
 	dets_store:store_new(?char_misc, {Guid, CharMisc}, true),
@@ -157,7 +157,7 @@ create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionB
 	dets_store:store_new(?char_acc, {Guid, AccountId}, true),
 	dets_store:store_new(?char_btns, {Guid, ActionButtons}, true),
 	dets_store:store_new(?char_spells, {Guid, Spells}, true),
-	dets_store:store_new(?char_items, {Guid, ItemValues}, true),
+	dets_store:store_new(?char_items, {Guid, SlotValues}, true),
 	ok.
 
 

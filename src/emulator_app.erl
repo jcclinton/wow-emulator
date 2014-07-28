@@ -11,6 +11,7 @@ start(normal, _Args) ->
 	%mnesia:wait_for_tables([account, realm, character], 1000),
 	world_data:init(),
 	char_data:init(),
+	item_data:init(),
 	account:init(),
 	static_store:init(),
 	emulator_sup:start_link().
@@ -19,5 +20,6 @@ stop(_State) ->
 	account:destroy(),
 	world_data:cleanup(),
 	char_data:cleanup(),
+	item_data:cleanup(),
 	static_store:cleanup(),
 	ok.

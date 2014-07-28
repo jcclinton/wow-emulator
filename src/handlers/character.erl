@@ -36,10 +36,10 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(?highguid_player, 0),
-	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons, StartingItemValues} = create_char_values(Data, Guid),
+	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons, StartingSlotValues} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons, StartingItemValues),
+	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons, StartingSlotValues),
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
 	{smsg_char_create, Msg}.
@@ -245,7 +245,6 @@ mapCharGuids(Guid) ->
 	ItemProto = content:lookup_item(25),
 	DisplayInfoId = ItemProto#item_proto.display_info_id,
 	InvType = ItemProto#item_proto.inventory_type,
-	io:format("item: ~p~n", [ItemProto]),
 	SlotData = <<DisplayInfoId?L, InvType?B>>,
 	ItemSlotData = binary:copy(SlotData, EQUIPMENT_SLOT_END),
 
@@ -432,9 +431,11 @@ create_char_values(Data, Guid) ->
 
 	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
 	%StartingItemIds = [],
-	StartingItemValues = lists:map(fun(Id) ->
-		item:create(Id, Guid)
-	end, StartingItemIds),
-	
+	CharSlotValues = lists:foldl(fun(ItemId, SlotValues) ->
+		{NewSlotValues, ItemValues} = item:equip_new(ItemId, SlotValues, Guid),
+		item_data:store_values(ItemValues),
+		NewSlotValues
+	end, item:init_char_slot_values(), StartingItemIds),
 
-	{Name, CharMisc, CharMv, Values, Spells, ActionButtonsBin, StartingItemValues}.
+
+	{Name, CharMisc, CharMv, Values, Spells, ActionButtonsBin, CharSlotValues}.
