@@ -21,7 +21,7 @@
 
 
 % item record
--record(item_proto, {id, max_durability, display_info_id, inventory_type}).
+-record(item_proto, {id, class, sub_class, max_durability, display_info_id, inventory_type}).
 
 % static object stores
 

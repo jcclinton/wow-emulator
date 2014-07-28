@@ -533,9 +533,14 @@ initial_action_bars(troll, mage) ->
 lookup_item(ItemId) ->
 	Items = get_item_list(),
 	ItemProto = lists:keyfind(ItemId, 1, Items),
-	DisplayInfoId = element(5, ItemProto),
-	InventoryType = element(11, ItemProto),
-	#item_proto{id=ItemId, display_info_id=DisplayInfoId, inventory_type=InventoryType}.
+	if ItemProto /= false ->
+			Class = element(2, ItemProto),
+			SubClass = element(3, ItemProto),
+			DisplayInfoId = element(5, ItemProto),
+			InventoryType = element(11, ItemProto),
+			#item_proto{id=ItemId, class=Class, sub_class=SubClass, display_info_id=DisplayInfoId, inventory_type=InventoryType};
+		ItemProto == false -> false
+	end.
 
 
 get_item_list() ->

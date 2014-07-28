@@ -4,6 +4,7 @@
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
 -include("include/types.hrl").
+-include("include/character.hrl").
 
 
 
@@ -27,7 +28,7 @@ enum(Data) ->
 delete(Data) ->
 	Packet = recv_data:get(payload, Data),
 	<<Guid?Q>> = Packet,
-	ItemGuids = char_data:get_item_guids(Guid),
+	ItemGuids = item:get_item_guids(Guid),
 	item_data:delete_items(ItemGuids),
 	char_data:delete_char(Guid),
 
@@ -243,12 +244,26 @@ mapCharGuids(Guid) ->
 	PetLevel = 0,
 	PetFamily = 0,
 
-	EQUIPMENT_SLOT_END = 19,
-	ItemProto = content:lookup_item(25),
-	DisplayInfoId = ItemProto#item_proto.display_info_id,
-	InvType = ItemProto#item_proto.inventory_type,
-	SlotData = <<DisplayInfoId?L, InvType?B>>,
-	ItemSlotData = binary:copy(SlotData, EQUIPMENT_SLOT_END),
+	EmptySlot = <<0?L, 0?B>>,
+	ItemGuids = item:get_equipped_item_guids(Guid),
+	ItemSlotData = lists:foldl(fun(ItemGuid, Acc) ->
+		SlotData = try item_data:get_values(ItemGuid) of
+			ItemValues ->
+				ItemId = item_values:get_item_id(ItemValues),
+				ItemProto = content:lookup_item(ItemId),
+				if ItemProto /= false ->
+						DisplayInfoId = ItemProto#item_proto.display_info_id,
+						InvType = ItemProto#item_proto.inventory_type,
+						<<DisplayInfoId?L, InvType?B>>;
+					ItemProto == false ->
+						EmptySlot
+				end
+			catch
+				badarg -> EmptySlot
+			end,
+			<<Acc/binary, SlotData/binary>>
+	end, <<>>, ItemGuids),
+	%ItemSlotData = binary:copy(EmptySlot, ?equipment_slot_end),
 
 	BagDisplayId = 0,
 	BagInventoryType = 0,
