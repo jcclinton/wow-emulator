@@ -13,19 +13,24 @@
 
 build_create_update_packet_for_player(Guid) ->
 	CharMove = char_data:get_char_move(Guid),
-	Values = char_data:get_values(Guid),
-	ItemValuesList = char_data:get_slot_values(Guid),
+	ItemGuidList = item:get_equipped_item_guids(Guid),
 	ItemTypeId = ?typeid_item,
 	ItemUpdateFlag = ?updateflag_all,
-	{ItemBlocks, ItemBlockCount} = lists:foldl(fun(ItemValues, {Blocks, Count}) ->
-		Block = create_block(CharMove, ItemValues, false, ItemTypeId, ItemUpdateFlag),
-		NewBlocks = <<Blocks/binary, Block/binary>>,
-		{NewBlocks, Count+1}
-	end, {<<>>, 0}, ItemValuesList),
+	{ItemBlocks, ItemBlockCount} = lists:foldl(fun(ItemGuid, {Blocks, Count}) ->
+		if ItemGuid > 0 ->
+				ItemValues = item_data:get_values(ItemGuid),
+				Block = create_block(CharMove, ItemValues, false, ItemTypeId, ItemUpdateFlag, ItemGuid),
+				NewBlocks = <<Blocks/binary, Block/binary>>,
+				{NewBlocks, Count+1};
+			true ->
+				{Blocks, Count}
+		end
+	end, {<<>>, 0}, ItemGuidList),
 
 	PlayerTypeId = ?typeid_player,
 	PlayerUpdateFlags = ?updateflag_living bor ?updateflag_all bor ?updateflag_has_position,
-	PlayerBlock = create_block(CharMove, Values, true, PlayerTypeId, PlayerUpdateFlags),
+	Values = char_data:get_values(Guid),
+	PlayerBlock = create_block(CharMove, Values, true, PlayerTypeId, PlayerUpdateFlags, Guid),
 	TotalCount = ItemBlockCount + 1,
 	build_packet(<<ItemBlocks/binary, PlayerBlock/binary>>, TotalCount).
 
@@ -61,11 +66,10 @@ update_block(Mask, Values) ->
 
 
 
-create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag) ->
+create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag, Guid) ->
 	UpdateType = if IsSelf -> ?updatetype_create_object2;
 		not IsSelf -> ?updatetype_create_object
 	end,
-	Guid = char_values:get(guid, Values),
 	PackedGuid = pack_guid(Guid),
 	%Guid = <<7, 41, 179, 24>>,
 %io:format("update binary guid: ~p~n", [Guid]),
@@ -82,15 +86,16 @@ create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag) ->
 	<<UpdateType?B, PackedGuid/binary, TypeId?B, MovementData/binary, Blocks?B, MaskBits/binary, ValuesData/binary>>.
 
 
-	build_values_update(MaskBits, Values, Count) ->
-		lists:foldl(fun(Index, Bin) ->
-			BitFlag = update_mask:get_bit(MaskBits, Index),
-			if BitFlag ->
-								Value = object_values:get_value(Index, Values),
-								<<Bin/binary, Value?L>>;
-							true -> Bin
-						end
-		end, <<>>, lists:seq(0, Count)).
+
+build_values_update(MaskBits, Values, Count) ->
+	lists:foldl(fun(Index, Bin) ->
+		BitFlag = update_mask:get_bit(MaskBits, Index),
+		if BitFlag ->
+							Value = object_values:get_value(Index, Values),
+							<<Bin/binary, Value?L>>;
+						true -> Bin
+					end
+	end, <<>>, lists:seq(0, Count)).
 
 
 
