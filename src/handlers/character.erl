@@ -27,6 +27,8 @@ enum(Data) ->
 delete(Data) ->
 	Packet = recv_data:get(payload, Data),
 	<<Guid?Q>> = Packet,
+	ItemGuids = char_data:get_item_guids(Guid),
+	item_data:delete_items(ItemGuids),
 	char_data:delete_char(Guid),
 
 	Success = 16#39,

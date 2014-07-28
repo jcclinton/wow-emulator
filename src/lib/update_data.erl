@@ -14,7 +14,7 @@
 build_create_update_packet_for_player(Guid) ->
 	CharMove = char_data:get_char_move(Guid),
 	Values = char_data:get_values(Guid),
-	ItemValuesList = char_data:get_item_values(Guid),
+	ItemValuesList = char_data:get_item_slot_values(Guid),
 	ItemTypeId = ?typeid_item,
 	ItemUpdateFlag = ?updateflag_all,
 	{ItemBlocks, ItemBlockCount} = lists:foldl(fun(ItemValues, {Blocks, Count}) ->

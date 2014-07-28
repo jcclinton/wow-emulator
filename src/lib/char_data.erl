@@ -3,7 +3,8 @@
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
 -export([enum_char_guids/1, delete_char/1, create_char/9]).
--export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_item_values/1]).
+-export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_item_slot_values/1]).
+-export([get_item_guids/1]).
 -export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
 -export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
@@ -128,7 +129,7 @@ get_action_buttons(Guid) ->
 get_account_id(Guid) ->
 	get_char_data(Guid, ?char_acc).
 
-get_item_values(Guid) ->
+get_item_slot_values(Guid) ->
 	get_char_data(Guid, ?char_items).
 
 get_values(Guid) ->
@@ -139,6 +140,19 @@ get_char_data(Guid, Tab) ->
 		[] -> throw(badarg);
 		[{Guid, Val}] -> Val
 	end.
+
+
+get_item_guids(Guid) ->
+	SlotValues = get_item_slot_values(Guid),
+	Guids = extract_slot_values_guids(SlotValues),
+	lists:reverse(Guids).
+
+extract_slot_values_guids(SlotValues) ->
+	extract_slot_values_guids(SlotValues, []).
+extract_slot_values_guids(<<>>, Acc) -> Acc;
+extract_slot_values_guids(<<Guid?Q, Rest/binary>>, Acc) ->
+	extract_slot_values_guids(Rest, [Guid|Acc]).
+
 
 
 

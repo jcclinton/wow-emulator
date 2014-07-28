@@ -2,6 +2,7 @@
 
 -export([init/0, cleanup/0]).
 -export([store_values/1]).
+-export([delete_items/1, delete_item/1]).
 -export([get_values/1]).
 
 
@@ -25,3 +26,12 @@ get_values(ItemGuid) ->
 		[] -> throw(badarg);
 		[{ItemGuid, Values}] -> Values
 	end.
+
+
+delete_items(GuidList) ->
+	lists:foreach(fun(Guid) ->
+		delete_item(Guid)
+	end, GuidList).
+
+delete_item(Guid) ->
+	dets_store:delete(item_values, Guid, true).
