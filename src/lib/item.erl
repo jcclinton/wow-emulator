@@ -135,9 +135,8 @@ init_values(ItemGuid, ItemId, OwnerGuid) ->
 	ObjectType = ?typemask_item bor ?typemask_object,
 	Scale = 1,
 
-	%ItemProto = content:get_item(ItemId),
-	%ItemMaxDurability = ItemProto#item.max_durability,
-	ItemMaxDurability = 10,
+	ItemProto = content:lookup_item(ItemId),
+	ItemMaxDurability = ItemProto#item_proto.max_durability,
 
 	KeyValues = [
 		{'OBJECT_FIELD_GUID', ItemGuid, uint64},

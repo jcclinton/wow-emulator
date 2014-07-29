@@ -66,7 +66,7 @@ set_uint64_mark_if_needed(Field, NewValue, Values) ->
 set_uint64_mark_if_needed(Field, NewValue, Values, MarkUpdate) ->
 	Value = object_values:get_uint64_value(Field, Values),
 	if Value /= NewValue ->
-			if MarkUpdate -> mark_update(Field, Values);
+			if MarkUpdate -> mark_update(Field, Values); %todo mark both 32 bit flags
 				true -> ok
 			end,
 			object_values:set_uint64_value(Field, NewValue, Values);
