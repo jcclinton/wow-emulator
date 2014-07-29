@@ -199,7 +199,7 @@ player_login(Payload) ->
 	_PetDisplayId?L,
 	_PetLevel?L,
 	_PetFamily?L,
-	0:SlotDataSize/unsigned-little-integer,
+	_SlotData:SlotDataSize/unsigned-little-integer,
 	_BagDisplayId?L,
 	_BagInventoryType?B>> = CharData,
 	Name = [NameNum1, NameNum2, NameNum3, NameNum4],

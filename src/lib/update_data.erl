@@ -1,7 +1,7 @@
 -module(update_data).
 
 -export([compress/1, decompress/1]).
--export([build_create_update_packet_for_player/1, build_update_packet/2]).
+-export([build_create_update_packet_for_player/2, build_update_packet/2]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
@@ -11,7 +11,7 @@
 
 
 
-build_create_update_packet_for_player(Guid) ->
+build_create_update_packet_for_player(Guid, IsSelf) ->
 	CharMove = char_data:get_char_move(Guid),
 	ItemGuidList = item:get_equipped_item_guids(Guid),
 	ItemTypeId = ?typeid_item,
@@ -30,7 +30,7 @@ build_create_update_packet_for_player(Guid) ->
 	PlayerTypeId = ?typeid_player,
 	PlayerUpdateFlags = ?updateflag_living bor ?updateflag_all bor ?updateflag_has_position,
 	Values = char_data:get_values(Guid),
-	PlayerBlock = create_block(CharMove, Values, true, PlayerTypeId, PlayerUpdateFlags, Guid),
+	PlayerBlock = create_block(CharMove, Values, IsSelf, PlayerTypeId, PlayerUpdateFlags, Guid),
 	TotalCount = ItemBlockCount + 1,
 	build_packet(<<ItemBlocks/binary, PlayerBlock/binary>>, TotalCount).
 

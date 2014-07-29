@@ -60,12 +60,12 @@ init([]) ->
 
 handle_call({add_to_map, NewPlayer={AccountId, Guid}}, _From, State = #state{players=Players}) ->
 	%login packets to send when player is added to map
-	{OpAtom1, Update1} = update_data:build_create_update_packet_for_player(Guid),
+	{OpAtom1, Update1} = update_data:build_create_update_packet_for_player(Guid, true),
 	player_controller:send(AccountId, OpAtom1, Update1),
 
 	% send update to other players
-	%{OpAtom2, Update2} = update_data:build_create_packet({CharMove, Values, false}),
-	%send_to_all_but_player(OpAtom2, Update2, Guid),
+	{OpAtom2, Update2} = update_data:build_create_update_packet_for_player(Guid, false),
+	send_to_all_but_player(OpAtom2, Update2, Guid),
 
 
 	InList = lists:any(fun({_, GuidOther}) -> GuidOther == Guid end, Players),
@@ -74,11 +74,8 @@ handle_call({add_to_map, NewPlayer={AccountId, Guid}}, _From, State = #state{pla
 		not InList ->
 			% send updates about other players to new player
 			lists:foreach(fun({_, GuidOther}) ->
-				CharMoveOther = char_data:get_char_move(GuidOther),
-				ValuesOther = char_data:get_values(GuidOther),
-				ok
-				%{OpAtom, Update} = update_data:build_create_packet({CharMoveOther, ValuesOther, false}),
-				%player_controller:send(AccountId, OpAtom, Update)
+				{OpAtom, Update} = update_data:build_create_update_packet_for_player(GuidOther, false),
+				player_controller:send(AccountId, OpAtom, Update)
 			end, Players),
 			[NewPlayer|Players]
 	end,
