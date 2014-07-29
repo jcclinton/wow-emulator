@@ -140,6 +140,12 @@ class(Values) ->
 gender(Values) ->
 	object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 2).
 
+%returns guid of item in a given slot
+item(Slot, Values) ->
+	Field = 'PLAYER_FIELD_INV_SLOT_HEAD',
+	Index = update_fields:fields(Field) + (2 * Slot),
+	object_values:get_uint64_value(Index, Values).
+
 
 
 
