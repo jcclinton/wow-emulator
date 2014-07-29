@@ -69,8 +69,27 @@ equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, MarkUpdate) ->
 				end;
 			true -> ok
 			end;
-		true -> ok
+		true ->
+				% put item in bag
+				Values = char_data:get_values(OwnerGuid),
+				Slot = get_empty_inv_slot(OwnerGuid),
+				Offset = Slot * 8,
+						<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
+						NewCharSlotValues = <<Head/binary, NewItemGuid?Q, Rest/binary>>,
+						char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
+				NewValues = char_values:set_item(Slot, NewItemGuid, Values, MarkUpdate),
+				char_data:update_values(OwnerGuid, NewValues),
+
+				ItemValues = item_data:get_values(NewItemGuid),
+				NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
+				NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
+				item_data:store_values(NewItemValues)
+
 	end.
+
+get_empty_inv_slot(OwnerGuid) ->
+				Slot = 23,
+				Slot.
 
 visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
 	Values = char_data:get_values(OwnerGuid),
