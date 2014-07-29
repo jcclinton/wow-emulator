@@ -2,9 +2,10 @@
 
 -export([init/0, cleanup/0]).
 -export([store_connected_client/2, get_session_key/1]).
--export([enum_char_guids/1, delete_char/1, create_char/9]).
+-export([enum_char_guids/1, delete_char/1, create_char/8]).
+-export([equip_starting_items/1]).
 -export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
--export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2]).
+-export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2]).
 -export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
 -export([get_mask/1]).
@@ -152,7 +153,7 @@ delete_char(Guid) ->
 	ok.
 
 
-create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons, SlotValues) when is_integer(Guid), is_binary(Values), is_binary(CharName), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons), is_binary(SlotValues) ->
+create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons) when is_integer(Guid), is_binary(Values), is_binary(CharName), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_list(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons) ->
 	dets_store:store_new(?char_val, {Guid, Values}, true),
 	dets_store:store_new(?char_name, {Guid, CharName}, true),
 	dets_store:store_new(?char_misc, {Guid, CharMisc}, true),
@@ -160,8 +161,15 @@ create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionB
 	dets_store:store_new(?char_acc, {Guid, AccountId}, true),
 	dets_store:store_new(?char_btns, {Guid, ActionButtons}, true),
 	dets_store:store_new(?char_spells, {Guid, Spells}, true),
-	dets_store:store_new(?char_items, {Guid, SlotValues}, true),
+
+	InitialCharSlotValues = item:init_char_slot_values(),
+	dets_store:store_new(?char_items, {Guid, InitialCharSlotValues}, true),
+
 	ok.
+
+
+update_slot_values(Guid, Values) when is_binary(Values) ->
+	dets_store:store(?char_items, {Guid, Values}, true).
 
 
 update_values(Guid, Values) when is_binary(Values) ->
@@ -179,6 +187,18 @@ update_coords(Guid, X, Y, Z, O, MovementInfo) ->
 	CharMv = get_char_move(Guid),
 	NewCharMv = CharMv#char_move{x=X, y=Y, z=Z, orient=O, movement_info=MovementInfo},
 	dets_store:store(?char_mv, {Guid, NewCharMv}, true).
+
+
+equip_starting_items(Guid) ->
+	Values = get_values(Guid),
+	Race = char_values:get(race, Values),
+	Class = char_values:get(class, Values),
+	Gender = char_values:get(gender, Values),
+	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
+	lists:foreach(fun(ItemId) ->
+		SlotValues = get_slot_values(Guid),
+		ok = item:equip_new(ItemId, SlotValues, Guid, false)
+	end, StartingItemIds).
 
 
 create_action_buttons(ActionButtonData) ->

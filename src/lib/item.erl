@@ -1,7 +1,7 @@
 -module(item).
 
 -export([create/2]).
--export([equip_new/3, equip/4]).
+-export([equip_new/3, equip_new/4, equip/5, equip/6]).
 -export([init_char_slot_values/0]).
 -export([get_item_guids/1, get_equipped_item_guids/1]).
 
@@ -39,13 +39,17 @@ init_char_slot_values() ->
 
 
 equip_new(ItemId, CharSlotValues, OwnerGuid) ->
+	equip_new(ItemId, CharSlotValues, OwnerGuid, true).
+equip_new(ItemId, CharSlotValues, OwnerGuid, MarkUpdate) ->
 	ItemValues = create(ItemId, OwnerGuid),
+	item_data:store_values(ItemValues),
 	ItemGuid = item_values:get_guid(ItemValues),
-	NewSlotValues = equip(ItemId, CharSlotValues, ItemGuid, false),
-	{NewSlotValues, ItemValues}.
+	equip(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false, MarkUpdate).
 
 
-equip(ItemId, SlotValues, NewItemGuid, Swap) ->
+equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
+	equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, true).
+equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, MarkUpdate) ->
 	ItemProto = content:lookup_item(ItemId),
 	Class = ItemProto#item_proto.class,
 	if Class == ?item_class_weapon orelse Class == ?item_class_armor ->
@@ -56,14 +60,38 @@ equip(ItemId, SlotValues, NewItemGuid, Swap) ->
 				Offset = Slot * 8,
 				<<Head:Offset/binary, OldItemGuid?Q, Rest/binary>> = SlotValues,
 				if OldItemGuid == 0 orelse Swap ->
-						<<Head/binary, NewItemGuid?Q, Rest/binary>>;
+						NewCharSlotValues = <<Head/binary, NewItemGuid?Q, Rest/binary>>,
+						char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
+						visualize_item(OwnerGuid, NewItemGuid, Slot, MarkUpdate),
+						ok;
 					true ->
-						SlotValues
+						ok
 				end;
-			true -> SlotValues
+			true -> ok
 			end;
-		true -> SlotValues
+		true -> ok
 	end.
+
+visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
+	Values = char_data:get_values(OwnerGuid),
+	NewValues = char_values:set_item(Slot, ItemGuid, Values, MarkUpdate),
+	char_data:update_values(OwnerGuid, NewValues),
+
+	ItemValues = item_data:get_values(ItemGuid),
+	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
+	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
+	item_data:store_values(NewItemValues),
+
+	set_visual_item_slot(OwnerGuid, ItemGuid, Slot, MarkUpdate).
+
+
+set_visual_item_slot(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
+	Values = char_data:get_values(OwnerGuid),
+	ItemValues = item_data:get_values(ItemGuid),
+	ItemId = item_values:get_item_id(ItemValues),
+	NewValues = char_values:set_visible_item(Slot, ItemId, Values, MarkUpdate),
+	char_data:update_values(OwnerGuid, NewValues).
+
 
 
 get_slot(InvType) ->
@@ -118,7 +146,7 @@ init_values(ItemGuid, ItemId, OwnerGuid) ->
     {'OBJECT_FIELD_ENTRY', ItemId, uint32},
 
     {'ITEM_FIELD_OWNER', OwnerGuid, uint64},
-    {'ITEM_FIELD_CONTAINED', OwnerGuid, uint64},
+    {'ITEM_FIELD_CONTAINED', ItemGuid, uint64},
     {'ITEM_FIELD_STACK_COUNT', 1, uint32},
     {'ITEM_FIELD_MAXDURABILITY', ItemMaxDurability, uint32},
     {'ITEM_FIELD_DURABILITY', ItemMaxDurability, uint32}

@@ -64,10 +64,10 @@ get_value(IndexName, Values, float) ->
 get_value(Index, Values) ->
 	get_uint32_value(Index, Values).
 get_value(IndexName, Values, Size, Offset) when is_atom(IndexName) ->
-	% each Index is a 4 byte long word
 	Index = update_fields:fields(IndexName),
 	get_value(Index, Values, Size, Offset);
 get_value(IndexIn, Values, Size, Offset) ->
+	% each Index is a 4 byte long word
 	Index = (IndexIn * 4) + Offset,
 	BitSize = Size*8,
 	<<_Head:Index/binary, Value:BitSize/unsigned-little-integer, _Tail/binary>> = Values,
@@ -100,9 +100,12 @@ set_value(IndexName, Value, Values, float, Offset) ->
 	Index = (update_fields:fields(IndexName) + Offset) * 4,
 	<<Head:Index/binary, _OldValue:4/binary, Tail/binary>> = Values,
 	<<Head:Index/binary, Value?f, Tail/binary>>;
-set_value(IndexName, Value, Values, Size, Offset) ->
+set_value(IndexName, Value, Values, Size, Offset) when is_atom(IndexName) ->
+	Index = update_fields:fields(IndexName),
+	set_value(Index, Value, Values, Size, Offset);
+set_value(IndexIn, Value, Values, Size, Offset) ->
 	% each Index is a 4 byte long word
-	Index = (update_fields:fields(IndexName) * 4) + Offset,
+	Index =  4 * IndexIn + Offset,
 	BitSize = Size * 8,
 	<<Head:Index/binary, _OldValue:Size/binary, Tail/binary>> = Values,
 	<<Head:Index/binary, Value:BitSize/unsigned-little-integer, Tail/binary>>.

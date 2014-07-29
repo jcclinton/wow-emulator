@@ -39,10 +39,12 @@ delete(Data) ->
 
 create(Data) ->
 	Guid = world:get_guid(?highguid_player, 0),
-	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons, StartingSlotValues} = create_char_values(Data, Guid),
+	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
 	AccountId = recv_data:get(account_id, Data),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
-	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons, StartingSlotValues),
+	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons),
+	char_data:equip_starting_items(Guid),
+
 	Result = 16#2E, % success
 	Msg = <<Result?B>>,
 	{smsg_char_create, Msg}.
@@ -446,13 +448,5 @@ create_char_values(Data, Guid) ->
 	ActionButtons = CreateInfo#char_create_info.initial_action_bars,
 	ActionButtonsBin = char_data:create_action_buttons(ActionButtons),
 
-	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
-	%StartingItemIds = [],
-	CharSlotValues = lists:foldl(fun(ItemId, SlotValues) ->
-		{NewSlotValues, ItemValues} = item:equip_new(ItemId, SlotValues, Guid),
-		item_data:store_values(ItemValues),
-		NewSlotValues
-	end, item:init_char_slot_values(), StartingItemIds),
 
-
-	{Name, CharMisc, CharMv, Values, Spells, ActionButtonsBin, CharSlotValues}.
+	{Name, CharMisc, CharMv, Values, Spells, ActionButtonsBin}.

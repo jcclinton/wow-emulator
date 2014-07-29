@@ -2,8 +2,13 @@
 
 
 -export([set_anim_state/2, set_sheathed/2]).
+-export([set_item/3, set_item/4]).
+-export([set_visible_item/3, set_visible_item/4]).
 -export([get/2]).
 -compile([export_all]). % needed to call functions through get/1
+
+
+-include("include/items.hrl").
 
 
 % sets
@@ -23,13 +28,61 @@ set_anim_state(AnimState, Values) ->
 
 
 
+set_item(Slot, ItemGuid, Values) ->
+	set_item(Slot, ItemGuid, Values, true).
+set_item(Slot, ItemGuid, Values, MarkUpdate) ->
+	Field = 'PLAYER_FIELD_INV_SLOT_HEAD',
+	Index = update_fields:fields(Field) + (2 * Slot),
+	set_uint64_mark_if_needed(Index, ItemGuid, Values, MarkUpdate).
+
+
+set_visible_item(Slot, ItemId, Values) ->
+	set_visible_item(Slot, ItemId, Values, true).
+set_visible_item(Slot, ItemId, Values, MarkUpdate) ->
+	Field = 'PLAYER_VISIBLE_ITEM_1_0',
+	Index = update_fields:fields(Field) + (Slot * ?max_visible_item_offset),
+	set_uint32_mark_if_needed(Index, ItemId, Values, MarkUpdate).
+
+
+
+
 % private helpers
 
-set_byte_mark_if_needed(Field, AnimState, Values, Offset) ->
+set_uint32_mark_if_needed(Field, NewValue, Values) ->
+	set_uint32_mark_if_needed(Field, NewValue, Values, true).
+set_uint32_mark_if_needed(Field, NewValue, Values, MarkUpdate) ->
+	Value = object_values:get_uint32_value(Field, Values),
+	if Value /= NewValue ->
+			if MarkUpdate -> mark_update(Field, Values);
+				true -> ok
+			end,
+			object_values:set_uint32_value(Field, NewValue, Values);
+		true -> Values
+	end.
+
+
+set_uint64_mark_if_needed(Field, NewValue, Values) ->
+	set_uint64_mark_if_needed(Field, NewValue, Values, true).
+set_uint64_mark_if_needed(Field, NewValue, Values, MarkUpdate) ->
+	Value = object_values:get_uint64_value(Field, Values),
+	if Value /= NewValue ->
+			if MarkUpdate -> mark_update(Field, Values);
+				true -> ok
+			end,
+			object_values:set_uint64_value(Field, NewValue, Values);
+		true -> Values
+	end.
+
+
+set_byte_mark_if_needed(Field, NewValue, Values, Offset) ->
+	set_byte_mark_if_needed(Field, NewValue, Values, Offset, true).
+set_byte_mark_if_needed(Field, NewValue, Values, Offset, MarkUpdate) ->
 	Value = object_values:get_byte_value(Field, Values, Offset),
-	if Value /= AnimState ->
-			mark_update(Field, Values),
-			object_values:set_byte_value(Field, AnimState, Values, Offset);
+	if Value /= NewValue ->
+			if MarkUpdate -> mark_update(Field, Values);
+				true -> ok
+			end,
+			object_values:set_byte_value(Field, NewValue, Values, Offset);
 		true -> Values
 	end.
 
