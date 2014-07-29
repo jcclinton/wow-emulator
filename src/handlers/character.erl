@@ -359,7 +359,7 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
     {'UNIT_FIELD_NATIVEDISPLAYID', NativeModelId, uint32},
     {'UNIT_FIELD_FACTIONTEMPLATE', FactionTemplate, uint32}, %not sure what this should be
-    {'UNIT_FIELD_CHARM', 0, uint64}, %not sure what this should be
+    {'UNIT_FIELD_CHARM', 0, uint64},
     {'UNIT_FIELD_CHANNEL_OBJECT', 0, uint64},
     {'UNIT_CHANNEL_SPELL', 0, uint32},
     {'UNIT_FIELD_SUMMON', 0, uint64}, %pet

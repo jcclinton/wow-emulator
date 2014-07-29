@@ -142,7 +142,7 @@ race_create_info(orc, Rec) ->
                          stamina          = 22, 
                          strength         = 23};
 race_create_info(dwarf, Rec) ->
-    Rec#char_create_info{faction_template = 3, 
+    Rec#char_create_info{faction_template = 1, 
                          display_id       = 53, 
                          scale            = 1, 
                          map_id           = 0, 
@@ -158,7 +158,7 @@ race_create_info(dwarf, Rec) ->
                          stamina          = 23, 
                          strength         = 22};
 race_create_info(night_elf, Rec) ->
-    Rec#char_create_info{faction_template = 4, 
+    Rec#char_create_info{faction_template = 1, 
                          display_id       = 55, 
                          scale            = 1, 
                          map_id           = 1, 
@@ -174,7 +174,7 @@ race_create_info(night_elf, Rec) ->
                          stamina          = 19, 
                          strength         = 17};
 race_create_info(undead, Rec) ->
-    Rec#char_create_info{faction_template = 5, 
+    Rec#char_create_info{faction_template = 2, 
                          display_id       = 57, 
                          scale            = 1, 
                          map_id           = 0, 
@@ -190,7 +190,7 @@ race_create_info(undead, Rec) ->
                          stamina          = 21, 
                          strength         = 19};
 race_create_info(tauren, Rec) ->
-    Rec#char_create_info{faction_template = 6, 
+    Rec#char_create_info{faction_template = 2, 
                          display_id       = 59, 
                          scale            = 1.3, 
                          map_id           = 1, 
@@ -206,7 +206,7 @@ race_create_info(tauren, Rec) ->
                          stamina          = 22, 
                          strength         = 25};
 race_create_info(gnome, Rec) ->
-    Rec#char_create_info{faction_template = 8, 
+    Rec#char_create_info{faction_template = 1, 
                          display_id       = 1563, 
                          scale            = 1, 
                          map_id           = 0, 
@@ -222,7 +222,7 @@ race_create_info(gnome, Rec) ->
                          stamina          = 19, 
                          strength         = 15};
 race_create_info(troll, Rec) ->
-    Rec#char_create_info{faction_template = 9, 
+    Rec#char_create_info{faction_template = 2, 
                          display_id       = 1478, 
                          scale            = 1, 
                          map_id           = 1, 
@@ -236,38 +236,6 @@ race_create_info(troll, Rec) ->
                          intellect        = 16, 
                          spirit           = 21, 
                          stamina          = 21, 
-                         strength         = 21};
-race_create_info(blood_elf, Rec) ->
-    Rec#char_create_info{faction_template = 914, 
-                         display_id       = 15467, 
-                         scale            = 1, 
-                         map_id           = 530, 
-                         zone_id          = 3430, 
-                         intro            = 162,
-                         position_x       = 10349.6, 
-                         position_y       = -6357.29, 
-                         position_z       = 33.4026, 
-                         orientation      = 0,
-                         agility          = 22, 
-                         intellect        = 24, 
-                         spirit           = 19, 
-                         stamina          = 18, 
-                         strength         = 17};
-race_create_info(draenei, Rec) ->
-    Rec#char_create_info{faction_template = 927, 
-                         display_id       = 16125, 
-                         scale            = 1, 
-                         map_id           = 530, 
-                         zone_id          = 3524, 
-                         intro            = 163,
-                         position_x       = -3961.64, 
-                         position_y       = -13931.2, 
-                         position_z       = 100.615, 
-                         orientation      = 0,
-                         agility          = 17, 
-                         intellect        = 21, 
-                         spirit           = 22, 
-                         stamina          = 19, 
                          strength         = 21}.
 
 %% @spec class_create_info(class(), tuple()) -> tuple().
