@@ -39,16 +39,17 @@ zone_update(Data) ->
 	ok.
 
 meetingstone_info(_Data) ->
-	io:format("received req for meetingstone info~n"),
-	ok.
+	Payload = <<0?L, 6?B>>,
+	{smsg_meetingstone_setqueue, Payload}.
 
 battlefield_status(_Data) ->
-	io:format("received req for battlefield status~n"),
+	%io:format("received req for battlefield status~n"),
 	ok.
 
 query_next_mail_time(_Data) ->
-	io:format("received req to query next mail time~n"),
-	ok.
+	% reply with no unread mail
+	Payload = <<16#C7A8C000?L, 0?L>>,
+	{msg_query_next_mail_time, Payload}.
 
 gmticket_getticket(Data) ->
 	% send time response first
