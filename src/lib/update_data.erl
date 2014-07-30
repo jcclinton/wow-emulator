@@ -2,6 +2,7 @@
 
 -export([compress/1, decompress/1]).
 -export([build_create_update_packet_for_player/2, build_update_packet/2]).
+-export([build_create_update_packet_for_item/1]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
@@ -33,6 +34,14 @@ build_create_update_packet_for_player(Guid, IsSelf) ->
 	PlayerBlock = create_block(CharMove, Values, IsSelf, PlayerTypeId, PlayerUpdateFlags, Guid),
 	TotalCount = ItemBlockCount + 1,
 	build_packet(<<ItemBlocks/binary, PlayerBlock/binary>>, TotalCount).
+
+
+build_create_update_packet_for_item(ItemGuid) ->
+	ItemTypeId = ?typeid_item,
+	ItemUpdateFlag = ?updateflag_all,
+	ItemValues = item_data:get_values(ItemGuid),
+	Block = create_block(none, ItemValues, false, ItemTypeId, ItemUpdateFlag, ItemGuid),
+	build_packet(Block, 1).
 
 
 
@@ -115,32 +124,35 @@ getMovementData(CharMove, IsSelf, Flags) ->
 	UpdateFlags = if IsSelf -> Flags bor Self;
 		not IsSelf -> Flags
 	end,
-	MoveFlags = ?moveflag_move_stop,
-	WorldTime = util:game_time(),
-	X = CharMove#char_move.x,
-	Y = CharMove#char_move.y,
-	Z = CharMove#char_move.z,
-	O = CharMove#char_move.orient,
-	{W, R, WB, S, SB, _F, _FB, T, _P} = {2.5, 7, 4.5, 4.72, 2.5, 7, 4.5, 3.141593, 1.0},
 
 	FunList = [
 		fun(Acc) ->
 			HasFlag = util:has_flag(UpdateFlags, ?updateflag_living),
-			if HasFlag -> <<Acc/binary, MoveFlags?L, WorldTime?L>>;
+			if HasFlag ->
+					MoveFlags = ?moveflag_move_stop,
+					WorldTime = util:game_time(),
+					<<Acc/binary, MoveFlags?L, WorldTime?L>>;
 				not HasFlag -> Acc
 			end
 		end,
 
 		fun(Acc) ->
 			HasFlag = util:has_flag(UpdateFlags, ?updateflag_has_position),
-			if HasFlag -> <<Acc/binary, X?f, Y?f, Z?f, O?f>>;
+			if HasFlag ->
+					X = CharMove#char_move.x,
+					Y = CharMove#char_move.y,
+					Z = CharMove#char_move.z,
+					O = CharMove#char_move.orient,
+					<<Acc/binary, X?f, Y?f, Z?f, O?f>>;
 				not HasFlag -> Acc
 			end
 		end,
 
 		fun(Acc) ->
 			HasFlag = util:has_flag(UpdateFlags, ?updateflag_living),
-			if HasFlag -> <<Acc/binary, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f>>;
+			if HasFlag ->
+					{W, R, WB, S, SB, _F, _FB, T, _P} = {2.5, 7, 4.5, 4.72, 2.5, 7, 4.5, 3.141593, 1.0},
+					<<Acc/binary, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f>>;
 				not HasFlag -> Acc
 			end
 		end,
@@ -157,7 +169,6 @@ getMovementData(CharMove, IsSelf, Flags) ->
 		Fun(Bin)
 	end, <<UpdateFlags?B>>, FunList).
 
-	%<<UpdateFlags?B, MoveFlags?L, WorldTime?L, X?f, Y?f, Z?f, O?f, 0?f, W?f, R?f, WB?f, S?f, SB?f, T?f, 1?L>>.
 
 
 
