@@ -107,6 +107,8 @@ get_callback_by_num(cmsg_setsheathed) ->
 	#callback{type=character, module=combat, function=set_sheathed};
 
 
+get_callback_by_num(cmsg_use_item) ->
+	#callback{type=character, module=inventory, function=use_item};
 get_callback_by_num(cmsg_swap_inv_item) ->
 	#callback{type=character, module=inventory, function=swap_inv_item};
 
