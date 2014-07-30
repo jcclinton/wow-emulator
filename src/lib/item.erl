@@ -1,5 +1,6 @@
 -module(item).
 
+-export([swap/3]).
 -export([create/2]).
 -export([equip_new/3, equip_new/4, equip/5, equip/6]).
 -export([init_char_slot_values/0]).
@@ -10,6 +11,103 @@
 -include("include/database_records.hrl").
 -include("include/character.hrl").
 -include("include/items.hrl").
+
+
+
+swap(SrcSlot, DestSlot, Guid) ->
+	SrcEmpty = slot_empty(SrcSlot, Guid),
+	DestEmpty = slot_empty(DestSlot, Guid),
+	IsDestBagSlot = is_item_slot(DestSlot),
+	IsDestEquipSlot = is_equip_slot(DestSlot),
+
+	if SrcEmpty orelse SrcSlot == DestSlot ->
+			ok;
+		true ->
+			ok
+	end,
+			%error
+
+%		if DestEmpty ->
+%				ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+%				if IsDestBagSlot ->
+%					remove(SrcSlot, Guid),
+%					equip(ItemGuid, DestSlot, Guid);
+%				true -> ok
+%				end,
+%				if IsDestEquipSlot ->
+%					CanEquip = can_equip(ItemGuid, DestSlot),
+%					if CanEquip ->
+%							remove(SrcSlot, Guid),
+%							equip(ItemGuid, DestSlot, Guid);
+%						true -> ok
+%					end;
+%			true -> ok
+%		end
+
+
+%		if not DestEmpty ->
+%			CanMerge = can_merge(SrcSlot, DestSlot, Guid),
+%			if CanMerge ->
+%					merge(SrcSlot, DestSlot, Guid);
+%				true ->
+%					if not CanMerge ->
+%						SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+%						DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
+%
+%						IsDestBagSlot = is_item_slot(DestSlot),
+%						IsSrcBagSlot = is_item_slot(SrcSlot),
+%
+%						CanEquipSrc = IsSrcBagSlot orelse (IsSrcEquipSlot andalso can_equip(SrcItemGuid, SrcSlot)),
+%%%%%%%%%						CanEquipDest = IsDestBagSlot orelse (IsDestEquipSlot andalso can_equip(DestItemGuid, DestSlot)),
+%
+%						if CanEquipSrc andalso CanEquipDest ->
+%								remove(SrcSlot, Guid),
+%								remove(DestSlot, Guid),
+%								equip(SrcItemGuid, DestSlot, Guid),
+%								equip(DestItemGuid, SrcSlot, Guid);
+%							true -> ok
+%						end;
+%
+%					true -> ok
+%					end
+%
+%				end;
+%			true -> ok
+%		end
+	%end,
+
+
+	ok.
+
+remove(Slot, Guid) ->
+	ok.
+
+can_merge(SrcSlot, DestSlot, Guid) ->
+	false.
+
+
+% inside bag
+is_item_slot(Slot) ->
+	Slot >= ?inventory_slot_item_start andalso Slot < ?inventory_slot_item_end.
+
+is_equip_slot(Slot) ->
+	Slot >= ?equipment_slot_start andalso Slot < ?equipment_slot_end.
+
+
+slot_empty(Slot, Guid) ->
+	SlotGuid = get_item_guid_at_slot(Slot, Guid),
+	if SlotGuid /= 0 -> false; SlotGuid == 0 -> true end.
+
+
+get_item_guid_at_slot(Slot, Guid) ->
+	SlotGuids = char_data:get_slot_values(Guid),
+	Offset = 8 * Slot,
+	<<_:Offset/binary, SlotGuid?Q, _/binary>> = SlotGuids,
+	SlotGuid.
+
+
+
+
 
 
 
@@ -46,6 +144,9 @@ equip_new(ItemId, CharSlotValues, OwnerGuid, MarkUpdate) ->
 	ItemGuid = item_values:get_guid(ItemValues),
 	equip(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false, MarkUpdate).
 
+
+equip(ItemGuid, DestSlot, Guid) ->
+	ok.
 
 equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
 	equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, true).
@@ -92,7 +193,7 @@ get_first_empty_inv_slot(OwnerGuid) ->
 	Values = char_data:get_values(OwnerGuid),
 	get_first_empty_inv_slot(Values, FirstSlot).
 
-get_first_empty_inv_slot(_, ?inventory_slot_item_end + 1) -> 0;
+get_first_empty_inv_slot(_, ?inventory_slot_item_end) -> 0;
 get_first_empty_inv_slot(Values, Slot) ->
 	SlotValue = char_values:item(Slot, Values),
 	if SlotValue == 0 -> Slot;
