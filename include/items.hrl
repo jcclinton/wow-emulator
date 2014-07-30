@@ -47,3 +47,91 @@
 -define(invtype_rangedright, 26).
 -define(invtype_quiver, 27).
 -define(invtype_relic, 28).
+
+
+
+-define(equip_err_ok, 0).
+-define(equip_err_cant_equip_level_i, 1). % ERR_CANT_EQUIP_LEVEL_I
+-define(equip_err_cant_equip_skill, 2). % ERR_CANT_EQUIP_SKILL
+-define(equip_err_item_doesnt_go_to_slot, 3). % ERR_WRONG_SLOT
+-define(equip_err_bag_full, 4). % ERR_BAG_FULL
+-define(equip_err_nonempty_bag_over_other_bag, 5). % ERR_BAG_IN_BAG
+-define(equip_err_cant_trade_equip_bags, 6). % ERR_TRADE_EQUIPPED_BAG
+-define(equip_err_only_ammo_can_go_here, 7). % ERR_AMMO_ONLY
+-define(equip_err_no_required_proficiency, 8). % ERR_PROFICIENCY_NEEDED
+-define(equip_err_no_equipment_slot_available, 9). % ERR_NO_SLOT_AVAILABLE
+-define(equip_err_you_can_never_use_that_item, 10). % ERR_CANT_EQUIP_EVER
+-define(equip_err_you_can_never_use_that_item2, 11). % ERR_CANT_EQUIP_EVER
+-define(equip_err_no_equipment_slot_available2, 12). % ERR_NO_SLOT_AVAILABLE
+-define(equip_err_cant_equip_with_twohanded, 13). % ERR_2HANDED_EQUIPPED
+-define(equip_err_cant_dual_wield, 14). % ERR_2HSKILLNOTFOUND
+-define(equip_err_item_doesnt_go_into_bag, 15). % ERR_WRONG_BAG_TYPE
+-define(equip_err_item_doesnt_go_into_bag2, 16). % ERR_WRONG_BAG_TYPE
+-define(equip_err_cant_carry_more_of_this, 17). % ERR_ITEM_MAX_COUNT
+-define(equip_err_no_equipment_slot_available3, 18). % ERR_NO_SLOT_AVAILABLE
+-define(equip_err_item_cant_stack, 19). % ERR_CANT_STACK
+-define(equip_err_item_cant_be_equipped, 20). % ERR_NOT_EQUIPPABLE
+-define(equip_err_items_cant_be_swapped, 21). % ERR_CANT_SWAP
+-define(equip_err_slot_is_empty, 22). % ERR_SLOT_EMPTY
+-define(equip_err_item_not_found, 23). % ERR_ITEM_NOT_FOUND
+-define(equip_err_cant_drop_soulbound, 24). % ERR_DROP_BOUND_ITEM
+-define(equip_err_out_of_range, 25). % ERR_OUT_OF_RANGE
+-define(equip_err_tried_to_split_more_than_count, 26). % ERR_TOO_FEW_TO_SPLIT
+-define(equip_err_couldnt_split_items, 27). % ERR_SPLIT_FAILED
+-define(equip_err_missing_reagent, 28). % ERR_SPELL_FAILED_REAGENTS_GENERIC
+-define(equip_err_not_enough_money, 29). % ERR_NOT_ENOUGH_MONEY
+-define(equip_err_not_a_bag, 30). % ERR_NOT_A_BAG
+-define(equip_err_can_only_do_with_empty_bags, 31). % ERR_DESTROY_NONEMPTY_BAG
+-define(equip_err_dont_own_that_item, 32). % ERR_NOT_OWNER
+-define(equip_err_can_equip_only1_quiver, 33). % ERR_ONLY_ONE_QUIVER
+-define(equip_err_must_purchase_that_bag_slot, 34). % ERR_NO_BANK_SLOT
+-define(equip_err_too_far_away_from_bank, 35). % ERR_NO_BANK_HERE
+-define(equip_err_item_locked, 36). % ERR_ITEM_LOCKED
+-define(equip_err_you_are_stunned, 37). % ERR_GENERIC_STUNNED
+-define(equip_err_you_are_dead, 38). % ERR_PLAYER_DEAD
+-define(equip_err_cant_do_right_now, 39). % ERR_CLIENT_LOCKED_OUT
+-define(equip_err_int_bag_error, 40). % ERR_INTERNAL_BAG_ERROR
+-define(equip_err_can_equip_only1_bolt, 41). % ERR_ONLY_ONE_BOLT
+-define(equip_err_can_equip_only1_ammopouch, 42). % ERR_ONLY_ONE_AMMO
+-define(equip_err_stackable_cant_be_wrapped, 43). % ERR_CANT_WRAP_STACKABLE
+-define(equip_err_equipped_cant_be_wrapped, 44). % ERR_CANT_WRAP_EQUIPPED
+-define(equip_err_wrapped_cant_be_wrapped, 45). % ERR_CANT_WRAP_WRAPPED
+-define(equip_err_bound_cant_be_wrapped, 46). % ERR_CANT_WRAP_BOUND
+-define(equip_err_unique_cant_be_wrapped, 47). % ERR_CANT_WRAP_UNIQUE
+-define(equip_err_bags_cant_be_wrapped, 48). % ERR_CANT_WRAP_BAGS
+-define(equip_err_already_looted, 49). % ERR_LOOT_GONE
+-define(equip_err_inventory_full, 50). % ERR_INV_FULL
+-define(equip_err_bank_full, 51). % ERR_BAG_FULL
+-define(equip_err_item_is_currently_sold_out, 52). % ERR_VENDOR_SOLD_OUT
+-define(equip_err_bag_full3, 53). % ERR_BAG_FULL
+-define(equip_err_item_not_found2, 54). % ERR_ITEM_NOT_FOUND
+-define(equip_err_item_cant_stack2, 55). % ERR_CANT_STACK
+-define(equip_err_bag_full4, 56). % ERR_BAG_FULL
+-define(equip_err_item_sold_out, 57). % ERR_VENDOR_SOLD_OUT
+-define(equip_err_object_is_busy, 58). % ERR_OBJECT_IS_BUSY
+-define(equip_err_none, 59). % ERR_CANT_BE_DISENCHANTED
+-define(equip_err_not_in_combat, 60). % ERR_NOT_IN_COMBAT
+-define(equip_err_not_while_disarmed, 61). % ERR_NOT_WHILE_DISARMED
+-define(equip_err_bag_full6, 62). % ERR_BAG_FULL
+-define(equip_err_cant_equip_rank, 63). % ERR_CANT_EQUIP_RANK
+-define(equip_err_cant_equip_reputation, 64). % ERR_CANT_EQUIP_REPUTATION
+-define(equip_err_too_many_special_bags, 65). % ERR_TOO_MANY_SPECIAL_BAGS
+-define(equip_err_loot_cant_loot_that_now, 66). % ERR_LOOT_CANT_LOOT_THAT_NOW
+% ANY GREATER VALUES SHOW AS "BAG FULL"
+
+-define(buy_err_cant_find_item, 0).
+-define(buy_err_item_already_sold, 1).
+-define(buy_err_not_enought_money, 2).
+-define(buy_err_seller_dont_like_you, 4).
+-define(buy_err_distance_too_far, 5).
+-define(buy_err_item_sold_out, 7).
+-define(buy_err_cant_carry_more, 8).
+-define(buy_err_rank_require, 11).
+-define(buy_err_reputation_require, 12).
+
+-define(sell_err_cant_find_item, 1,
+-define(sell_err_cant_sell_item, 2). % merchant doesn't like that item
+-define(sell_err_cant_find_vendor, 3). % merchant doesn't like you
+-define(sell_err_you_dont_own_that_item, 4). % you don't own that item
+-define(sell_err_unk, 5). % nothing appears...
+-define(sell_err_only_empty_bag, 6). % can only do with empty bags
