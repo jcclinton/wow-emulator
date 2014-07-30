@@ -266,6 +266,13 @@ init_values(ItemGuid, ItemId, OwnerGuid) ->
 
 	ItemProto = content:lookup_item(ItemId),
 	ItemMaxDurability = ItemProto#item_proto.max_durability,
+	ItemClass = ItemProto#item_proto.class,
+
+	StackCount = if ItemClass == ?item_class_consumable -> 5;
+		true -> 1
+	end,
+
+	Charges = -1,
 
 	KeyValues = [
 		{'OBJECT_FIELD_GUID', ItemGuid, uint64},
@@ -273,9 +280,14 @@ init_values(ItemGuid, ItemId, OwnerGuid) ->
     {'OBJECT_FIELD_SCALE_X', Scale, float},
     {'OBJECT_FIELD_ENTRY', ItemId, uint32},
 
+    {'ITEM_FIELD_SPELL_CHARGES', Charges, uint32},
+    {'ITEM_FIELD_SPELL_CHARGES_01', Charges, uint32},
+    {'ITEM_FIELD_SPELL_CHARGES_02', Charges, uint32},
+    {'ITEM_FIELD_SPELL_CHARGES_03', Charges, uint32},
+    {'ITEM_FIELD_SPELL_CHARGES_04', Charges, uint32},
     {'ITEM_FIELD_OWNER', OwnerGuid, uint64},
     {'ITEM_FIELD_CONTAINED', ItemGuid, uint64},
-    {'ITEM_FIELD_STACK_COUNT', 1, uint32},
+    {'ITEM_FIELD_STACK_COUNT', StackCount, uint32},
     {'ITEM_FIELD_MAXDURABILITY', ItemMaxDurability, uint32},
     {'ITEM_FIELD_DURABILITY', ItemMaxDurability, uint32}
 	],
