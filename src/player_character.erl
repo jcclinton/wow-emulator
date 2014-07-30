@@ -16,6 +16,8 @@
 -include("include/binary.hrl").
 -include("include/shared_defines.hrl").
 
+-define(update_timer_interval, 50).
+
 
 %% public api
 
@@ -46,10 +48,10 @@ start_link(AccountId, Guid) ->
 
 init({AccountId, Guid}) ->
 	process_flag(trap_exit, true),
-	io:format("char SERVER: started~n"),
+	io:format("char SERVER started for ~p~n", [Guid]),
 	char_data:init_session(Guid),
 
-	{ok, TRef} = timer:apply_interval(50, ?MODULE, update, [AccountId]),
+	{ok, TRef} = timer:apply_interval(?update_timer_interval, ?MODULE, update, [AccountId]),
 	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef}}.
 
 

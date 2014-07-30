@@ -72,6 +72,7 @@ handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId}
 	{noreply, State};
 handle_cast({send_to_client, OpAtom, Payload}, State=#state{send_pid = SendPid}) ->
 	Opcode = opcodes:get_num_by_atom(OpAtom),
+	%io:format("sending ~p to client~n", [OpAtom]),
 	player_send:send_msg(SendPid, Opcode, Payload),
 	{noreply, State};
 handle_cast({login_char, Guid}, State=#state{account_id = AccountId, parent_pid = ParentPid}) ->

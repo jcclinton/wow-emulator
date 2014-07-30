@@ -5,6 +5,7 @@
 -export([equip_new/3, equip_new/4, equip/5, equip/6]).
 -export([init_char_slot_values/0]).
 -export([get_item_guids/1, get_equipped_item_guids/1]).
+-export([slot_empty/2, get_item_guid_at_slot/2]).
 
 -include("include/types.hrl").
 -include("include/binary.hrl").
@@ -17,32 +18,52 @@
 swap(SrcSlot, DestSlot, Guid) ->
 	SrcEmpty = slot_empty(SrcSlot, Guid),
 	DestEmpty = slot_empty(DestSlot, Guid),
+
+	if SrcEmpty ->
+			{error, ?equip_err_slot_is_empty};
+		SrcSlot == DestSlot ->
+			{error, ?equip_err_items_cant_be_swapped};
+		true ->
+			if DestEmpty ->
+					move_item_to_empty_slot(SrcSlot, DestSlot, Guid);
+				not DestEmpty ->
+					swap_item(SrcSlot, DestSlot, Guid)
+			end
+			%update_data:build_create_update_packet_for_item(ItemGuid),
+	end.
+
+
+% srcslot is item, dest slot is empty
+move_item_to_empty_slot(SrcSlot, DestSlot, Guid) ->
+	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	IsDestBagSlot = is_item_slot(DestSlot),
 	IsDestEquipSlot = is_equip_slot(DestSlot),
+	if IsDestBagSlot ->
+			io:format("dest slot is empty~n"),
+			remove(SrcSlot, Guid),
+			equip(ItemGuid, DestSlot, Guid);
+		IsDestEquipSlot ->
+			CanEquip = can_equip(ItemGuid, DestSlot),
+			if CanEquip ->
+					io:format("can equip and is equip slot is empty~n"),
+					remove(SrcSlot, Guid),
+					visualize_item(Guid, ItemGuid, DestSlot, true),
+					equip(ItemGuid, DestSlot, Guid);
+				true ->
+					{error, ?equip_err_you_can_never_use_that_item}
+			end
+	end.
 
-	if SrcEmpty orelse SrcSlot == DestSlot ->
-			ok;
-		true ->
-			ok
-	end,
-			%error
 
-%		if DestEmpty ->
-%				ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
-%				if IsDestBagSlot ->
-%					remove(SrcSlot, Guid),
-%					equip(ItemGuid, DestSlot, Guid);
-%				true -> ok
-%				end,
-%				if IsDestEquipSlot ->
-%					CanEquip = can_equip(ItemGuid, DestSlot),
-%					if CanEquip ->
-%							remove(SrcSlot, Guid),
-%							equip(ItemGuid, DestSlot, Guid);
-%						true -> ok
-%					end;
-%			true -> ok
-%		end
+can_equip(ItemGuid, Slot) ->
+	ItemProto = item_data:get_item_proto(ItemGuid),
+	InvType = ItemProto#item_proto.inventory_type,
+	EquipSlot = get_slot(InvType),
+	Slot == EquipSlot.
+
+
+swap_item(SrcSlot, DestSlot, Guid) ->
+					{error, ?equip_err_you_can_never_use_that_item}.
 
 
 %		if not DestEmpty ->
@@ -77,9 +98,20 @@ swap(SrcSlot, DestSlot, Guid) ->
 	%end,
 
 
-	ok.
+remove(Slot, OwnerGuid) ->
+	%ItemGuid = get_item_guid_at_slot(Slot, OwnerGuid),
 
-remove(Slot, Guid) ->
+	Values = char_data:get_values(OwnerGuid),
+	NewValues = char_values:set_item(Slot, 0, Values, true),
+	char_data:update_values(OwnerGuid, NewValues),
+
+	SlotValues = char_data:get_slot_values(OwnerGuid),
+	Offset = 8 * Slot,
+	<<Head:Offset/binary, _ItemGuid?Q, Rest/binary>> = SlotValues,
+	NewSlotValues = <<Head/binary, 0?Q, Rest/binary>>,
+	char_data:update_slot_values(OwnerGuid, NewSlotValues),
+
+	set_visual_item_slot(OwnerGuid, 0, Slot, true),
 	ok.
 
 can_merge(SrcSlot, DestSlot, Guid) ->
@@ -135,6 +167,15 @@ init_char_slot_values() ->
 	binary:copy(<<0?Q>>, ?player_slots_count).
 
 
+equip_item_at_slot(Slot, ItemGuid, OwnerGuid, MarkUpdate) ->
+	SlotValues = char_data:get_slot_values(OwnerGuid),
+	Offset = Slot * 8,
+	<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
+	NewCharSlotValues = <<Head/binary, ItemGuid?Q, Rest/binary>>,
+	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
+	visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate).
+
+
 
 equip_new(ItemId, CharSlotValues, OwnerGuid) ->
 	equip_new(ItemId, CharSlotValues, OwnerGuid, true).
@@ -145,8 +186,23 @@ equip_new(ItemId, CharSlotValues, OwnerGuid, MarkUpdate) ->
 	equip(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false, MarkUpdate).
 
 
-equip(ItemGuid, DestSlot, Guid) ->
-	ok.
+equip(ItemGuid, DestSlot, OwnerGuid) ->
+	SlotValues = char_data:get_slot_values(OwnerGuid),
+	Offset = DestSlot * 8,
+	<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
+	NewCharSlotValues = <<Head/binary, ItemGuid?Q, Rest/binary>>,
+	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
+
+	Values = char_data:get_values(OwnerGuid),
+	NewValues = char_values:set_item(DestSlot, ItemGuid, Values, true),
+	char_data:update_values(OwnerGuid, NewValues),
+
+	ItemValues = item_data:get_values(ItemGuid),
+	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
+	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
+	item_data:store_values(NewItemValues),
+
+	update_data:build_create_update_packet_for_item(ItemGuid).
 
 equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
 	equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, true).
@@ -161,9 +217,7 @@ equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, MarkUpdate) ->
 				Offset = Slot * 8,
 				<<Head:Offset/binary, OldItemGuid?Q, Rest/binary>> = SlotValues,
 				if OldItemGuid == 0 orelse Swap ->
-						NewCharSlotValues = <<Head/binary, NewItemGuid?Q, Rest/binary>>,
-						char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
-						visualize_item(OwnerGuid, NewItemGuid, Slot, MarkUpdate),
+						equip_item_at_slot(Slot, NewItemGuid, OwnerGuid, MarkUpdate),
 						ok;
 					true ->
 						ok
@@ -216,8 +270,11 @@ visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
 
 set_visual_item_slot(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
 	Values = char_data:get_values(OwnerGuid),
-	ItemValues = item_data:get_values(ItemGuid),
-	ItemId = item_values:get_item_id(ItemValues),
+	ItemId = if ItemGuid > 0 ->
+			ItemValues = item_data:get_values(ItemGuid),
+			item_values:get_item_id(ItemValues);
+		true -> 0
+	end,
 	NewValues = char_values:set_visible_item(Slot, ItemId, Values, MarkUpdate),
 	char_data:update_values(OwnerGuid, NewValues).
 

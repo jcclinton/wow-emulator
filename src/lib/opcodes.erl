@@ -111,6 +111,8 @@ get_callback_by_num(cmsg_use_item) ->
 	#callback{type=character, module=inventory, function=use_item};
 get_callback_by_num(cmsg_swap_inv_item) ->
 	#callback{type=character, module=inventory, function=swap_inv_item};
+get_callback_by_num(cmsg_item_query_single) ->
+	#callback{type=character, module=inventory, function=item_query_single};
 
 get_callback_by_num(cmsg_query_time) ->
 	#callback{type=account, module=server, function=query_time};
