@@ -4,6 +4,7 @@
 -export([store_values/1]).
 -export([delete_items/1, delete_item/1]).
 -export([get_values/1]).
+-export([get_item_proto/1, get_item_id/1]).
 
 
 init() ->
@@ -35,3 +36,13 @@ delete_items(GuidList) ->
 
 delete_item(Guid) ->
 	dets_store:delete(item_values, Guid, true).
+
+
+%% misc gets
+get_item_proto(ItemGuid) ->
+	ItemId = get_item_id(ItemGuid),
+	content:lookup_item(ItemId).
+
+get_item_id(ItemGuid) ->
+	Values = get_values(ItemGuid),
+	item_values:get_item_id(Values).
