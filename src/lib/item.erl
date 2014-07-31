@@ -132,10 +132,12 @@ can_swap(SrcSlot, DestSlot, Guid) ->
 	CanEquipSrcAtDest = can_equip_from_slot(SrcSlot, DestSlot, Guid),
 	CanEquipDestAtSrc = can_equip_from_slot(DestSlot, SrcSlot, Guid),
 
-	(DestIsInvSlot andalso SrcIsInvSlot) orelse
-	(DestIsInvSlot andalso SrcIsEquipSlot andalso CanEquipDestAtSrc) orelse
-	(DestIsEquipSlot andalso SrcIsInvSlot andalso CanEquipSrcAtDest) orelse
-	(DestIsEquipSlot andalso SrcIsEquipSlot andalso CanEquipSrcAtDest andalso CanEquipDestAtSrc).
+	% and has higher precedence than or
+	% no point in using short circuit operators here
+	DestIsInvSlot and SrcIsInvSlot or
+	DestIsInvSlot and SrcIsEquipSlot and CanEquipDestAtSrc or
+	DestIsEquipSlot and SrcIsInvSlot and CanEquipSrcAtDest or
+	DestIsEquipSlot and SrcIsEquipSlot and CanEquipSrcAtDest and CanEquipDestAtSrc.
 
 
 
