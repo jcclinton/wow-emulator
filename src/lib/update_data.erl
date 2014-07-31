@@ -2,7 +2,7 @@
 
 -export([compress/1, decompress/1]).
 -export([build_create_update_packet_for_player/2, build_update_packet/2]).
--export([build_create_update_packet_for_item/1]).
+-export([build_create_update_packet_for_items/1]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
@@ -36,12 +36,16 @@ build_create_update_packet_for_player(Guid, IsSelf) ->
 	build_packet(<<ItemBlocks/binary, PlayerBlock/binary>>, TotalCount).
 
 
-build_create_update_packet_for_item(ItemGuid) ->
+
+build_create_update_packet_for_items(ItemGuids) ->
 	ItemTypeId = ?typeid_item,
 	ItemUpdateFlag = ?updateflag_all,
-	ItemValues = item_data:get_values(ItemGuid),
-	Block = create_block(none, ItemValues, false, ItemTypeId, ItemUpdateFlag, ItemGuid),
-	build_packet(Block, 1).
+	{Blocks, TotalCount} = lists:foldl(fun(ItemGuid, {Acc, Count}) ->
+		ItemValues = item_data:get_values(ItemGuid),
+		Block = create_block(none, ItemValues, false, ItemTypeId, ItemUpdateFlag, ItemGuid),
+		{<<Acc/binary, Block/binary>>, Count+1}
+	end, {<<>>, 0}, ItemGuids),
+	build_packet(Blocks, TotalCount).
 
 
 

@@ -64,28 +64,15 @@ swap(SrcSlot, DestSlot, Guid) ->
 				end;
 				DestIsEquipSlot ->
 
-					if CanEquipSrcAtDest ->
-							if CanSwap ->
-									swap_slots(SrcSlot, DestSlot, Guid);
-								not CanSwap ->
-									{error, ?equip_err_items_cant_be_swapped}
-							end;
-						not CanEquipSrcAtDest ->
-							{error, ?equip_err_item_doesnt_go_to_slot}
+					if CanSwap ->
+							swap_slots(SrcSlot, DestSlot, Guid);
+						not CanSwap ->
+							{error, ?equip_err_items_cant_be_swapped}
 					end
 			end
 
 	end.
 
-
-merge(SrcSlot, DestSlot, Guid) ->
-	ok.
-
-merge_with_overflow(SrcSlot, DestSlot, Guid) ->
-	ok.
-
-can_swap(SrcSlot, DestSlot, Guid) ->
-	false.
 
 can_merge(SrcSlot, DestSlot, Guid) ->
 	false.
@@ -93,8 +80,56 @@ can_merge(SrcSlot, DestSlot, Guid) ->
 can_merge_with_overflow(SrcSlot, DestSlot, Guid) ->
 	false.
 
-swap_slots(SrcSlot, DestSlot, Guid) ->
+merge(SrcSlot, DestSlot, Guid) ->
 	ok.
+
+merge_with_overflow(SrcSlot, DestSlot, Guid) ->
+	ok.
+
+
+can_swap(SrcSlot, DestSlot, Guid) ->
+	DestIsInvSlot = is_inv_slot(DestSlot),
+	DestIsEquipSlot = is_equip_slot(DestSlot),
+
+	SrcIsInvSlot = is_inv_slot(SrcSlot),
+	SrcIsEquipSlot = is_equip_slot(SrcSlot),
+
+	CanEquipSrcAtDest = can_equip_from_slot(SrcSlot, DestSlot, Guid),
+	CanEquipDestAtSrc = can_equip_from_slot(DestSlot, SrcSlot, Guid),
+
+	(DestIsInvSlot andalso SrcIsInvSlot) orelse
+	(DestIsInvSlot andalso SrcIsEquipSlot andalso CanEquipDestAtSrc) orelse
+	(DestIsEquipSlot andalso SrcIsInvSlot andalso CanEquipSrcAtDest) orelse
+	(DestIsEquipSlot andalso SrcIsEquipSlot andalso CanEquipSrcAtDest andalso CanEquipDestAtSrc).
+
+
+
+swap_slots(SrcSlot, DestSlot, Guid) ->
+	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+	DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
+
+	DestIsInvSlot = is_inv_slot(DestSlot),
+	DestIsEquipSlot = is_equip_slot(DestSlot),
+
+	DestIsEquipSlot = is_equip_slot(DestSlot),
+	SrcIsEquipSlot = is_equip_slot(SrcSlot),
+
+	remove(SrcSlot, Guid),
+	remove(DestSlot, Guid),
+
+	equip_slot(SrcItemGuid, DestSlot, Guid),
+	if DestIsEquipSlot ->
+			visualize_item(Guid, SrcItemGuid, DestSlot, true);
+		DestIsInvSlot -> ok
+	end,
+
+	equip_slot(DestItemGuid, SrcSlot, Guid),
+	if SrcIsEquipSlot ->
+			visualize_item(Guid, DestItemGuid, SrcSlot, true);
+		DestIsInvSlot -> ok
+	end,
+
+	update_data:build_create_update_packet_for_items([SrcItemGuid, DestItemGuid]).
 
 
 % remove from old slot
@@ -170,7 +205,6 @@ get_item_guid_at_slot(Slot, Guid) ->
 
 
 
-
 get_equipped_item_guids(Guid) ->
 	ItemGuids = get_item_guids(Guid),
 	{Guids, _} = lists:split(?equipment_slot_end, ItemGuids),
@@ -213,7 +247,7 @@ equip_new(ItemId, CharSlotValues, OwnerGuid, MarkUpdate) ->
 	equip(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false, MarkUpdate).
 
 
-equip(ItemGuid, DestSlot, OwnerGuid) ->
+equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 	SlotValues = char_data:get_slot_values(OwnerGuid),
 	Offset = DestSlot * 8,
 	<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
@@ -227,9 +261,11 @@ equip(ItemGuid, DestSlot, OwnerGuid) ->
 	ItemValues = item_data:get_values(ItemGuid),
 	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
 	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
-	item_data:store_values(NewItemValues),
+	item_data:store_values(NewItemValues).
 
-	update_data:build_create_update_packet_for_item(ItemGuid).
+equip(ItemGuid, DestSlot, OwnerGuid) ->
+	equip_slot(ItemGuid, DestSlot, OwnerGuid),
+	update_data:build_create_update_packet_for_items([ItemGuid]).
 
 equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
 	equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, true).
