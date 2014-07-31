@@ -18,25 +18,97 @@
 swap(SrcSlot, DestSlot, Guid) ->
 	SrcEmpty = slot_empty(SrcSlot, Guid),
 	DestEmpty = slot_empty(DestSlot, Guid),
+	SrcIsValidSlot = is_valid_slot(SrcSlot),
+	DestIsValidSlot = is_valid_slot(DestSlot),
+
+	DestIsInvSlot = is_inv_slot(DestSlot),
+	DestIsEquipSlot = is_equip_slot(DestSlot),
+
+	CanEquipSrcAtDest = can_equip_from_slot(SrcSlot, DestSlot, Guid),
+
+	CanMerge = can_merge(SrcSlot, DestSlot, Guid),
+	CanMergeWithOverFlow = can_merge_with_overflow(SrcSlot, DestSlot, Guid),
+
+	CanSwap = swap_slots(SrcSlot, DestSlot, Guid),
 
 	if SrcEmpty ->
 			{error, ?equip_err_slot_is_empty};
 		SrcSlot == DestSlot ->
 			{error, ?equip_err_items_cant_be_swapped};
-		true ->
-			if DestEmpty ->
-					move_item_to_empty_slot(SrcSlot, DestSlot, Guid);
-				not DestEmpty ->
-					swap_item(SrcSlot, DestSlot, Guid)
+		not SrcIsValidSlot orelse not DestIsValidSlot ->
+			{error, ?equip_err_no_equipment_slot_available};
+		DestEmpty ->
+			if DestIsInvSlot ->
+				store_from_slot(SrcSlot, DestSlot, Guid);
+				DestIsEquipSlot ->
+
+					if CanEquipSrcAtDest ->
+							equip_from_slot(SrcSlot, DestSlot, Guid);
+						not CanEquipSrcAtDest ->
+							{error, ?equip_err_item_doesnt_go_to_slot}
+					end
+			end;
+
+		not DestEmpty ->
+
+			if DestIsInvSlot ->
+				if CanMerge ->
+						merge(SrcSlot, DestSlot, Guid);
+					CanMergeWithOverFlow ->
+						merge_with_overflow(SrcSlot, DestSlot, Guid);
+					CanSwap ->
+						swap_slots(SrcSlot, DestSlot, Guid);
+					not CanSwap ->
+						{error, ?equip_err_items_cant_be_swapped}
+				end;
+				DestIsEquipSlot ->
+
+					if CanEquipSrcAtDest ->
+							if CanSwap ->
+									swap_slots(SrcSlot, DestSlot, Guid);
+								not CanSwap ->
+									{error, ?equip_err_items_cant_be_swapped}
+							end;
+						not CanEquipSrcAtDest ->
+							{error, ?equip_err_item_doesnt_go_to_slot}
+					end
 			end
-			%update_data:build_create_update_packet_for_item(ItemGuid),
+
 	end.
+
+
+merge(SrcSlot, DestSlot, Guid) ->
+	ok.
+
+merge_with_overflow(SrcSlot, DestSlot, Guid) ->
+	ok.
+
+can_merge(SrcSlot, DestSlot, Guid) ->
+	true.
+
+can_merge_with_overflow(SrcSlot, DestSlot, Guid) ->
+	true.
+
+
+swap_slots(SrcSlot, DestSlot, Guid) ->
+	ok.
+
+
+can_equip_from_slot(SrcSlot, DestSlot, Guid) ->
+	true.
+
+store_from_slot(SrcSlot, DestSlot, Guid) ->
+	ok.
+
+equip_from_slot(SrcSlot, DestSlot, Guid) ->
+	ok.
+
 
 
 % srcslot is item, dest slot is empty
 move_item_to_empty_slot(SrcSlot, DestSlot, Guid) ->
 	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
-	IsDestBagSlot = is_item_slot(DestSlot),
+	IsDestBagSlot = is_inv_slot(DestSlot),
 	IsDestEquipSlot = is_equip_slot(DestSlot),
 	if IsDestBagSlot ->
 			io:format("dest slot is empty~n"),
@@ -75,8 +147,8 @@ swap_item(SrcSlot, DestSlot, Guid) ->
 %						SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 %						DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
 %
-%						IsDestBagSlot = is_item_slot(DestSlot),
-%						IsSrcBagSlot = is_item_slot(SrcSlot),
+%						IsDestBagSlot = is_inv_slot(DestSlot),
+%						IsSrcBagSlot = is_inv_slot(SrcSlot),
 %
 %						CanEquipSrc = IsSrcBagSlot orelse (IsSrcEquipSlot andalso can_equip(SrcItemGuid, SrcSlot)),
 %%%%%%%%%						CanEquipDest = IsDestBagSlot orelse (IsDestEquipSlot andalso can_equip(DestItemGuid, DestSlot)),
@@ -114,12 +186,12 @@ remove(Slot, OwnerGuid) ->
 	set_visual_item_slot(OwnerGuid, 0, Slot, true),
 	ok.
 
-can_merge(SrcSlot, DestSlot, Guid) ->
-	false.
 
+is_valid_slot(Slot) ->
+	is_inv_slot(Slot) orelse is_equip_slot(Slot).
 
 % inside bag
-is_item_slot(Slot) ->
+is_inv_slot(Slot) ->
 	Slot >= ?inventory_slot_item_start andalso Slot < ?inventory_slot_item_end.
 
 is_equip_slot(Slot) ->
