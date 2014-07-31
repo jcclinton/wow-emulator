@@ -6,6 +6,7 @@
 -export([init_char_slot_values/0]).
 -export([get_item_guids/1, get_equipped_item_guids/1]).
 -export([slot_empty/2, get_item_guid_at_slot/2]).
+-export([get_slot/1]).
 
 -compile([export_all]).
 
@@ -15,6 +16,21 @@
 -include("include/character.hrl").
 -include("include/items.hrl").
 -include("include/shared_defines.hrl").
+
+
+test() ->
+	Guid = 913,
+	ItemId = 44,
+
+	lists:foreach(fun(_) ->
+		ItemValues = item:create(ItemId, Guid),
+		item_data:store_values(ItemValues),
+		ItemGuid = item_values:get_guid(ItemValues),
+		Slot = get_first_empty_inv_slot(Guid),
+		item:equip_slot(ItemGuid, Slot, Guid)
+	end, lists:seq(1 ,12)),
+
+	ok.
 
 
 
@@ -148,7 +164,7 @@ swap_slots(SrcSlot, DestSlot, Guid) ->
 	DestIsInvSlot = is_inv_slot(DestSlot),
 	DestIsEquipSlot = is_equip_slot(DestSlot),
 
-	DestIsEquipSlot = is_equip_slot(DestSlot),
+	SrcIsInvSlot = is_inv_slot(SrcSlot),
 	SrcIsEquipSlot = is_equip_slot(SrcSlot),
 
 	remove(SrcSlot, Guid),
@@ -163,7 +179,7 @@ swap_slots(SrcSlot, DestSlot, Guid) ->
 	equip_slot(DestItemGuid, SrcSlot, Guid),
 	if SrcIsEquipSlot ->
 			visualize_item(Guid, DestItemGuid, SrcSlot, true);
-		DestIsInvSlot -> ok
+		SrcIsInvSlot -> ok
 	end,
 
 	update_data:build_create_update_packet_for_items([SrcItemGuid, DestItemGuid]).
@@ -347,7 +363,7 @@ get_first_empty_inv_slot(OwnerGuid) ->
 	Values = char_data:get_values(OwnerGuid),
 	get_first_empty_inv_slot(Values, FirstSlot).
 
-get_first_empty_inv_slot(_, ?inventory_slot_item_end) -> 0;
+get_first_empty_inv_slot(_, ?inventory_slot_item_end) -> -1;
 get_first_empty_inv_slot(Values, Slot) ->
 	SlotValue = char_values:item(Slot, Values),
 	if SlotValue == 0 -> Slot;
