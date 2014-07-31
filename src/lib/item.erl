@@ -96,12 +96,17 @@ swap_slots(SrcSlot, DestSlot, Guid) ->
 % remove from old slot
 % store in inventory
 store_from_slot(SrcSlot, DestSlot, Guid) ->
-	ok.
+	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+	remove(SrcSlot, Guid),
+	equip(ItemGuid, DestSlot, Guid).
 
 % remove from old slot
 % equip item
 equip_from_slot(SrcSlot, DestSlot, Guid) ->
-	ok.
+	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+	remove(SrcSlot, Guid),
+	visualize_item(Guid, ItemGuid, DestSlot, true),
+	equip(ItemGuid, DestSlot, Guid).
 
 
 can_equip_from_slot(SrcSlot, DestSlot, Guid) ->
