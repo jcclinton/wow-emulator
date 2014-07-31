@@ -7,6 +7,8 @@
 -export([get_item_guids/1, get_equipped_item_guids/1]).
 -export([slot_empty/2, get_item_guid_at_slot/2]).
 
+-compile([export_all]).
+
 -include("include/types.hrl").
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -25,12 +27,6 @@ swap(SrcSlot, DestSlot, Guid) ->
 	DestIsInvSlot = is_inv_slot(DestSlot),
 	DestIsEquipSlot = is_equip_slot(DestSlot),
 
-	CanEquipSrcAtDest = can_equip_from_slot(SrcSlot, DestSlot, Guid),
-
-	CanMerge = can_merge(SrcSlot, DestSlot, Guid),
-	CanMergeWithOverFlow = can_merge_with_overflow(SrcSlot, DestSlot, Guid),
-
-	CanSwap = can_swap(SrcSlot, DestSlot, Guid),
 
 	if SrcEmpty ->
 			{error, ?equip_err_slot_is_empty};
@@ -43,6 +39,8 @@ swap(SrcSlot, DestSlot, Guid) ->
 				store_from_slot(SrcSlot, DestSlot, Guid);
 				DestIsEquipSlot ->
 
+					CanEquipSrcAtDest = can_equip_from_slot(SrcSlot, DestSlot, Guid),
+
 					if CanEquipSrcAtDest ->
 							equip_from_slot(SrcSlot, DestSlot, Guid);
 						not CanEquipSrcAtDest ->
@@ -52,7 +50,13 @@ swap(SrcSlot, DestSlot, Guid) ->
 
 		not DestEmpty ->
 
+			CanSwap = can_swap(SrcSlot, DestSlot, Guid),
+
 			if DestIsInvSlot ->
+
+				CanMerge = can_merge(SrcSlot, DestSlot, Guid),
+				CanMergeWithOverFlow = can_merge_with_overflow(SrcSlot, DestSlot, Guid),
+
 				if CanMerge ->
 						merge(SrcSlot, DestSlot, Guid);
 					CanMergeWithOverFlow ->
@@ -75,13 +79,50 @@ swap(SrcSlot, DestSlot, Guid) ->
 
 
 can_merge(SrcSlot, DestSlot, Guid) ->
-	false.
+	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+	DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
+
+	SrcItemProto = item_data:get_item_proto(SrcItemGuid),
+	DestItemProto = item_data:get_item_proto(DestItemGuid),
+
+	% check if they are the same item and that item is stackable
+	StackSize = SrcItemProto#item_proto.stackable,
+	if SrcItemProto#item_proto.id == DestItemProto#item_proto.id andalso StackSize > 1 ->
+			SrcItemValues = item_data:get_values(SrcItemGuid),
+			DestItemValues = item_data:get_values(DestItemGuid),
+			SrcStackCount = item_values:get_stack_count(SrcItemValues),
+			DestStackCount = item_values:get_stack_count(DestItemValues),
+			TotalAmount = SrcStackCount + DestStackCount,
+			if TotalAmount =< StackSize -> true;
+				% handle overflow in separate case
+				TotalAmount > StackSize -> false
+			end;
+		true -> false
+	end.
 
 can_merge_with_overflow(SrcSlot, DestSlot, Guid) ->
 	false.
 
 merge(SrcSlot, DestSlot, Guid) ->
-	ok.
+	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+	DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
+
+	SrcItemValues = item_data:get_values(SrcItemGuid),
+	DestItemValues = item_data:get_values(DestItemGuid),
+
+	SrcStackCount = item_values:get_stack_count(SrcItemValues),
+	DestStackCount = item_values:get_stack_count(DestItemValues),
+	TotalAmount = SrcStackCount + DestStackCount,
+
+	NewDestItemValues = item_values:set_stack_count(TotalAmount, DestItemValues),
+	item_data:store_values(NewDestItemValues),
+
+	NewSrcItemValues = item_values:set_stack_count(0, SrcItemValues),
+	item_data:store_values(NewSrcItemValues),
+	remove(SrcSlot, Guid),
+	%todo how to delete an item?
+
+	update_data:build_create_update_packet_for_items([SrcItemGuid, DestItemGuid]).
 
 merge_with_overflow(SrcSlot, DestSlot, Guid) ->
 	ok.

@@ -506,8 +506,9 @@ lookup_item(ItemId) ->
 			SubClass = element(3, ItemProto),
 			DisplayInfoId = element(5, ItemProto),
 			InventoryType = element(11, ItemProto),
+			Stackable = element(24, ItemProto),
 			MaxDurability = element(118, ItemProto),
-			#item_proto{id=ItemId, class=Class, sub_class=SubClass, display_info_id=DisplayInfoId, inventory_type=InventoryType, max_durability=MaxDurability};
+			#item_proto{id=ItemId, class=Class, sub_class=SubClass, display_info_id=DisplayInfoId, inventory_type=InventoryType, stackable=Stackable, max_durability=MaxDurability};
 		ItemProto == false -> false
 	end.
 
