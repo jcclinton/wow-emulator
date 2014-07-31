@@ -12,6 +12,7 @@
 -include("include/database_records.hrl").
 -include("include/character.hrl").
 -include("include/items.hrl").
+-include("include/shared_defines.hrl").
 
 
 
@@ -29,7 +30,7 @@ swap(SrcSlot, DestSlot, Guid) ->
 	CanMerge = can_merge(SrcSlot, DestSlot, Guid),
 	CanMergeWithOverFlow = can_merge_with_overflow(SrcSlot, DestSlot, Guid),
 
-	CanSwap = swap_slots(SrcSlot, DestSlot, Guid),
+	CanSwap = can_swap(SrcSlot, DestSlot, Guid),
 
 	if SrcEmpty ->
 			{error, ?equip_err_slot_is_empty};
@@ -83,6 +84,9 @@ merge(SrcSlot, DestSlot, Guid) ->
 merge_with_overflow(SrcSlot, DestSlot, Guid) ->
 	ok.
 
+can_swap(SrcSlot, DestSlot, Guid) ->
+	false.
+
 can_merge(SrcSlot, DestSlot, Guid) ->
 	false.
 
@@ -118,30 +122,6 @@ can_equip(ItemGuid, Slot) ->
 	InvType = ItemProto#item_proto.inventory_type,
 	EquipSlot = get_slot(InvType),
 	Slot == EquipSlot.
-
-
-
-% srcslot is item, dest slot is empty
-move_item_to_empty_slot(SrcSlot, DestSlot, Guid) ->
-	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
-	IsDestBagSlot = is_inv_slot(DestSlot),
-	IsDestEquipSlot = is_equip_slot(DestSlot),
-	if IsDestBagSlot ->
-			io:format("dest slot is empty~n"),
-			remove(SrcSlot, Guid),
-			equip(ItemGuid, DestSlot, Guid);
-		IsDestEquipSlot ->
-			CanEquip = can_equip(ItemGuid, DestSlot),
-			if CanEquip ->
-					io:format("can equip and is equip slot is empty~n"),
-					remove(SrcSlot, Guid),
-					visualize_item(Guid, ItemGuid, DestSlot, true),
-					equip(ItemGuid, DestSlot, Guid);
-				true ->
-					{error, ?equip_err_you_can_never_use_that_item}
-			end
-	end.
-
 
 
 
@@ -262,7 +242,7 @@ equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, MarkUpdate) ->
 		if Slot >= 0 ->
 				% offset is in 64 bit chunks
 				Offset = Slot * 8,
-				<<Head:Offset/binary, OldItemGuid?Q, Rest/binary>> = SlotValues,
+				<<_:Offset/binary, OldItemGuid?Q, _/binary>> = SlotValues,
 				if OldItemGuid == 0 orelse Swap ->
 						equip_item_at_slot(Slot, NewItemGuid, OwnerGuid, MarkUpdate),
 						ok;
@@ -359,20 +339,19 @@ get_slot(InvType) ->
 
 create(ItemId, OwnerGuid) ->
 	ItemGuid = world:get_guid(?highguid_item, 0),
-
 	init_values(ItemGuid, ItemId, OwnerGuid).
 
 
 
 init_values(ItemGuid, ItemId, OwnerGuid) ->
 	ObjectType = ?typemask_item bor ?typemask_object,
-	Scale = 1,
+	Scale = ?default_scale,
 
 	ItemProto = content:lookup_item(ItemId),
 	ItemMaxDurability = ItemProto#item_proto.max_durability,
 	ItemClass = ItemProto#item_proto.class,
 
-	StackCount = if ItemClass == ?item_class_consumable -> 5;
+	StackCount = if ItemClass == ?item_class_consumable -> ?default_item_stack_size;
 		true -> 1
 	end,
 

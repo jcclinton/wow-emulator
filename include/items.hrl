@@ -1,4 +1,5 @@
 -define(max_visible_item_offset, 12).
+-define(default_item_stack_size, 5).
 
 -define(item_class_consumable, 0).
 -define(item_class_container, 1).
