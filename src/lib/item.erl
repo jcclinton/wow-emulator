@@ -84,24 +84,35 @@ merge_with_overflow(SrcSlot, DestSlot, Guid) ->
 	ok.
 
 can_merge(SrcSlot, DestSlot, Guid) ->
-	true.
+	false.
 
 can_merge_with_overflow(SrcSlot, DestSlot, Guid) ->
-	true.
-
+	false.
 
 swap_slots(SrcSlot, DestSlot, Guid) ->
 	ok.
 
 
-can_equip_from_slot(SrcSlot, DestSlot, Guid) ->
-	true.
-
+% remove from old slot
+% store in inventory
 store_from_slot(SrcSlot, DestSlot, Guid) ->
 	ok.
 
+% remove from old slot
+% equip item
 equip_from_slot(SrcSlot, DestSlot, Guid) ->
 	ok.
+
+
+can_equip_from_slot(SrcSlot, DestSlot, Guid) ->
+	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+	can_equip(ItemGuid, DestSlot).
+
+can_equip(ItemGuid, Slot) ->
+	ItemProto = item_data:get_item_proto(ItemGuid),
+	InvType = ItemProto#item_proto.inventory_type,
+	EquipSlot = get_slot(InvType),
+	Slot == EquipSlot.
 
 
 
@@ -127,47 +138,6 @@ move_item_to_empty_slot(SrcSlot, DestSlot, Guid) ->
 	end.
 
 
-can_equip(ItemGuid, Slot) ->
-	ItemProto = item_data:get_item_proto(ItemGuid),
-	InvType = ItemProto#item_proto.inventory_type,
-	EquipSlot = get_slot(InvType),
-	Slot == EquipSlot.
-
-
-swap_item(SrcSlot, DestSlot, Guid) ->
-					{error, ?equip_err_you_can_never_use_that_item}.
-
-
-%		if not DestEmpty ->
-%			CanMerge = can_merge(SrcSlot, DestSlot, Guid),
-%			if CanMerge ->
-%					merge(SrcSlot, DestSlot, Guid);
-%				true ->
-%					if not CanMerge ->
-%						SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
-%						DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
-%
-%						IsDestBagSlot = is_inv_slot(DestSlot),
-%						IsSrcBagSlot = is_inv_slot(SrcSlot),
-%
-%						CanEquipSrc = IsSrcBagSlot orelse (IsSrcEquipSlot andalso can_equip(SrcItemGuid, SrcSlot)),
-%%%%%%%%%						CanEquipDest = IsDestBagSlot orelse (IsDestEquipSlot andalso can_equip(DestItemGuid, DestSlot)),
-%
-%						if CanEquipSrc andalso CanEquipDest ->
-%								remove(SrcSlot, Guid),
-%								remove(DestSlot, Guid),
-%								equip(SrcItemGuid, DestSlot, Guid),
-%								equip(DestItemGuid, SrcSlot, Guid);
-%							true -> ok
-%						end;
-%
-%					true -> ok
-%					end
-%
-%				end;
-%			true -> ok
-%		end
-	%end,
 
 
 remove(Slot, OwnerGuid) ->
@@ -200,7 +170,7 @@ is_equip_slot(Slot) ->
 
 slot_empty(Slot, Guid) ->
 	SlotGuid = get_item_guid_at_slot(Slot, Guid),
-	if SlotGuid /= 0 -> false; SlotGuid == 0 -> true end.
+	SlotGuid == 0.
 
 
 get_item_guid_at_slot(Slot, Guid) ->
