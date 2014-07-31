@@ -55,12 +55,9 @@ swap(SrcSlot, DestSlot, Guid) ->
 			if DestIsInvSlot ->
 
 				CanMerge = can_merge(SrcSlot, DestSlot, Guid),
-				CanMergeWithOverFlow = can_merge_with_overflow(SrcSlot, DestSlot, Guid),
 
 				if CanMerge ->
 						merge(SrcSlot, DestSlot, Guid);
-					CanMergeWithOverFlow ->
-						merge_with_overflow(SrcSlot, DestSlot, Guid);
 					CanSwap ->
 						swap_slots(SrcSlot, DestSlot, Guid);
 					not CanSwap ->
@@ -87,21 +84,8 @@ can_merge(SrcSlot, DestSlot, Guid) ->
 
 	% check if they are the same item and that item is stackable
 	StackSize = SrcItemProto#item_proto.stackable,
-	if SrcItemProto#item_proto.id == DestItemProto#item_proto.id andalso StackSize > 1 ->
-			SrcItemValues = item_data:get_values(SrcItemGuid),
-			DestItemValues = item_data:get_values(DestItemGuid),
-			SrcStackCount = item_values:get_stack_count(SrcItemValues),
-			DestStackCount = item_values:get_stack_count(DestItemValues),
-			TotalAmount = SrcStackCount + DestStackCount,
-			if TotalAmount =< StackSize -> true;
-				% handle overflow in separate case
-				TotalAmount > StackSize -> false
-			end;
-		true -> false
-	end.
+	SrcItemProto#item_proto.id == DestItemProto#item_proto.id andalso StackSize > 1.
 
-can_merge_with_overflow(SrcSlot, DestSlot, Guid) ->
-	false.
 
 merge(SrcSlot, DestSlot, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
@@ -110,22 +94,32 @@ merge(SrcSlot, DestSlot, Guid) ->
 	SrcItemValues = item_data:get_values(SrcItemGuid),
 	DestItemValues = item_data:get_values(DestItemGuid),
 
+	SrcItemProto = item_data:get_item_proto(SrcItemGuid),
+	StackSize = SrcItemProto#item_proto.stackable,
+
 	SrcStackCount = item_values:get_stack_count(SrcItemValues),
 	DestStackCount = item_values:get_stack_count(DestItemValues),
 	TotalAmount = SrcStackCount + DestStackCount,
 
-	NewDestItemValues = item_values:set_stack_count(TotalAmount, DestItemValues),
+	{DestAmount, SrcAmount} = if TotalAmount > StackSize ->
+			{StackSize, TotalAmount - StackSize};
+		TotalAmount =< StackSize ->
+			{TotalAmount, 0}
+	end,
+
+	NewDestItemValues = item_values:set_stack_count(DestAmount, DestItemValues),
 	item_data:store_values(NewDestItemValues),
 
-	NewSrcItemValues = item_values:set_stack_count(0, SrcItemValues),
+	NewSrcItemValues = item_values:set_stack_count(SrcAmount, SrcItemValues),
 	item_data:store_values(NewSrcItemValues),
-	remove(SrcSlot, Guid),
-	%todo how to delete an item?
+	if SrcAmount == 0 ->
+			%todo how to delete an item from ets and update client?
+			remove(SrcSlot, Guid);
+		true -> ok
+	end,
 
 	update_data:build_create_update_packet_for_items([SrcItemGuid, DestItemGuid]).
 
-merge_with_overflow(SrcSlot, DestSlot, Guid) ->
-	ok.
 
 
 can_swap(SrcSlot, DestSlot, Guid) ->
