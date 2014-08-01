@@ -74,19 +74,23 @@ get_value(IndexIn, Values, Size, Offset) ->
 	Value.
 
 
-set_byte_value(IndexName, Value, Values, Offset) ->
+set_byte_value(IndexName, RawValue, Values, Offset) ->
+	Value = RawValue band 16#FF,
 	set_value(IndexName, Value, Values, 1, Offset).
 
-set_uint16_value(IndexName, Value, Values, Offset) ->
+set_uint16_value(IndexName, RawValue, Values, Offset) ->
+	Value = RawValue band 16#FFFF,
 	set_value(IndexName, Value, Values, 2, Offset).
 
-set_uint32_value(IndexName, Value, Values) ->
+set_uint32_value(IndexName, RawValue, Values) ->
+	Value = RawValue band 16#FFFFFFFF,
 	set_value(IndexName, Value, Values, 4, 0).
 
 set_float_value(IndexName, Value, Values, Offset) ->
 	set_value(IndexName, Value, Values, float, Offset).
 
-set_uint64_value(IndexName, Value, Values) ->
+set_uint64_value(IndexName, RawValue, Values) ->
+	Value = RawValue band 16#FFFFFFFFFFFFFFFF,
 	set_value(IndexName, Value, Values, 8, 0).
 
 set_float_value(IndexName, Value, Values) ->
