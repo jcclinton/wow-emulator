@@ -18,7 +18,7 @@
 
 
 test() ->
-	Guid = 913,
+	Guid = 1000,
 	ItemId = 44,
 
 	lists:foreach(fun(_) ->
@@ -385,14 +385,18 @@ visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
 
 
 set_visual_item_slot(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
-	Values = char_data:get_values(OwnerGuid),
-	ItemId = if ItemGuid > 0 ->
-			ItemValues = item_data:get_values(ItemGuid),
-			item_values:get_item_id(ItemValues);
-		true -> 0
-	end,
-	NewValues = char_values:set_visible_item(Slot, ItemId, Values, MarkUpdate),
-	char_data:update_values(OwnerGuid, NewValues).
+	IsEquipSlot = is_equip_slot(Slot),
+	if IsEquipSlot ->
+			Values = char_data:get_values(OwnerGuid),
+			ItemId = if ItemGuid > 0 ->
+					ItemValues = item_data:get_values(ItemGuid),
+					item_values:get_item_id(ItemValues);
+				true -> 0
+			end,
+			NewValues = char_values:set_visible_item(Slot, ItemId, Values, MarkUpdate),
+			char_data:update_values(OwnerGuid, NewValues);
+		true -> ok
+	end.
 
 
 

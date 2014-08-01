@@ -33,6 +33,11 @@ set_item(Slot, ItemGuid, Values) ->
 set_item(Slot, ItemGuid, Values, MarkUpdate) ->
 	Field = 'PLAYER_FIELD_INV_SLOT_HEAD',
 	Index = update_fields:fields(Field) + (2 * Slot),
+	% this can set an item from equipped, bags, bag inventory, bank and keyrings
+	NextIndex = update_fields:fields('PLAYER_FARSIGHT'),
+	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
+		true -> ok
+	end,
 	set_uint64_mark_if_needed(Index, ItemGuid, Values, MarkUpdate).
 
 
@@ -41,6 +46,11 @@ set_visible_item(Slot, ItemId, Values) ->
 set_visible_item(Slot, ItemId, Values, MarkUpdate) ->
 	Field = 'PLAYER_VISIBLE_ITEM_1_0',
 	Index = update_fields:fields(Field) + (Slot * ?max_visible_item_offset),
+	NextIndex = update_fields:fields('PLAYER_FIELD_INV_SLOT_HEAD'),
+	% this can only be used to set equipped items
+	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
+		true -> ok
+	end,
 	set_uint32_mark_if_needed(Index, ItemId, Values, MarkUpdate).
 
 
