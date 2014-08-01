@@ -16,6 +16,7 @@
 -include("include/binary.hrl").
 
 
+% used when initializing char values
 set_key_values({IndexName, Value, Type}, Values) ->
 	%io:format("indexname: ~p~nvalue: ~p~n", [IndexName, Value]),
 	case Type of
@@ -74,23 +75,37 @@ get_value(IndexIn, Values, Size, Offset) ->
 	Value.
 
 
-set_byte_value(IndexName, RawValue, Values, Offset) ->
-	Value = RawValue band 16#FF,
+set_byte_value(IndexName, Value, Values, Offset) ->
+	if Offset > 3 orelse Offset < 0 -> throw(badarg);
+		true -> ok
+	end,
+	if Value > 16#FF orelse Value < 0 -> throw(badarg);
+		true -> ok
+	end,
 	set_value(IndexName, Value, Values, 1, Offset).
 
-set_uint16_value(IndexName, RawValue, Values, Offset) ->
-	Value = RawValue band 16#FFFF,
+set_uint16_value(IndexName, Value, Values, Offset) ->
+	if Offset > 1 orelse Offset < 0 -> throw(badarg);
+		true -> ok
+	end,
+	if Value > 16#FFFF orelse Value < 0 -> throw(badarg);
+		true -> ok
+	end,
 	set_value(IndexName, Value, Values, 2, Offset).
 
-set_uint32_value(IndexName, RawValue, Values) ->
-	Value = RawValue band 16#FFFFFFFF,
+set_uint32_value(IndexName, Value, Values) ->
+	if Value > 16#FFFFFFFF orelse Value < 0 -> throw(badarg);
+		true -> ok
+	end,
 	set_value(IndexName, Value, Values, 4, 0).
 
 set_float_value(IndexName, Value, Values, Offset) ->
 	set_value(IndexName, Value, Values, float, Offset).
 
-set_uint64_value(IndexName, RawValue, Values) ->
-	Value = RawValue band 16#FFFFFFFFFFFFFFFF,
+set_uint64_value(IndexName, Value, Values) ->
+	if Value > 16#FFFFFFFFFFFFFFFF orelse Value < 0 -> throw(badarg);
+		true -> ok
+	end,
 	set_value(IndexName, Value, Values, 8, 0).
 
 set_float_value(IndexName, Value, Values) ->
