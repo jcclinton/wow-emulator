@@ -16,7 +16,13 @@ object_values_test_() ->
 	{"overflow offset test",
 	 {setup, fun init/0, fun stop/1, fun overflow_offset_test/1}},
 	{"overflow value test",
-	 {setup, fun init/0, fun stop/1, fun overflow_value_test/1}}
+	 {setup, fun init/0, fun stop/1, fun overflow_value_test/1}},
+	{"set empty test",
+	 {setup, fun init_numbers/0, fun stop/1, fun empty_set_test/1}},
+	{"overflow offset test",
+	 {setup, fun init_numbers/0, fun stop/1, fun overflow_offset_test/1}},
+	{"overflow value test",
+	 {setup, fun init_numbers/0, fun stop/1, fun overflow_value_test/1}}
 	].
 
 
@@ -29,6 +35,13 @@ object_values_test_() ->
 
 
 init() ->
+	TotalCount = 10,
+	EmptyValues = binary:copy(<<0?L>>, TotalCount),
+	Index = 'OBJECT_FIELD_GUID',
+	Value = 5,
+	{TotalCount, EmptyValues, Index, Value}.
+
+init_numbers() ->
 	TotalCount = 10,
 	EmptyValues = binary:copy(<<0?L>>, TotalCount),
 	Index = 1,
