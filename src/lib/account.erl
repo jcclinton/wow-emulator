@@ -20,7 +20,6 @@ destroy() ->
 	ok.
 
 lookup(I) ->
-	io:format("looking up ~p~n", [I]),
 	Result = dets_store:lookup(?acc, I),
 	Value = case Result of
 		[] -> false;
