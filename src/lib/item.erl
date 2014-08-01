@@ -1,7 +1,6 @@
 -module(item).
 
 -export([swap/3]).
--export([create/2]).
 -export([equip_new/3, equip_new/4, equip/5, equip/6]).
 -export([init_char_slot_values/0]).
 -export([get_item_guids/1, get_equipped_item_guids/1]).
@@ -23,9 +22,10 @@ test() ->
 	ItemId = 44,
 
 	lists:foreach(fun(_) ->
-		ItemValues = item:create(ItemId, Guid),
+		ItemGuid = world:get_guid(?highguid_item, 0),
+		ItemValues = item_values:create(ItemGuid, ItemId, Guid),
 		item_data:store_values(ItemValues),
-		ItemGuid = item_values:get_guid(ItemValues),
+
 		Slot = get_first_empty_inv_slot(Guid),
 		item:equip_slot(ItemGuid, Slot, Guid)
 	end, lists:seq(1 ,12)),
@@ -294,9 +294,9 @@ equip_item_at_slot(Slot, ItemGuid, OwnerGuid, MarkUpdate) ->
 equip_new(ItemId, CharSlotValues, OwnerGuid) ->
 	equip_new(ItemId, CharSlotValues, OwnerGuid, true).
 equip_new(ItemId, CharSlotValues, OwnerGuid, MarkUpdate) ->
-	ItemValues = create(ItemId, OwnerGuid),
+	ItemGuid = world:get_guid(?highguid_item, 0),
+	ItemValues = item_values:create(ItemGuid, ItemId, OwnerGuid),
 	item_data:store_values(ItemValues),
-	ItemGuid = item_values:get_guid(ItemValues),
 	equip(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false, MarkUpdate).
 
 
@@ -424,50 +424,3 @@ get_slot(InvType) ->
 		?invtype_rangedright -> ?equipment_slot_ranged;
 		_ -> -1
 	end.
-
-
-create(ItemId, OwnerGuid) ->
-	ItemGuid = world:get_guid(?highguid_item, 0),
-	init_values(ItemGuid, ItemId, OwnerGuid).
-
-
-
-init_values(ItemGuid, ItemId, OwnerGuid) ->
-	ObjectType = ?typemask_item bor ?typemask_object,
-	Scale = ?default_scale,
-
-	ItemProto = content:lookup_item(ItemId),
-	ItemMaxDurability = ItemProto#item_proto.max_durability,
-	ItemClass = ItemProto#item_proto.class,
-
-	StackCount = if ItemClass == ?item_class_consumable -> ?default_item_stack_size;
-		true -> 1
-	end,
-
-	Charges = -1,
-
-	KeyValues = [
-		{'OBJECT_FIELD_GUID', ItemGuid, uint64},
-		{'OBJECT_FIELD_TYPE', ObjectType, uint32},
-    {'OBJECT_FIELD_SCALE_X', Scale, float},
-    {'OBJECT_FIELD_ENTRY', ItemId, uint32},
-
-    {'ITEM_FIELD_SPELL_CHARGES', Charges, uint32},
-    {'ITEM_FIELD_SPELL_CHARGES_01', Charges, uint32},
-    {'ITEM_FIELD_SPELL_CHARGES_02', Charges, uint32},
-    {'ITEM_FIELD_SPELL_CHARGES_03', Charges, uint32},
-    {'ITEM_FIELD_SPELL_CHARGES_04', Charges, uint32},
-    {'ITEM_FIELD_OWNER', OwnerGuid, uint64},
-    {'ITEM_FIELD_CONTAINED', ItemGuid, uint64},
-    {'ITEM_FIELD_STACK_COUNT', StackCount, uint32},
-    {'ITEM_FIELD_MAXDURABILITY', ItemMaxDurability, uint32},
-    {'ITEM_FIELD_DURABILITY', ItemMaxDurability, uint32}
-	],
-
-	EmptyValues = get_empty_values(),
-	lists:foldl(fun object_values:set_key_values/2, EmptyValues, KeyValues).
-
-
-get_empty_values() ->
-	TotalCount = update_fields:get_total_count(item),
-	binary:copy(<<0?L>>, TotalCount).

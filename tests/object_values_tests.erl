@@ -81,6 +81,9 @@ empty_set_test({_TotalCount, EmptyValues, Index, Value}) ->
 		?_assertNotEqual(NewValuesWord1, EmptyValues)
 	],
 
+	NewValuesLInt = object_values:set_int32_value(Index, -1, EmptyValues),
+	TestSetLongInt = [?_assertNotEqual(NewValuesLInt, EmptyValues)],
+
 	NewValuesL = object_values:set_uint32_value(Index, Value, EmptyValues),
 	TestSetLong = [?_assertNotEqual(NewValuesL, EmptyValues)],
 
@@ -111,11 +114,15 @@ empty_set_test({_TotalCount, EmptyValues, Index, Value}) ->
 	NewValueL = object_values:get_uint32_value(Index, NewValuesL),
 	TestGetLong = [?_assertEqual(NewValueL, Value)],
 
+	NewValueLInt = object_values:get_int32_value(Index, NewValuesLInt),
+	TestGetLongInt = [?_assertEqual(-1, NewValueLInt)],
+
 	NewValueQ = object_values:get_uint64_value(Index, NewValuesQ),
 	TestGetQuad = [?_assertEqual(NewValueQ, Value)],
 
-	TestSetByte ++ TestSetWord ++ TestSetLong ++ TestSetQuad ++ 
-		TestGetByte ++ TestGetWord ++ TestGetLong ++ TestGetQuad.
+	TestSetByte ++ TestSetWord ++ TestSetLong ++ TestSetQuad ++
+		TestGetByte ++ TestGetWord ++ TestGetLong ++ TestGetQuad ++
+		TestSetLongInt ++ TestGetLongInt.
 
 
 
@@ -147,6 +154,7 @@ overflow_value_test({_TotalCount, EmptyValues, Index, _Value}) ->
 		?_assertThrow(badarg, object_values:set_uint16_value(Index, BadWordValue1, EmptyValues, 1)),
 		?_assertThrow(badarg, object_values:set_uint16_value(Index, BadWordValue2, EmptyValues, 1)),
 
+		?_assertThrow(badarg, object_values:set_int32_value(Index, BadLongValue1, EmptyValues)),
 		?_assertThrow(badarg, object_values:set_uint32_value(Index, BadLongValue1, EmptyValues)),
 		?_assertThrow(badarg, object_values:set_uint32_value(Index, BadLongValue2, EmptyValues)),
 		?_assertThrow(badarg, object_values:set_uint64_value(Index, BadQuadValue1, EmptyValues)),

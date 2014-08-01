@@ -8,6 +8,16 @@
 -export([set_contained/2, set_owner/2]).
 -export([set_stack_count/2]).
 
+-export([create/3]).
+
+
+-include("include/types.hrl").
+-include("include/binary.hrl").
+-include("include/shared_defines.hrl").
+-include("include/items.hrl").
+-include("include/database_records.hrl").
+
+
 % gets
 
 get_guid(Values) ->
@@ -42,3 +52,47 @@ set_item_id(Value, Values) ->
 
 set_owner(Value, Values) ->
 	object_values:set_uint64_value('ITEM_FIELD_OWNER', Value, Values).
+
+
+
+% create values
+
+create(ItemGuid, ItemId, OwnerGuid) ->
+	ObjectType = ?typemask_item bor ?typemask_object,
+	Scale = ?default_scale,
+
+	ItemProto = content:lookup_item(ItemId),
+	ItemMaxDurability = ItemProto#item_proto.max_durability,
+	ItemClass = ItemProto#item_proto.class,
+
+	StackCount = if ItemClass == ?item_class_consumable -> ?default_item_stack_size;
+		true -> 1
+	end,
+
+	Charges = -1,
+
+	KeyValues = [
+		{'OBJECT_FIELD_GUID', ItemGuid, uint64},
+		{'OBJECT_FIELD_TYPE', ObjectType, uint32},
+    {'OBJECT_FIELD_SCALE_X', Scale, float},
+    {'OBJECT_FIELD_ENTRY', ItemId, uint32},
+
+    {'ITEM_FIELD_SPELL_CHARGES', Charges, int32},
+    {'ITEM_FIELD_SPELL_CHARGES_01', Charges, int32},
+    {'ITEM_FIELD_SPELL_CHARGES_02', Charges, int32},
+    {'ITEM_FIELD_SPELL_CHARGES_03', Charges, int32},
+    {'ITEM_FIELD_SPELL_CHARGES_04', Charges, int32},
+    {'ITEM_FIELD_OWNER', OwnerGuid, uint64},
+    {'ITEM_FIELD_CONTAINED', ItemGuid, uint64},
+    {'ITEM_FIELD_STACK_COUNT', StackCount, uint32},
+    {'ITEM_FIELD_MAXDURABILITY', ItemMaxDurability, uint32},
+    {'ITEM_FIELD_DURABILITY', ItemMaxDurability, uint32}
+	],
+
+	EmptyValues = get_empty_values(),
+	lists:foldl(fun object_values:set_key_values/2, EmptyValues, KeyValues).
+
+
+get_empty_values() ->
+	TotalCount = update_fields:get_total_count(item),
+	binary:copy(<<0?L>>, TotalCount).

@@ -3,12 +3,14 @@
 -export([get_byte_value/3,
 				get_uint16_value/3,
 				get_uint32_value/2,
+				get_int32_value/2,
 				get_uint64_value/2,
 				get_float_value/2,
 				get_value/2]).
 -export([set_byte_value/4,
 				set_uint16_value/4,
 				set_uint32_value/3,
+				set_int32_value/3,
 				set_uint64_value/3,
 				set_float_value/4]).
 -export([set_key_values/2]).
@@ -20,6 +22,8 @@
 set_key_values({IndexName, Value, Type}, Values) ->
 	%io:format("indexname: ~p~nvalue: ~p~n", [IndexName, Value]),
 	case Type of
+		int32 ->
+			set_int32_value(IndexName, Value, Values);
 		uint32 ->
 			set_uint32_value(IndexName, Value, Values);
 		uint64 ->
@@ -47,6 +51,9 @@ get_byte_value(IndexName, Values, Offset) ->
 get_uint16_value(IndexName, Values, Offset) ->
 	get_value(IndexName, Values, 2, Offset).
 
+get_int32_value(IndexName, Values) ->
+	get_value(IndexName, Values, 4, 0, int).
+
 get_uint32_value(IndexName, Values) ->
 	get_value(IndexName, Values, 4, 0).
 
@@ -56,6 +63,7 @@ get_uint64_value(IndexName, Values) ->
 get_float_value(IndexName, Values) ->
 	get_value(IndexName, Values, float).
 
+
 get_value(IndexName, Values, float) ->
 	% each Index is a 4 byte long word
 	Index = update_fields:fields(IndexName) * 4,
@@ -64,15 +72,23 @@ get_value(IndexName, Values, float) ->
 
 get_value(Index, Values) ->
 	get_uint32_value(Index, Values).
-get_value(IndexName, Values, Size, Offset) when is_atom(IndexName) ->
+
+get_value(IndexName, Values, Size, Offset) ->
+	get_value(IndexName, Values, Size, Offset, uint).
+get_value(IndexName, Values, Size, Offset, Type) when is_atom(IndexName) ->
 	Index = update_fields:fields(IndexName),
-	get_value(Index, Values, Size, Offset);
-get_value(IndexIn, Values, Size, Offset) ->
+	get_value(Index, Values, Size, Offset, Type);
+get_value(IndexIn, Values, Size, Offset, Type) ->
 	% each Index is a 4 byte long word
 	Index = (IndexIn * 4) + Offset,
 	BitSize = Size*8,
-	<<_Head:Index/binary, Value:BitSize/unsigned-little-integer, _Tail/binary>> = Values,
-	Value.
+	if Type == int ->
+			<<_Head:Index/binary, Value:BitSize/signed-little-integer, _Tail/binary>> = Values,
+			Value;
+		Type == uint ->
+			<<_Head:Index/binary, Value:BitSize/unsigned-little-integer, _Tail/binary>> = Values,
+			Value
+	end.
 
 
 set_byte_value(IndexName, Value, Values, Offset) ->
@@ -92,6 +108,12 @@ set_uint16_value(IndexName, Value, Values, Offset) ->
 		true -> ok
 	end,
 	set_value(IndexName, Value, Values, 2, Offset).
+
+set_int32_value(IndexName, Value, Values) ->
+	if Value > 16#FFFFFFFF -> throw(badarg);
+		true -> ok
+	end,
+	set_value(IndexName, Value, Values, 4, 0, int).
 
 set_uint32_value(IndexName, Value, Values) ->
 	if Value > 16#FFFFFFFF orelse Value < 0 -> throw(badarg);
@@ -119,12 +141,19 @@ set_value(IndexName, Value, Values, float, Offset) ->
 	Index = (update_fields:fields(IndexName) + Offset) * 4,
 	<<Head:Index/binary, _OldValue:4/binary, Tail/binary>> = Values,
 	<<Head:Index/binary, Value?f, Tail/binary>>;
-set_value(IndexName, Value, Values, Size, Offset) when is_atom(IndexName) ->
-	Index = update_fields:fields(IndexName),
-	set_value(Index, Value, Values, Size, Offset);
 set_value(IndexIn, Value, Values, Size, Offset) ->
+	set_value(IndexIn, Value, Values, Size, Offset, uint).
+
+set_value(IndexName, Value, Values, Size, Offset, Type) when is_atom(IndexName) ->
+	Index = update_fields:fields(IndexName),
+	set_value(Index, Value, Values, Size, Offset, Type);
+set_value(IndexIn, Value, Values, Size, Offset, Type) ->
 	% each Index is a 4 byte long word
 	Index =  4 * IndexIn + Offset,
 	BitSize = Size * 8,
 	<<Head:Index/binary, _OldValue:Size/binary, Tail/binary>> = Values,
-	<<Head:Index/binary, Value:BitSize/unsigned-little-integer, Tail/binary>>.
+	if Type == int ->
+			<<Head:Index/binary, Value:BitSize/signed-little-integer, Tail/binary>>;
+		Type == uint ->
+			<<Head:Index/binary, Value:BitSize/unsigned-little-integer, Tail/binary>>
+	end.

@@ -2,6 +2,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include("include/binary.hrl").
+-include("include/types.hrl").
 
 
 
@@ -12,12 +13,15 @@
 
 object_values_test_() ->
 	[{"get set test",
-	 {setup, fun init/0, fun stop/1, fun get_set_test/1}},
+	 {setup, fun init_values/0, fun stop/1, fun get_set_test/1}},
 
 	{"underflow value test",
 	 {setup, fun init_underflow/0, fun stop/1, fun throw_test/1}},
 	{"overflow value test",
-	 {setup, fun init_overflow/0, fun stop/1, fun throw_test/1}}
+	 {setup, fun init_overflow/0, fun stop/1, fun throw_test/1}},
+
+	{"create values test",
+	 {setup, fun init_create/0, fun stop/1, fun create_test/1}}
 	].
 
 
@@ -30,7 +34,14 @@ object_values_test_() ->
 
 
 
-init() ->
+init_create() ->
+	ItemGuid = 100,
+	ItemId = 25, % worn shortsword
+	OwnerGuid = 50,
+	Guid = ItemGuid bor (0 bsl 24) bor (?highguid_item bsl 48),
+	{Guid, ItemId, OwnerGuid}.
+
+init_values() ->
 	Values = get_empty_values(),
 	Value32 = 16#1010BABA,
 	Value64 = 16#EFEF5678ACAC1234,
@@ -60,6 +71,30 @@ stop(_SetupData) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Actual Tests %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+create_test({ItemGuid, ItemId, OwnerGuid}) ->
+	Values = item_values:create(ItemGuid, ItemId, OwnerGuid),
+
+	GetGuid = item_values:get_guid(Values),
+
+	GetItemId = item_values:get_item_id(Values),
+
+	GetStackCount = item_values:get_stack_count(Values),
+
+	GetOwner = item_values:get_owner(Values),
+
+	GetContained = item_values:get_contained(Values),
+
+	[
+		?_assertEqual(ItemGuid, GetGuid),
+		?_assertEqual(ItemId, GetItemId),
+		?_assertEqual(1, GetStackCount),
+		?_assertEqual(OwnerGuid, GetOwner),
+		?_assertEqual(ItemGuid, GetContained)
+	].
+
+
+
 
 get_set_test({Values, Value32, Value64, Funs}) ->
 
