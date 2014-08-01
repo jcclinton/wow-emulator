@@ -34,19 +34,22 @@ init() ->
 	Values = get_empty_values(),
 	Value32 = 16#1010BABA,
 	Value64 = 16#EFEF5678ACAC1234,
-	{Values, Value32, Value64}.
+	Funs = get_funs(),
+	{Values, Value32, Value64, Funs}.
 
 init_overflow() ->
 	Values = get_empty_values(),
 	Value32 = 16#FFFFFFFF + 1,
 	Value64 = 16#FFFFFFFFFFFFFFFF + 1,
-	{Values, Value32, Value64}.
+	Funs = get_funs(),
+	{Values, Value32, Value64, Funs}.
 
 init_underflow() ->
 	Values = get_empty_values(),
 	Value32 = -1,
 	Value64 = -1,
-	{Values, Value32, Value64}.
+	Funs = get_funs(),
+	{Values, Value32, Value64, Funs}.
 
 
 stop(_SetupData) ->
@@ -58,49 +61,60 @@ stop(_SetupData) ->
 %%% Actual Tests %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-get_set_test({Values, Value32, Value64}) ->
+get_set_test({Values, Value32, Value64, Funs}) ->
 
 	% test that any values are getting changed
-	Guid = Value64,
-	ItemId = Value32,
-	Owner = Value64 + 1,
-	Contained = Value64 + 2,
 
-	NewValues1 = item_values:set_guid(Guid, Values),
-	NewValues2 = item_values:set_item_id(ItemId, NewValues1),
-	NewValues3 = item_values:set_owner(Owner, NewValues2),
-	NewValues = item_values:set_contained(Contained, NewValues3),
+	SetFuns = proplists:get_value(sets, Funs),
+	SetFuns32 = proplists:get_value(32, SetFuns),
+	SetFuns64 = proplists:get_value(64, SetFuns),
 
-	TestSetNotEq = [
-		?_assertNotEqual(Values, NewValues1),
-		?_assertNotEqual(NewValues1, NewValues2),
-		?_assertNotEqual(NewValues2, NewValues3),
-		?_assertNotEqual(NewValues3, NewValues)
-	],
+	GetFuns = proplists:get_value(gets, Funs),
+	GetFuns32 = proplists:get_value(32, GetFuns),
+	GetFuns64 = proplists:get_value(64, GetFuns),
 
-	ValueGuid = item_values:get_guid(NewValues),
-	ValueItemId = item_values:get_item_id(NewValues),
-	ValueOwner = item_values:get_owner(NewValues),
-	ValueContained = item_values:get_contained(NewValues),
+	%sets
+	{T1, NewValues1, Count1} = lists:foldl(fun(SetFun, {TestAcc, ValuesAcc, Count}) ->
+		NewValuesInner = item_values:SetFun(Value64+Count, ValuesAcc),
+		TestAccOut = [ ?_assertNotEqual(ValuesAcc, NewValuesInner) | TestAcc],
+		{TestAccOut, NewValuesInner, Count+1}
+	end, {[], Values, 0}, SetFuns64),
 
-	TestSetEq = [
-		?_assertEqual(Guid, ValueGuid),
-		?_assertEqual(ItemId, ValueItemId),
-		?_assertEqual(Owner, ValueOwner),
-		?_assertEqual(Contained, ValueContained)
-	],
+	{T2, NewValues, _} = lists:foldl(fun(SetFun, {TestAcc, ValuesAcc, Count}) ->
+		NewValuesInner = item_values:SetFun(Value32+Count, ValuesAcc),
+		TestAccOut = [ ?_assertNotEqual(ValuesAcc, NewValuesInner) | TestAcc],
+		{TestAccOut, NewValuesInner, Count+1}
+	end, {T1, NewValues1, Count1}, SetFuns32),
 
-	TestSetNotEq ++ TestSetEq.
+	%gets
+	{T3, Count2} = lists:foldl(fun(GetFun, {TestAcc, Count}) ->
+		Value = item_values:GetFun(NewValues),
+		TestAccOut = [ ?_assertEqual(Value64+Count, Value) | TestAcc],
+		{TestAccOut, Count+1}
+	end, {T2, 0}, GetFuns64),
+
+	{T4, _} = lists:foldl(fun(GetFun, {TestAcc, Count}) ->
+		Value = item_values:GetFun(NewValues),
+		TestAccOut = [ ?_assertEqual(Value32+Count, Value) | TestAcc],
+		{TestAccOut, Count+1}
+	end, {T3, Count2}, GetFuns32),
+
+	T4.
 
 
 
-throw_test({Values, Value32, Value64}) ->
-	[
-		?_assertThrow(badarg, item_values:set_guid(Value64, Values)),
-		?_assertThrow(badarg, item_values:set_item_id(Value32, Values)),
-		?_assertThrow(badarg, item_values:set_owner(Value64, Values)),
-		?_assertThrow(badarg, item_values:set_contained(Value64, Values))
-	].
+throw_test({Values, Value32, Value64, Funs}) ->
+	SetFuns = proplists:get_value(sets, Funs),
+	SetFuns32 = proplists:get_value(32, SetFuns),
+	SetFuns64 = proplists:get_value(64, SetFuns),
+
+	T1 = lists:foldl(fun(SetFun, Acc) ->
+		[?_assertThrow(badarg, item_values:SetFun(Value64, Values) ) | Acc]
+	end, [], SetFuns64),
+
+	lists:foldl(fun(SetFun, Acc) ->
+		[?_assertThrow(badarg, item_values:SetFun(Value32, Values) ) | Acc]
+	end, T1, SetFuns32).
 
 
 %%%%%%%%%%%%
@@ -108,3 +122,27 @@ throw_test({Values, Value32, Value64}) ->
 get_empty_values() ->
 	TotalCount = update_fields:fields('ITEM_END'),
 	binary:copy(<<0?L>>, TotalCount).
+
+% put all gets and sets here
+% gets have to be in the same order as the sets
+get_funs() ->
+	[
+		{sets,
+			[
+				{32,
+					[set_item_id, set_stack_count]},
+				{64,
+					[set_guid, set_owner, set_contained]
+				}
+			]
+		},
+		{gets,
+			[
+				{32,
+					[get_item_id, get_stack_count]},
+				{64,
+					[get_guid, get_owner, get_contained]
+				}
+			]
+		}
+	].
