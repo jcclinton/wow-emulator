@@ -23,7 +23,7 @@ start_link(AccountId) ->
 
 init([]) ->
 	Name = player_worker,
-	{ok, {{simple_one_for_one, 3, 5},
+	{ok, {{simple_one_for_one, 0, 1},
 				[{Name,
 					{Name, start_link, []},
 					transient, 2000, worker, [Name]}
