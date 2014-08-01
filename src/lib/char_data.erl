@@ -197,7 +197,7 @@ equip_starting_items(Guid) ->
 	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
 	lists:foreach(fun(ItemId) ->
 		SlotValues = get_slot_values(Guid),
-		ok = item:equip_new(ItemId, SlotValues, Guid, false)
+		ok = item:equip_new(ItemId, SlotValues, Guid)
 	end, StartingItemIds).
 
 

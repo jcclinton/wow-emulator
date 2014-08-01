@@ -1,7 +1,7 @@
 -module(item).
 
 -export([swap/3]).
--export([equip_new/3, equip_new/4, equip/5, equip/6]).
+-export([equip_new/3, equip_out_of_game/5]).
 -export([init_char_slot_values/0]).
 -export([get_item_guids/1, get_equipped_item_guids/1]).
 -export([slot_empty/2, get_item_guid_at_slot/2]).
@@ -157,6 +157,8 @@ can_swap(SrcSlot, DestSlot, Guid) ->
 
 
 
+% internal function to swap slots
+% does not handle inventory checking
 swap_slots(SrcSlot, DestSlot, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
@@ -258,11 +260,14 @@ get_item_guid_at_slot(Slot, Guid) ->
 
 
 
+% get just equipped item guids
 get_equipped_item_guids(Guid) ->
 	ItemGuids = get_item_guids(Guid),
 	{Guids, _} = lists:split(?equipment_slot_end, ItemGuids),
 	Guids.
 
+% returns guids for all items in inventory
+% this includes equipped and in bags
 get_item_guids(Guid) ->
 	SlotValues = char_data:get_slot_values(Guid),
 	Guids = extract_slot_values_guids(SlotValues),
@@ -281,6 +286,10 @@ init_char_slot_values() ->
 	binary:copy(<<0?Q>>, ?player_slots_count).
 
 
+
+
+
+
 equip_item_at_slot(Slot, ItemGuid, OwnerGuid, MarkUpdate) ->
 	SlotValues = char_data:get_slot_values(OwnerGuid),
 	Offset = Slot * 8,
@@ -292,12 +301,10 @@ equip_item_at_slot(Slot, ItemGuid, OwnerGuid, MarkUpdate) ->
 
 
 equip_new(ItemId, CharSlotValues, OwnerGuid) ->
-	equip_new(ItemId, CharSlotValues, OwnerGuid, true).
-equip_new(ItemId, CharSlotValues, OwnerGuid, MarkUpdate) ->
 	ItemGuid = world:get_guid(?highguid_item, 0),
 	ItemValues = item_values:create(ItemGuid, ItemId, OwnerGuid),
 	item_data:store_values(ItemValues),
-	equip(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false, MarkUpdate).
+	equip_out_of_game(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false).
 
 
 equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
@@ -320,9 +327,9 @@ equip(ItemGuid, DestSlot, OwnerGuid) ->
 	equip_slot(ItemGuid, DestSlot, OwnerGuid),
 	update_data:build_create_update_packet_for_items([ItemGuid]).
 
-equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
-	equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, true).
-equip(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap, MarkUpdate) ->
+% need to do everything manually because this is done out of game when a char is created
+equip_out_of_game(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
+	MarkUpdate = false,
 	ItemProto = content:lookup_item(ItemId),
 	Class = ItemProto#item_proto.class,
 	if Class == ?item_class_weapon orelse Class == ?item_class_armor ->
@@ -370,6 +377,7 @@ get_first_empty_inv_slot(Values, Slot) ->
 		SlotValue > 0 ->
 			get_first_empty_inv_slot(Values, Slot + 1)
 	end.
+
 
 visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
 	Values = char_data:get_values(OwnerGuid),
