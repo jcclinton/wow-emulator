@@ -15,9 +15,9 @@ object_values_test_() ->
 	 {setup, fun init/0, fun stop/1, fun get_set_test/1}},
 
 	{"underflow value test",
-	 {setup, fun init_underflow/0, fun stop/1, fun overflow_value_test/1}},
+	 {setup, fun init_underflow/0, fun stop/1, fun throw_test/1}},
 	{"overflow value test",
-	 {setup, fun init_overflow/0, fun stop/1, fun overflow_value_test/1}}
+	 {setup, fun init_overflow/0, fun stop/1, fun throw_test/1}}
 	].
 
 
@@ -61,11 +61,15 @@ stop(_SetupData) ->
 get_set_test({Values, Value32, Value64}) ->
 
 	% test that any values are getting changed
+	Guid = Value64,
+	ItemId = Value32,
+	Owner = Value64 + 1,
+	Contained = Value64 + 2,
 
-	NewValues1 = item_values:set_guid(Value64, Values),
-	NewValues2 = item_values:set_item_id(Value32, NewValues1),
-	NewValues3 = item_values:set_owner(Value64, NewValues2),
-	NewValues = item_values:set_contained(Value64, NewValues3),
+	NewValues1 = item_values:set_guid(Guid, Values),
+	NewValues2 = item_values:set_item_id(ItemId, NewValues1),
+	NewValues3 = item_values:set_owner(Owner, NewValues2),
+	NewValues = item_values:set_contained(Contained, NewValues3),
 
 	TestSetNotEq = [
 		?_assertNotEqual(Values, NewValues1),
@@ -80,17 +84,17 @@ get_set_test({Values, Value32, Value64}) ->
 	ValueContained = item_values:get_contained(NewValues),
 
 	TestSetEq = [
-		?_assertEqual(Value64, ValueGuid),
-		?_assertEqual(Value32, ValueItemId),
-		?_assertEqual(Value64, ValueOwner),
-		?_assertEqual(Value64, ValueContained)
+		?_assertEqual(Guid, ValueGuid),
+		?_assertEqual(ItemId, ValueItemId),
+		?_assertEqual(Owner, ValueOwner),
+		?_assertEqual(Contained, ValueContained)
 	],
 
 	TestSetNotEq ++ TestSetEq.
 
 
 
-overflow_value_test({Values, Value32, Value64}) ->
+throw_test({Values, Value32, Value64}) ->
 	[
 		?_assertThrow(badarg, item_values:set_guid(Value64, Values)),
 		?_assertThrow(badarg, item_values:set_item_id(Value32, Values)),
