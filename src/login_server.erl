@@ -18,6 +18,7 @@
 -compile([export_all]).
 
 
+-include("include/auth.hrl").
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
 
@@ -61,8 +62,15 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
 	Account = account:lookup(Username),
+	io:format("looking up ~p~n", [Username]),
 	NewState = if Account == false ->
-			%% todo send error response
+			Cmd = ?cmd_auth_logon_challenge,
+			Err = ?wow_fail_unknown_account,
+
+			MsgOut = [<<Cmd?B>>,
+				_Unk2 = <<0?B>>,
+				<<Err?B>>],
+			gen_tcp:send(Socket, MsgOut),
 			State;
 		true ->
 			Verifier = Account#account.verifier,
@@ -125,6 +133,12 @@ terminate(_Reason, State) ->
 	ok.
 
 
+
+
+
+
+
+
 %% private
 
 build_challenge_response(ServerPublic, G, N, Salt) ->
@@ -145,10 +159,12 @@ build_challenge_response(ServerPublic, G, N, Salt) ->
 	%SaltLittle = <<SaltNum?QQ>>,
 	%% salt is already little endian
 	SaltLittle = Salt,
+	Cmd = ?cmd_auth_logon_challenge,
+	Err = ?wow_success,
 
-	[_Cmd = <<0?B>>,
-		_Err = <<0?B>>,
+	[<<Cmd?B>>,
 		_Unk2 = <<0?B>>,
+		<<Err?B>>,
 		ServerPubLittle,
 		<<GLen?B>>,
 		G,
@@ -165,22 +181,24 @@ build_proof_response(Username, Prime, Generator, Salt, ClientM1, ClientPublic, S
 
 	ServerM1 = srp:getM1(Prime, Generator, Username, Salt, ClientPublic, ServerPublic, Key),
 	%io:format("m1 server: ~p~n~nm1 client: ~p~n~n", [ServerM1, ClientM1]),
-	if ClientM1 == ServerM1 -> ok;
-		true -> io:format("CLIENTM1 and SERVERM1 do not match!~n")
-	end,
-	M2 = srp:getM2(ClientPublic, ServerM1, Key),
-	<<M2Num?SHB>> = M2,
-	M2Little = <<M2Num?SH>>,
-	%io:format("m2: ~p~n~n", [M2]),
-
-	Msg = [_Cmd = <<1?B>>,
-				 _Err = <<0?B>>,
-				 M2Little,
-				 _Flags = <<0?B>>,
+	Cmd = ?cmd_auth_logon_proof,
+	if ClientM1 == ServerM1 ->
+			M2B = srp:getM2(ClientPublic, ServerM1, Key),
+			M2L = srp:b_to_l_endian(M2B, 160),
+			Err = ?wow_success,
+			Flags = 0,
+			[<<Cmd?B>>,
+				 <<Err?B>>,
+				 M2L,
+				 <<Flags?B>>,
 				 <<0?B>>,
 				 <<0?B>>,
-				 <<0?B>>],
-	Msg.
+				 <<0?B>>];
+		true ->
+			io:format("CLIENTM1 and SERVERM1 do not match!~n"),
+			Err = ?wow_fail_incorrect_password,
+			[<<Cmd?B>>, <<Err?B>>]
+	end.
 
 
 build_realmlist_response() ->
