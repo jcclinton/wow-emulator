@@ -1,6 +1,6 @@
 -module(srp).
--export([normalize/1, getGenerator/0, getPrime/0, generatePrivate/0, getServerPublic/4, computeServerKey/5, interleaveHash/1, b_to_l_endian/2, l_to_b_endian/2, getM1/7, getM2/3]).
--export([getVerifier/3, getDerivedKey/3, getClientPublic/3, computeClientKey/6 ]).
+-export([normalize/1, getGenerator/0, getPrime/0, generatePrivate/0, computeServerKey/5, interleaveHash/1, b_to_l_endian/2, l_to_b_endian/2, getM1/7, getM2/3]).
+-export([getVerifier/3, getDerivedKey/3, getClientPublicPrivate/2, computeClientKey/6 ]).
 -export([getServerPublicPrivate/3]).
 
 -export([test/0]).
@@ -12,8 +12,6 @@
 
 
 test() ->
-	ClientPrivate = generatePrivate(),
-
 	Prime = getPrime(),
 	Generator = getGenerator(),
 
@@ -25,7 +23,7 @@ test() ->
 	DerivedKey = getDerivedKey(UBin, PwBin, Salt),
 	Verifier = getVerifier(Generator, Prime, DerivedKey),
 
-	ClientPublic = getClientPublic(Generator, Prime, ClientPrivate),
+	{ClientPublic, ClientPrivate} = getClientPublicPrivate(Generator, Prime),
 	{ServerPublic, ServerPrivate} = getServerPublicPrivate(Generator, Prime, Verifier),
 
 	ServerKey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier),
@@ -96,10 +94,16 @@ getScrambler(ClientPublic, ServerPublic) ->
 
 
 %% client public key
-getClientPublic(Generator, Prime, ClientPrivate) ->
+getClientPublicPrivate(Generator, Prime) ->
 	Version = getVersion(),
-																																															{Pub, ClientPrivate} = crypto:generate_key(srp, {user, [Generator, Prime, Version]}, ClientPrivate),
-	Pub.
+	{Pub, Priv} = crypto:generate_key(srp, {user, [Generator, Prime, Version]}),
+	Size = byte_size(Pub),
+	Bytes = getBytes(),
+	%sometimes server pub comes up less than required size and needs to be regenerated
+	if Bytes /= Size ->
+			getClientPublicPrivate(Generator, Prime);
+		Bytes == Size -> {Pub, Priv}
+	end.
 
 %generates a public private key pair
 getServerPublicPrivate(Generator, Prime, Verifier) ->
@@ -112,14 +116,6 @@ getServerPublicPrivate(Generator, Prime, Verifier) ->
 			getServerPublicPrivate(Generator, Prime, Verifier);
 		Bytes == Size -> {Pub, ServerPrivate}
 	end.
-
-%% server public key
-% not used anymore because occasionaly it generates an invalid key
-getServerPublic(Generator, Prime, ServerPrivate, Verifier) ->
-	Version = getVersion(),
-	{Pub, ServerPrivate} = crypto:generate_key(srp, {host, [Verifier, Generator, Prime, Version]}, ServerPrivate),
-	Pub.
-
 
 
 %% client session key
