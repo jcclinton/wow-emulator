@@ -91,15 +91,27 @@ swap(SrcSlot, DestSlot, Guid) ->
 	end.
 
 can_split(SrcSlot, DestSlot, Count, Guid) ->
-	true.
+	DestIsValidSlot = is_valid_slot(DestSlot),
+	DestEmpty = slot_empty(DestSlot, Guid),
+	DestIsInvSlot = is_inv_slot(DestSlot),
+
+	ValidSlot = (SrcSlot /= DestSlot) and DestIsValidSlot and DestEmpty and DestIsInvSlot,
+
+	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+	SrcItemValues = item_data:get_values(SrcItemGuid),
+	SrcItemProto = item_data:get_item_proto(SrcItemGuid),
+	SrcStackCount = item_values:get_stack_count(SrcItemValues),
+	NewStackCount = SrcStackCount - Count,
+
+	ValidStack = (SrcItemProto#item_proto.stackable > 1) and (NewStackCount > 0) and (Count > 0),
+
+	ValidStack and ValidSlot.
+
 
 split(SrcSlot, DestSlot, Count, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
-
 	SrcItemValues = item_data:get_values(SrcItemGuid),
-
 	SrcItemProto = item_data:get_item_proto(SrcItemGuid),
-
 	SrcStackCount = item_values:get_stack_count(SrcItemValues),
 	SrcAmount = SrcStackCount - Count,
 

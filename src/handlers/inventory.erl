@@ -16,7 +16,6 @@ split_item(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
 	<<_SrcBag?B, SrcSlot?B, _DestBag?B, DestSlot?B, Count?B>> = Payload,
-	io:format("split payload ~p~n", [Payload]),
 
 	CanSplit = item:can_split(SrcSlot, DestSlot, Count, Guid),
 
