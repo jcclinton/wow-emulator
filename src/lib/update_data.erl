@@ -70,7 +70,7 @@ build_packet(Blocks, BlockCount) ->
 update_block(Mask, Values) ->
 	Guid = char_values:get(guid, Values),
 	UpdateType = ?updatetype_values,
-	PackedGuid = pack_guid(Guid),
+	PackedGuid = guid:pack(Guid),
 	ValuesCount = (byte_size(Values) div 4) - 1,
 	Blocks = (ValuesCount + 31) div 32,
 	ValuesData = build_values_update(Mask, Values, ValuesCount),
@@ -83,7 +83,7 @@ create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag, Guid) ->
 	UpdateType = if IsSelf -> ?updatetype_create_object2;
 		not IsSelf -> ?updatetype_create_object
 	end,
-	PackedGuid = pack_guid(Guid),
+	PackedGuid = guid:pack(Guid),
 	%Guid = <<7, 41, 179, 24>>,
 %io:format("update binary guid: ~p~n", [Guid]),
 
@@ -111,14 +111,6 @@ build_values_update(MaskBits, Values, Count) ->
 	end, <<>>, lists:seq(0, Count)).
 
 
-
-		% first byte is a mask that tells you the size of the guid
-		% eg for a 3 byte guid,
-		% 7 = (1 << 0) bor (1 << 1) bor (1 << 2)
-		% objects can be a maximum up to 8 bytes
-pack_guid(Guid) ->
-	%<<7?B, Guid?G>>.
-	<<16#FF?B, Guid?Q>>.
 
 
 

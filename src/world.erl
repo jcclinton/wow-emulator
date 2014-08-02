@@ -91,7 +91,7 @@ handle_call({remove_from_map, RemoveGuid}, _From, State = #state{players=Players
 	{reply, ok, State#state{players=NewPlayers}};
 handle_call({new_guid, HighGuid, Entry}, _From, State) ->
 	LowGuid = world_data:increment_guid(),
-	Guid = LowGuid bor (Entry bsl 24) bor (HighGuid bsl 48),
+	Guid = guid:format(HighGuid, Entry, LowGuid),
 	{reply, Guid, State};
 handle_call(_E, _From, State) ->
 	{noreply, State}.

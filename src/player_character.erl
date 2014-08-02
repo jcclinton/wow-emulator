@@ -5,6 +5,7 @@
 	account_id,
 	guid,
 	update_timer,
+	last_swing,
 	timestamp
 }).
 
@@ -16,6 +17,7 @@
 
 -include("include/binary.hrl").
 -include("include/shared_defines.hrl").
+-include("include/attack.hrl").
 
 -define(update_timer_interval, 50).
 
@@ -53,13 +55,34 @@ init({AccountId, Guid}) ->
 	char_data:init_session(Guid),
 
 	{ok, TRef} = timer:apply_interval(?update_timer_interval, ?MODULE, update, [AccountId]),
-	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now()}}.
+	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now(), last_swing=0}}.
 
 
-handle_cast(update, State = #state{guid=Guid, timestamp=Ts}) ->
+handle_cast(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing}) ->
 	CurrentTs = now(),
 	% now_diff returns diff in microseconds
-	_MilliDiff = timer:now_diff(CurrentTs, Ts) div 1000,
+	Diff = timer:now_diff(CurrentTs, Ts) div 1000,
+
+	NextLastSwing = if LastSwing > 2000 ->
+			AttackOpAtom = smsg_attackerstateupdate,
+
+			HitInfo = ?hitinfo_normalswing,
+			PackGuid = guid:pack(Guid),
+			TargetGuid = 1046,
+			TargetPackGuid = guid:pack(TargetGuid),
+			Damage = 5,
+			DamageSchoolMask = 0,
+			Absorb = 0,
+			Resist = 0,
+			TargetState = ?victimstate_normal,
+			Blocked = 0,
+
+			Payload = <<HitInfo?L, PackGuid/binary, TargetPackGuid/binary, Damage?L, 1?B, DamageSchoolMask?L, Damage?f, Damage?L, Absorb?L, Resist?L, TargetState?L, 0?L, 0?L, Blocked?L>>,
+			world:send_to_all(AttackOpAtom, Payload),
+			0;
+		true ->
+			Diff + LastSwing
+	end,
 
 
 	Mask = char_data:get_mask(Guid),
@@ -73,7 +96,7 @@ handle_cast(update, State = #state{guid=Guid, timestamp=Ts}) ->
 		true -> ok
 	end,
 
-	{noreply, State#state{timestamp=CurrentTs}};
+	{noreply, State#state{timestamp=CurrentTs, last_swing=NextLastSwing}};
 handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
 	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}],
 	player_workers_sup:start_worker({Callback, Args}, AccountId),
