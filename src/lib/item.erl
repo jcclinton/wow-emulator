@@ -90,6 +90,33 @@ swap(SrcSlot, DestSlot, Guid) ->
 
 	end.
 
+can_split(SrcSlot, DestSlot, Count, Guid) ->
+	true.
+
+split(SrcSlot, DestSlot, Count, Guid) ->
+	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+
+	SrcItemValues = item_data:get_values(SrcItemGuid),
+
+	SrcItemProto = item_data:get_item_proto(SrcItemGuid),
+
+	SrcStackCount = item_values:get_stack_count(SrcItemValues),
+	SrcAmount = SrcStackCount - Count,
+
+	%create new dest item
+	DestItemGuid = world:get_guid(?highguid_item, 0),
+	ItemId = SrcItemProto#item_proto.id,
+	DestItemValues = item_values:create(DestItemGuid, ItemId, Guid),
+	NewDestItemValues = item_values:set_stack_count(Count, DestItemValues),
+	item_data:store_values(NewDestItemValues),
+	% add to users items
+	equip_slot(DestItemGuid, DestSlot, Guid),
+
+	NewSrcItemValues = item_values:set_stack_count(SrcAmount, SrcItemValues),
+	item_data:store_values(NewSrcItemValues),
+
+	update_data:build_create_update_packet_for_items([SrcItemGuid, DestItemGuid]).
+
 
 can_merge(SrcSlot, DestSlot, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
