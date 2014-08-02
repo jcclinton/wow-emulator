@@ -2,6 +2,7 @@
 -export([request_raid_info/1, name_query/1, cancel_trade/1, gmticket_getticket/1]).
 -export([query_next_mail_time/1, battlefield_status/1, meetingstone_info/1, zone_update/1]).
 -export([tutorial_flag/1, far_sight/1, set_selection/1, area_trigger/1]).
+-export([set_sheathed/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -78,3 +79,12 @@ name_query(Data) ->
 	Class = char_values:get(class, Guid),
 	Payload = <<Guid?Q, Name/binary, Null/binary, Race?L, Gender?L, Class?L>>,
 	{smsg_name_query_response, Payload}.
+
+set_sheathed(Data) ->
+	<<Value?L>> = recv_data:get(payload, Data),
+	Guid = recv_data:get(guid, Data),
+	Values = char_data:get_values(Guid),
+	NewValues = char_values:set_sheathed(Value, Values),
+	char_data:update_values(Guid, NewValues),
+
+	ok.

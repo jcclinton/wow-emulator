@@ -43,6 +43,8 @@ get_callback_by_num(cmsg_set_selection) ->
 	#callback{type=character, module=char_misc, function=set_selection};
 get_callback_by_num(cmsg_areatrigger) ->
 	#callback{type=character, module=char_misc, function=area_trigger};
+get_callback_by_num(cmsg_setsheathed) ->
+	#callback{type=character, module=char_misc, function=set_sheathed};
 
 get_callback_by_num(cmsg_messagechat) ->
 	#callback{type=character, module=chat, function=message_chat};
@@ -102,9 +104,6 @@ get_callback_by_num(cmsg_set_active_mover) ->
 	#callback{type=character, module=movement, function=set_active_mover};
 get_callback_by_num(cmsg_move_time_skipped) ->
 	#callback{type=character, module=movement, function=move_time_skipped};
-
-get_callback_by_num(cmsg_setsheathed) ->
-	#callback{type=character, module=combat, function=set_sheathed};
 
 get_callback_by_num(cmsg_cast_spell) ->
 	#callback{type=character, module=spell, function=cast};
