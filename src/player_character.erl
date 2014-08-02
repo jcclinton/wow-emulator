@@ -4,7 +4,8 @@
 -record(state, {
 	account_id,
 	guid,
-	update_timer
+	update_timer,
+	timestamp
 }).
 
 
@@ -52,10 +53,15 @@ init({AccountId, Guid}) ->
 	char_data:init_session(Guid),
 
 	{ok, TRef} = timer:apply_interval(?update_timer_interval, ?MODULE, update, [AccountId]),
-	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef}}.
+	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now()}}.
 
 
-handle_cast(update, State = #state{guid=Guid}) ->
+handle_cast(update, State = #state{guid=Guid, timestamp=Ts}) ->
+	CurrentTs = now(),
+	% now_diff returns diff in microseconds
+	_MilliDiff = timer:now_diff(CurrentTs, Ts) div 1000,
+
+
 	Mask = char_data:get_mask(Guid),
 	IsEmpty = update_mask:is_empty(Mask),
 	if not IsEmpty ->
@@ -66,7 +72,8 @@ handle_cast(update, State = #state{guid=Guid}) ->
 			ok;
 		true -> ok
 	end,
-	{noreply, State};
+
+	{noreply, State#state{timestamp=CurrentTs}};
 handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
 	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}, {guid, Guid}],
 	player_workers_sup:start_worker({Callback, Args}, AccountId),
