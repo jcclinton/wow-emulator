@@ -5,6 +5,7 @@
 -export([item_query_single/1]).
 -export([autoequip_item/1]).
 -export([split_item/1]).
+-export([destroy_item/1]).
 
 
 -include("include/binary.hrl").
@@ -12,6 +13,19 @@
 -include("include/database_records.hrl").
 
 
+% destroy an item at a slot
+destroy_item(Data) ->
+	Guid = recv_data:get(guid, Data),
+	Payload = recv_data:get(payload, Data),
+	<<_SrcBag?B, SrcSlot?B, Count?B, _Data1?B, _Data2?B, _Data3?B>> = Payload,
+	case item:destroy(SrcSlot, Count, Guid) of
+		{error, Error} ->
+			return_error(SrcSlot, 0, Guid, Error);
+		ok -> ok;
+		Msg -> Msg
+	end.
+
+% split an item from one slot to another
 split_item(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
@@ -28,7 +42,7 @@ split_item(Data) ->
 
 
 
-
+% autoequip an item from a slot
 autoequip_item(Data) ->
 	Guid = recv_data:get(guid, Data),
 	<<_SrcBag?B, SrcSlot?B>> = recv_data:get(payload, Data),
@@ -41,18 +55,21 @@ autoequip_item(Data) ->
 	end,
 	swap_internal(SrcSlot, DestSlot, Guid).
 
+% use item at a slot
 use_item(Data) ->
 	_Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
-	<<_BagIndex?B, _Slot?B, _SpellCount?B, Rest/binary>> = Payload,
+	<<_BagIndex?B, _Slot?B, _SpellCount?B, _Rest/binary>> = Payload,
 	io:format("use item: ~p~n", [Payload]),
 	ok.
 
+% return full item prototype for an unknown item
 item_query_single(Data) ->
 	<<ItemId?L, ItemGuid?Q>> = recv_data:get(payload, Data),
 	io:format("query item: ~p~nitem guid: ~p~n", [ItemId, ItemGuid]),
 	ok.
 
+% swap an item from one slot to another
 swap_inv_item(Data) ->
 	<<SrcSlot?B, DestSlot?B>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),

@@ -126,6 +126,8 @@ get_callback_by_num(cmsg_split_item) ->
 	#callback{type=character, module=inventory, function=split_item};
 get_callback_by_num(cmsg_item_query_single) ->
 	#callback{type=character, module=inventory, function=item_query_single};
+get_callback_by_num(cmsg_destroyitem) ->
+	#callback{type=character, module=inventory, function=destroy_item};
 
 get_callback_by_num(cmsg_query_time) ->
 	#callback{type=account, module=server, function=query_time};

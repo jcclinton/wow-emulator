@@ -6,6 +6,7 @@
 -export([get_item_guids/1, get_equipped_item_guids/1]).
 -export([slot_empty/2, get_item_guid_at_slot/2]).
 -export([get_slot/1]).
+-export([destroy/3]).
 
 -compile([export_all]).
 
@@ -17,6 +18,8 @@
 -include("include/shared_defines.hrl").
 
 
+
+%used to add items of itemId to guid's inventory
 test() ->
 	Guid = 1000,
 	ItemId = 44,
@@ -31,6 +34,37 @@ test() ->
 	end, lists:seq(1 ,12)),
 
 	ok.
+
+
+destroy(SrcSlot, Count, Guid) ->
+	SrcEmpty = slot_empty(SrcSlot, Guid),
+	if SrcEmpty ->
+			{error, ?equip_err_item_not_found};
+		Count > 0 ->
+			ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+			ItemValues = item_data:get_values(ItemGuid),
+			ItemProto = item_data:get_item_proto(ItemGuid),
+			if ItemProto#item_proto.stackable > 1 ->
+					StackCount = item_values:get_stack_count(ItemValues),
+					NewStackCount = StackCount - Count,
+					if NewStackCount > 0 ->
+							NewItemValues = item_values:set_stack_count(NewStackCount, ItemValues),
+							item_data:store_values(NewItemValues),
+							update_data:build_create_update_packet_for_items([ItemGuid]);
+						NewStackCount =< 0 ->
+							destroy_at_slot(SrcSlot, Guid)
+					end;
+				ItemProto#item_proto.stackable =< 1 ->
+					destroy_at_slot(SrcSlot, Guid)
+			end;
+		Count == 0 ->
+			destroy_at_slot(SrcSlot, Guid)
+	end.
+
+destroy_at_slot(SrcSlot, Guid) ->
+	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
+	item_data:delete_item(ItemGuid),
+	remove(SrcSlot, Guid).
 
 
 
