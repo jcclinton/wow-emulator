@@ -1,9 +1,12 @@
 % network defines
--define(I, /unsigned-integer).
 -define(IL, /unsigned-little-integer).
 -define(IB, /unsigned-big-integer).
--define(b, /bytes).
 -define(f, :32/float-little).
+
+-define(K, :1024?IL).
+-define(KB, :1024?IB).
+-define(KH, :512?IL).
+-define(KHB, :512?IB).
 
 -define(QQ, :256?IL).
 -define(QQB, :256?IB).

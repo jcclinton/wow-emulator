@@ -30,7 +30,8 @@ testM() ->
 	DerivedKey = srp:getDerivedKey(I, Pw, Salt),
 	ServerPublic = srp:getServerPublic(Generator, Prime, ServerPrivate, DerivedKey),
 
-	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Generator, Prime, DerivedKey),
+	Verifier = srp:getVerifier(Generator, Prime, DerivedKey),
+	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier),
 	io:format("server skey: ~p~n", [Skey]),
 	Key = srp:interleaveHash(Skey),
 

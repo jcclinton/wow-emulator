@@ -3,33 +3,68 @@
 -export([getVerifier/3, getDerivedKey/3, getClientPublic/3, computeClientKey/6 ]).
 -export([getServerPublicPrivate/3]).
 
+-export([test/0]).
+
 -include("include/binary.hrl").
 
 -define(sha, 160).
+-define(bits_size, 256).
 
 
-getGenerator() -> <<7/integer>>.
+test() ->
+	ClientPrivate = generatePrivate(),
+
+	Prime = getPrime(),
+	Generator = getGenerator(),
+
+	UBin = <<"alice">>,
+	PwBin = <<"password123">>,
+
+
+	Salt = generatePrivate(),
+	DerivedKey = getDerivedKey(UBin, PwBin, Salt),
+	Verifier = getVerifier(Generator, Prime, DerivedKey),
+
+	ClientPublic = getClientPublic(Generator, Prime, ClientPrivate),
+	{ServerPublic, ServerPrivate} = getServerPublicPrivate(Generator, Prime, Verifier),
+
+	ServerKey = computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier),
+	ClientKey = computeClientKey(ClientPrivate, ServerPublic, ClientPublic, Generator, Prime, DerivedKey),
+
+	io:format("client key: ~p~nserver key: ~p~n", [ClientKey, ServerKey]),
+	ServerKey == ClientKey.
+
+
+getGenerator() -> <<7?B>>.
 
 %% srp version 6
 getVersion() -> '6'.
 
-getMultiplier() -> <<3/integer>>.
+%getMultiplier() -> <<3?B>>.
 
 
-getSize() -> bit_size(getPrime()).
+getSize() ->
+	?bits_size.
+	%bit_size(getPrime()).
 getBytes() -> getSize() div 8.
 
 % randomly generated 32 byte number
 generatePrivate() ->
 	Bytes = getBytes(),
-	crypto:rand_bytes(Bytes).
+	crypto:strong_rand_bytes(Bytes).
 
 
 %% 32 byte prime number
 %% used in mangos: https://github.com/mangoszero/server/blob/master/src/realmd/AuthSocket.cpp#L190
 %% used in arcemu: http://arcemu.org/wiki/Server_Logon_Challenge
 getPrime() ->
-	<<16#894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7?QQB>>.
+	Size = getSize(),
+	get_prime(Size).
+
+	get_prime(256) ->
+		<<16#894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7?QQB>>;
+	get_prime(1024) ->
+	<<16#EEAF0AB9ADB38DD69C33F80AFA8FC5E86072618775FF3C0B9EA2314C9C256576D674DF7496EA81D3383B4813D692C6E0E0D5D8E250B98BE48E495C1D6089DAD15DC7D7B46154D6B6CE8EF4AD69B15D4982559B297BCF1885C529F566660E57EC68EDBC3C05726CC02FD4CBF4976EAA9AFD5138FE8376435B9FC61D2FC0EB06E3?K>>.
 
 
 
@@ -82,27 +117,16 @@ getServerPublicPrivate(Generator, Prime, Verifier) ->
 % not used anymore because occasionaly it generates an invalid key
 getServerPublic(Generator, Prime, ServerPrivate, Verifier) ->
 	Version = getVersion(),
-	crypto:generate_key(srp, {host, [Verifier, Generator, Prime, Version]}, ServerPrivate).
+	{Pub, ServerPrivate} = crypto:generate_key(srp, {host, [Verifier, Generator, Prime, Version]}, ServerPrivate),
+	Pub.
 
 
 
 %% client session key
-%% doesnt use compute_key because there currently is a bug in otp
-%% will be fixed sometime in R17
 computeClientKey(ClientPrivate, ServerPublic, ClientPublic, Generator, Prime, DerivedKey) ->
 	U = getScrambler(ClientPublic, ServerPublic),
-	PrimeI = bin_to_int(Prime),
-	Multiplier = getMultiplier(),
-	BX = crypto:mod_pow(Generator, DerivedKey, Prime),
-	%BX = Verifier,
-	BTMPI0 = bin_to_int(ServerPublic) - bin_to_int(Multiplier) * bin_to_int(BX),
-	BTMPI = BTMPI0 rem PrimeI,
-	Base = if
-			BTMPI > 0 -> int_to_bin(BTMPI);
-			true -> int_to_bin(BTMPI + PrimeI)
-	end,
-	Exponent = int_to_bin(bin_to_int(ClientPrivate) + bin_to_int(U) * bin_to_int(DerivedKey)),
-	crypto:mod_pow(Base, Exponent, Prime).
+	Version = getVersion(),
+	crypto:compute_key(srp, ServerPublic, {ClientPublic, ClientPrivate}, {user, [DerivedKey, Prime, Generator, Version, U]}).
 
 
 %% server session key
@@ -191,6 +215,9 @@ combineHashes(<<Even0?B, EvenRest/binary>>, <<Odd0?B, OddRest/binary>>, Data) ->
 %% utility functions
 hash(L) -> crypto:hash(sha, L).
 
+l_to_b_endian(Msg, 1024) ->
+	<<Num?K>> = Msg,
+	<<Num?KB>>;
 l_to_b_endian(Msg, 256) ->
 	<<Num?QQ>> = Msg,
 	<<Num?QQB>>;
@@ -201,6 +228,9 @@ l_to_b_endian(Msg, 320) ->
 	<<Num?SL>> = Msg,
 	<<Num?SLB>>.
 
+b_to_l_endian(Msg, 1024) ->
+	<<Num?KB>> = Msg,
+	<<Num?K>>;
 b_to_l_endian(Msg, 256) ->
 	<<Num?QQB>> = Msg,
 	<<Num?QQ>>;
@@ -210,15 +240,3 @@ b_to_l_endian(Msg, 160) ->
 b_to_l_endian(Msg, 320) ->
 	<<Num?SLB>> = Msg,
 	<<Num?SL>>.
-
-
-int_to_bin(Int) ->
-	Len0 = length(erlang:integer_to_list(Int, 16)),
-	Len1 = Len0 + (Len0 rem 2),
-	Bits = Len1 * 4,
-	<<Int:Bits>>.
-
-bin_to_int(Bin) ->
-	Bits = byte_size(Bin) * 8,
-	<<Val:Bits/unsigned-little-integer>> = Bin,
-	Val.
