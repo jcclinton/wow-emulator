@@ -1,0 +1,159 @@
+-define(cast_flag_none, 16#00000000).
+-define(cast_flag_hidden_combatlog, 16#00000001).               % hide in combat log?
+-define(cast_flag_unknown2, 16#00000002).
+-define(cast_flag_unknown3, 16#00000004).
+-define(cast_flag_unknown4, 16#00000008).
+-define(cast_flag_unknown5, 16#00000010).
+-define(cast_flag_ammo, 16#00000020).               % Projectiles visual
+-define(cast_flag_unknown7, 16#00000040).               % !0x41 mask used to call CGTradeSkillInfo::DoRecast
+-define(cast_flag_unknown8, 16#00000080).
+-define(cast_flag_unknown9, 16#00000100).
+
+
+-define(spell_failed_affecting_combat, 16#00).
+-define(spell_failed_already_at_full_health, 16#01).
+-define(spell_failed_already_at_full_mana, 16#02).
+-define(spell_failed_already_being_tamed, 16#03).
+-define(spell_failed_already_have_charm, 16#04).
+-define(spell_failed_already_have_summon, 16#05).
+-define(spell_failed_already_open, 16#06).
+-define(spell_failed_more_powerful_spell_active, 16#07).
+%-define(spell_failed_autotrack_interrupted, 16#08). old commented CAST_FAIL_FAILED = 8,-> 29
+-define(spell_failed_bad_implicit_targets, 16#09).
+-define(spell_failed_bad_targets, 16#0A).
+-define(spell_failed_cant_be_charmed, 16#0B).
+-define(spell_failed_cant_be_disenchanted, 16#0C).
+-define(spell_failed_cant_be_prospected, 16#0D).
+-define(spell_failed_cant_cast_on_tapped, 16#0E).
+-define(spell_failed_cant_duel_while_invisible, 16#0F).
+-define(spell_failed_cant_duel_while_stealthed, 16#10).
+-define(spell_failed_cant_too_close_to_enemy, 16#11).
+-define(spell_failed_cant_do_that_yet, 16#12).
+-define(spell_failed_caster_dead, 16#13).
+-define(spell_failed_charmed, 16#14).
+-define(spell_failed_chest_in_use, 16#15).
+-define(spell_failed_confused, 16#16).
+-define(spell_failed_dont_report, 16#17).     % [-ZERO] need check
+-define(spell_failed_equipped_item, 16#18).
+-define(spell_failed_equipped_item_class, 16#19).
+-define(spell_failed_equipped_item_class_mainhand, 16#1A).
+-define(spell_failed_equipped_item_class_offhand, 16#1B).
+-define(spell_failed_error, 16#1C).
+-define(spell_failed_fizzle, 16#1D).
+-define(spell_failed_fleeing, 16#1E).
+-define(spell_failed_food_lowlevel, 16#1F).
+-define(spell_failed_highlevel, 16#20).
+%-define(spell_failed_hunger_satiated, 16#21).
+-define(spell_failed_immune, 16#22).
+-define(spell_failed_interrupted, 16#23).
+-define(spell_failed_interrupted_combat, 16#24).
+-define(spell_failed_item_already_enchanted, 16#25).
+-define(spell_failed_item_gone, 16#26).
+-define(spell_failed_enchant_not_existing_item, 16#27).
+-define(spell_failed_item_not_ready, 16#28).
+-define(spell_failed_level_requirement, 16#29).
+-define(spell_failed_line_of_sight, 16#2A).
+-define(spell_failed_lowlevel, 16#2B).
+-define(spell_failed_skill_not_high_enough, 16#2C).
+-define(spell_failed_mainhand_empty, 16#2D).
+-define(spell_failed_moving, 16#2E).
+-define(spell_failed_need_ammo, 16#2F).
+-define(spell_failed_need_requires_something, 16#30).
+-define(spell_failed_need_exotic_ammo, 16#31).
+-define(spell_failed_nopath, 16#32).
+-define(spell_failed_not_behind, 16#33).
+-define(spell_failed_not_fishable, 16#34).
+-define(spell_failed_not_here, 16#35).
+-define(spell_failed_not_infront, 16#36).
+-define(spell_failed_not_in_control, 16#37).
+-define(spell_failed_not_known, 16#38).
+-define(spell_failed_not_mounted, 16#39).
+-define(spell_failed_not_on_taxi, 16#3A).
+-define(spell_failed_not_on_transport, 16#3B).
+-define(spell_failed_not_ready, 16#3C).
+-define(spell_failed_not_shapeshift, 16#3D).
+-define(spell_failed_not_standing, 16#3E).
+-define(spell_failed_not_tradeable, 16#3F).     % rogues trying "enchant" other's weapon with poison
+-define(spell_failed_not_trading, 16#40).     % CAST_FAIL_CANT_ENCHANT_TRADE_ITEM
+-define(spell_failed_not_unsheathed, 16#41).     % yellow text
+-define(spell_failed_not_while_ghost, 16#42).
+-define(spell_failed_no_ammo, 16#43).
+-define(spell_failed_no_charges_remain, 16#44).
+-define(spell_failed_no_champion, 16#45).     % CAST_FAIL_NOT_SELECT
+-define(spell_failed_no_combo_points, 16#46).
+-define(spell_failed_no_dueling, 16#47).
+-define(spell_failed_no_endurance, 16#48).
+-define(spell_failed_no_fish, 16#49).
+-define(spell_failed_no_items_while_shapeshifted, 16#4A).
+-define(spell_failed_no_mounts_allowed, 16#4B).
+-define(spell_failed_no_pet, 16#4C).
+-define(spell_failed_no_power, 16#4D).     % CAST_FAIL_NOT_ENOUGH_MANA
+-define(spell_failed_nothing_to_dispel, 16#4E).
+-define(spell_failed_nothing_to_steal, 16#4F).
+-define(spell_failed_only_abovewater, 16#50).     % CAST_FAIL_CANT_USE_WHILE_SWIMMING
+-define(spell_failed_only_daytime, 16#51).
+-define(spell_failed_only_indoors, 16#52).
+-define(spell_failed_only_mounted, 16#53).
+-define(spell_failed_only_nighttime, 16#54).
+-define(spell_failed_only_outdoors, 16#55).
+-define(spell_failed_only_shapeshift, 16#56).
+-define(spell_failed_only_stealthed, 16#57).
+-define(spell_failed_only_underwater, 16#58).     % CAST_FAIL_CAN_ONLY_USE_WHILE_SWIMMING
+-define(spell_failed_out_of_range, 16#59).
+-define(spell_failed_pacified, 16#5A).
+-define(spell_failed_possessed, 16#5B).
+%-define(spell_failed_reagents, 16#5C). [-ZERO] not in 1.12
+-define(spell_failed_requires_area, 16#5D).     % CAST_FAIL_YOU_NEED_TO_BE_IN_XXX
+-define(spell_failed_requires_spell_focus, 16#5E).     % CAST_FAIL_REQUIRES_XXX
+-define(spell_failed_rooted, 16#5F).     % CAST_FAIL_UNABLE_TO_MOVE
+-define(spell_failed_silenced, 16#60).
+-define(spell_failed_spell_in_progress, 16#61).
+-define(spell_failed_spell_learned, 16#62).
+-define(spell_failed_spell_unavailable, 16#63).
+-define(spell_failed_stunned, 16#64).
+-define(spell_failed_targets_dead, 16#65).
+-define(spell_failed_target_affecting_combat, 16#66).
+-define(spell_failed_target_aurastate, 16#67).     % CAST_FAIL_CANT_DO_THAT_YET_2
+-define(spell_failed_target_dueling, 16#68).
+-define(spell_failed_target_enemy, 16#69).
+-define(spell_failed_target_enraged, 16#6A).     % CAST_FAIL_TARGET_IS_TOO_ENRAGED_TO_CHARM
+-define(spell_failed_target_friendly, 16#6B).
+-define(spell_failed_target_in_combat, 16#6C).
+-define(spell_failed_target_is_player, 16#6D).
+-define(spell_failed_target_not_dead, 16#6E).
+-define(spell_failed_target_not_in_party, 16#6F).
+-define(spell_failed_target_not_looted, 16#70).     % CAST_FAIL_CREATURE_MUST_BE_LOOTED_FIRST
+-define(spell_failed_target_not_player, 16#71).
+-define(spell_failed_target_no_pockets, 16#72).     % CAST_FAIL_NOT_ITEM_TO_STEAL
+-define(spell_failed_target_no_weapons, 16#73).
+-define(spell_failed_target_unskinnable, 16#74).
+-define(spell_failed_thirst_satiated, 16#75).
+-define(spell_failed_too_close, 16#76).
+-define(spell_failed_too_many_of_item, 16#77).
+%-define(spell_failed_totems, 16#78).  % [-ZERO] not in 1.12
+-define(spell_failed_training_points, 16#79).
+-define(spell_failed_try_again, 16#7A).     % CAST_FAIL_FAILED_ATTEMPT
+-define(spell_failed_unit_not_behind, 16#7B).
+-define(spell_failed_unit_not_infront, 16#7C).
+-define(spell_failed_wrong_pet_food, 16#7D).
+-define(spell_failed_not_while_fatigued, 16#7E).
+-define(spell_failed_target_not_in_instance, 16#7F).     % CAST_FAIL_TARGET_MUST_BE_IN_THIS_INSTANCE
+-define(spell_failed_not_while_trading, 16#80).
+-define(spell_failed_target_not_in_raid, 16#81).
+-define(spell_failed_disenchant_while_looting, 16#82).
+-define(spell_failed_prospect_while_looting, 16#83).
+%-define(spell_failed_prospect_need_more, 16#85).
+-define(spell_failed_target_freeforall, 16#85).
+-define(spell_failed_no_edible_corpses, 16#86).
+-define(spell_failed_only_battlegrounds, 16#87).
+-define(spell_failed_target_not_ghost, 16#88).
+-define(spell_failed_too_many_skills, 16#89).     % CAST_FAIL_YOUR_PET_CANT_LEARN_MORE_SKILLS
+-define(spell_failed_cant_use_new_item, 16#8A).
+-define(spell_failed_wrong_weather, 16#8B).     % CAST_FAIL_CANT_DO_IN_THIS_WEATHER
+-define(spell_failed_damage_immune, 16#8C).     % CAST_FAIL_CANT_DO_IN_IMMUNE
+-define(spell_failed_prevented_by_mechanic, 16#8D).     % CAST_FAIL_CANT_DO_IN_XXX
+-define(spell_failed_play_time, 16#8E).     % CAST_FAIL_GAME_TIME_OVER
+-define(spell_failed_reputation, 16#8F).
+-define(spell_failed_min_skill, 16#90).
+-define(spell_failed_unknown, 16#91).
+-define(spell_cast_ok, 16#FF).      % custom value). don't must be send to client

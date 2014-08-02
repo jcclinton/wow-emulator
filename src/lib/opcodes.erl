@@ -106,6 +106,11 @@ get_callback_by_num(cmsg_move_time_skipped) ->
 get_callback_by_num(cmsg_setsheathed) ->
 	#callback{type=character, module=combat, function=set_sheathed};
 
+get_callback_by_num(cmsg_cast_spell) ->
+	#callback{type=character, module=spell, function=cast};
+get_callback_by_num(cmsg_cancel_cast) ->
+	#callback{type=character, module=spell, function=cancel_cast};
+
 
 get_callback_by_num(cmsg_autoequip_item) ->
 	#callback{type=character, module=inventory, function=autoequip_item};
