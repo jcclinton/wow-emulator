@@ -110,6 +110,11 @@ get_callback_by_num(cmsg_cast_spell) ->
 get_callback_by_num(cmsg_cancel_cast) ->
 	#callback{type=character, module=spell, function=cancel_cast};
 
+get_callback_by_num(cmsg_attackswing) ->
+	#callback{type=character, module=combat, function=attack_swing};
+get_callback_by_num(cmsg_attackstop) ->
+	#callback{type=character, module=combat, function=attack_stop};
+
 
 get_callback_by_num(cmsg_autoequip_item) ->
 	#callback{type=character, module=inventory, function=autoequip_item};
