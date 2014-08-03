@@ -19,8 +19,12 @@
 
 %% public api
 
+build_pid_key(AccountId) ->
+	AccountId ++ "controller".
+
 get_pid(AccountId) ->
-	world:build_pid(AccountId, "controller").
+	Key = build_pid_key(AccountId),
+	gproc:lookup_pid({n, l, Key}).
 
 
 packet_received(AccountId, Opcode, Payload) ->
@@ -45,11 +49,12 @@ logout_char(AccountId, Guid) ->
 %% behavior callbacks
 
 start_link(AccountId, SendPid, ParentPid) ->
-	Pid = get_pid(AccountId),
-	gen_server:start_link(Pid, ?MODULE, {AccountId, SendPid, ParentPid}, []).
+	gen_server:start_link(?MODULE, {AccountId, SendPid, ParentPid}, []).
 
 init({AccountId, SendPid, ParentPid}) ->
 	io:format("controller SERVER: started~n"),
+	Key = build_pid_key(AccountId),
+	gproc:reg({n, l, Key}, none),
 	{ok, #state{account_id=AccountId, send_pid=SendPid, parent_pid=ParentPid}}.
 
 
