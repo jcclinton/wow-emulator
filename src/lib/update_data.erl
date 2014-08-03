@@ -101,14 +101,98 @@ create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag, Guid) ->
 
 
 build_values_update(MaskBits, Values, Count) ->
+	TypeFlags = object_values:get_int32_value('OBJECT_FIELD_TYPE', Values),
+	IsUnit = util:has_flag(TypeFlags, ?typemask_unit),
+	%IsUnit = false,
+	IsPlayer = util:has_flag(TypeFlags, ?typemask_player),
 	lists:foldl(fun(Index, Bin) ->
 		BitFlag = update_mask:get_bit(MaskBits, Index),
 		if BitFlag ->
-							Value = object_values:get_value(Index, Values),
-							<<Bin/binary, Value?L>>;
-						true -> Bin
-					end
+				if IsUnit ->
+						IsNonNegFloat = is_non_neg_float_field(Index),
+						IsFloat = is_float_field(Index),
+						if IsNonNegFloat ->
+								build_non_neg_float(Index, Values, Bin);
+							IsPlayer andalso IsFloat ->
+								build_float(Index, Values, Bin);
+							true ->
+								build_uint32(Index, Values, Bin)
+						end;
+					not IsUnit ->
+						build_uint32(Index, Values, Bin)
+				end;
+			true -> Bin
+		end
 	end, <<>>, lists:seq(0, Count)).
+
+
+is_non_neg_float_field(Index) ->
+	Fields = [
+		'UNIT_FIELD_BASEATTACKTIME',
+		'UNIT_FIELD_OFFHANDATTACKTIME',
+		'UNIT_FIELD_RANGEDATTACKTIME'
+	],
+	lists:foldl(fun(Field, Bool) ->
+		if Bool -> Bool;
+			not Bool ->
+				FieldIndex = update_fields:fields(Field),
+				if FieldIndex == Index -> true;
+					FieldIndex /= Index -> Bool
+				end
+		end
+	end, false, Fields).
+		
+
+is_float_field(Index) ->
+	Fields = [
+		'PLAYER_FIELD_POSSTAT0',
+		'PLAYER_FIELD_POSSTAT1',
+		'PLAYER_FIELD_POSSTAT2',
+		'PLAYER_FIELD_POSSTAT3',
+		'PLAYER_FIELD_POSSTAT4',
+		'PLAYER_FIELD_NEGSTAT0',
+		'PLAYER_FIELD_NEGSTAT1',
+		'PLAYER_FIELD_NEGSTAT2',
+		'PLAYER_FIELD_NEGSTAT3',
+		'PLAYER_FIELD_NEGSTAT4'
+	],
+
+	IsFloat = lists:foldl(fun(Field, Bool) ->
+		if Bool -> Bool;
+			not Bool ->
+				FieldIndex = update_fields:fields(Field),
+				if FieldIndex == Index -> true;
+					FieldIndex /= Index -> Bool
+				end
+		end
+	end, false, Fields),
+
+	if IsFloat -> IsFloat;
+		not IsFloat ->
+			PosIndex = update_fields:fields('PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE'),
+			NegIndex = update_fields:fields('PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE'),
+			if Index >= PosIndex andalso Index =< (PosIndex + 6) -> true;
+				Index >= NegIndex andalso Index =< (NegIndex + 6) -> true;
+				true -> false
+			end
+	end.
+		
+
+build_uint32(Index, Values, Bin) ->
+	Value = object_values:get_value(Index, Values),
+	<<Bin/binary, Value?L>>.
+
+build_float(Index, Values, Bin) ->
+	Value = object_values:get_float_value(Index, Values),
+	UintValue = round(Value),
+	<<Bin/binary, UintValue?L>>.
+
+build_non_neg_float(Index, Values, Bin) ->
+	RawValue = object_values:get_float_value(Index, Values),
+	Value = if RawValue < 0 -> 0;
+		true -> round(RawValue)
+	end,
+	<<Bin/binary, Value?L>>.
 
 
 

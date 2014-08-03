@@ -5,6 +5,7 @@
 -include("include/database_records.hrl").
 -include("include/types.hrl").
 -include("include/character.hrl").
+-include("include/shared_defines.hrl").
 
 
 
@@ -343,6 +344,8 @@ create_char_values(Data, Guid) ->
 	% ffa
 	PlayerFlags = 16#80,
 
+	DefaultAttackTime = ?default_attack_time,
+
 
 
 
@@ -376,9 +379,9 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_BASE_HEALTH', Health, uint32},
     {'UNIT_FIELD_BASE_MANA', Power, uint32},
     {'UNIT_FIELD_RESISTANCES', 0, uint32},
-    {'UNIT_FIELD_BASEATTACKTIME', 2000.0, float},
-    {'UNIT_FIELD_BASEATTACKTIME', 2000.0, {float, 1}},
-    {'UNIT_FIELD_RANGEDATTACKTIME', 2000.0, float},
+    {'UNIT_FIELD_BASEATTACKTIME', DefaultAttackTime, float},
+    {'UNIT_FIELD_OFFHANDATTACKTIME', DefaultAttackTime, float},
+    {'UNIT_FIELD_RANGEDATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_MAXPOWER1', Mana, uint32},
     {'UNIT_FIELD_MAXPOWER2', Rage, uint32},
     {'UNIT_FIELD_MAXPOWER3', 0, uint32},
@@ -418,11 +421,35 @@ create_char_values(Data, Guid) ->
     {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 3}},
     {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 4}},
     {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 5}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 6}}
+    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 6}},
 
-		%% ignore skills for now
-		%% ignore spells
-		%% ignore bags
+    {'PLAYER_FIELD_POSSTAT0', 0.0, float}, % stat buff mods for strength
+    {'PLAYER_FIELD_POSSTAT1', 0.0, float}, % stat buff mods
+    {'PLAYER_FIELD_POSSTAT2', 0.0, float}, % stat buff mods
+    {'PLAYER_FIELD_POSSTAT3', 0.0, float}, % stat buff mods
+    {'PLAYER_FIELD_POSSTAT4', 0.0, float}, % stat buff mods
+    {'PLAYER_FIELD_NEGSTAT0', 0.0, float}, % stat buff mods for strength
+    {'PLAYER_FIELD_NEGSTAT1', 0.0, float}, % stat buff mods
+    {'PLAYER_FIELD_NEGSTAT2', 0.0, float}, % stat buff mods
+    {'PLAYER_FIELD_NEGSTAT3', 0.0, float}, % stat buff mods
+    {'PLAYER_FIELD_NEGSTAT4', 0.0, float}, % stat buff mods
+
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 0}}, % armor mod
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 1}}, % not sure
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 2}}, % fire mod
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 3}}, % nature mod
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 4}}, % frost mod
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 5}}, % shadow mod
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 6}}, % arcane mod
+
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 0}},
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 1}},
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 2}},
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 3}},
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 4}},
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 5}},
+    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 6}}
+
 	],
 
 	% create actual data objects

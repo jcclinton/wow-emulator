@@ -32,7 +32,6 @@ accept({accept, ListenSocket}, State) ->
 	process_flag(trap_exit, true),
 	%% start another acceptor
 	players_sup:start_socket(),
-	io:format("WORLD received accept socket: ~p~n", [AcceptSocket]),
 	challenge(ok, State#state{socket=AcceptSocket}).
 challenge(_, State = #state{socket=Socket}) ->
 	Seed   = random:uniform(16#FFFFFFFF),

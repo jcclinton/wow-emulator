@@ -85,7 +85,6 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 %receive proof
 handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, server_public=ServerPublic, server_private=ServerPrivate, verifier=Verifier, salt=Salt, identity=Name}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
-	io:format("LOGIN SERVER: received proof~n"),
 	{ClientPublic, M1} = extract_proof(Msg),
 	Prime = srp:getPrime(),
 	Skey = srp:computeServerKey(ServerPrivate, ClientPublic, ServerPublic, Prime, Verifier),
@@ -96,7 +95,6 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	StringName = binary_to_list(Name),
 	KeyL = srp:b_to_l_endian(Key, 320),
 	char_data:store_connected_client(StringName, KeyL),
-	%io:format("LOGIN SERVER: sending proof response~n"),
 	Generator = srp:getGenerator(),
 	MsgOut = build_proof_response(Name, Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	gen_tcp:send(Socket, MsgOut),
@@ -104,7 +102,6 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 % receive realmlist request
 handle_info({tcp, _Socket, <<16?B, _Msg/binary>>}, State=#state{socket=Socket}) ->
 	ok = inet:setopts(Socket, [{active, once}]),
-	io:format("LOGIN SERVER: received realmlist req~n"),
 	MsgOut = build_realmlist_response(),
 	gen_tcp:send(Socket, MsgOut),
 	{noreply, State};

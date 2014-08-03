@@ -64,9 +64,12 @@ get_float_value(IndexName, Values) ->
 	get_value(IndexName, Values, float).
 
 
-get_value(IndexName, Values, float) ->
+get_value(Field, Values, float) when is_atom(Field) ->
+	Index = update_fields:fields(Field),
+	get_value(Index, Values, float);
+get_value(IndexIn, Values, float) ->
 	% each Index is a 4 byte long word
-	Index = update_fields:fields(IndexName) * 4,
+	Index = IndexIn * 4,
 	<<_Head:Index/binary, Value?f, _Tail/binary>> = Values,
 	Value.
 
