@@ -6,7 +6,6 @@
 -export([equip_starting_items/1]).
 -export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
 -export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2]).
--export([init_session/1, close_session/1]).
 -export([store_selection/2, store_mask/2, clear_mask/1]).
 -export([get_mask/1]).
 
@@ -16,7 +15,6 @@
 -include("include/character.hrl").
 
 -define(conn, connected_clients).
--define(char_sess, characters_session).
 
 -define(char_val, characters_values).
 -define(char_name, characters_names).
@@ -44,7 +42,6 @@ get_char_tabs() ->
 
 init() ->
 	ets:new(?conn, [named_table, set, public]),
-	ets:new(?char_sess, [named_table, set, public]),
 
 	lists:foreach(fun(Tab) ->
 		dets_store:open(Tab, true)
@@ -53,7 +50,6 @@ init() ->
 
 cleanup() ->
 	ets:delete(?conn),
-	ets:delete(?char_sess),
 
 	lists:foreach(fun(Tab) ->
 		dets_store:close(Tab, true)
@@ -72,14 +68,6 @@ get_session_key(AccountId) ->
 	[{_, Key}] = ets:lookup(?conn, AccountId),
 	Key.
 
-
-% session data
-init_session(Guid) ->
-	EmptyMask = update_mask:empty(),
-	ets:insert_new(?char_sess, {Guid, #char_sess{update_mask=EmptyMask}}).
-
-close_session(Guid) ->
-	ets:delete(?char_sess, Guid).
 
 store_selection(Guid, Target) ->
 	Sess = get_sess(Guid),

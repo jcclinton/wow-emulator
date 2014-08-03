@@ -6,7 +6,8 @@
 	guid,
 	update_timer,
 	last_swing,
-	timestamp
+	timestamp,
+	mask
 }).
 
 
@@ -41,6 +42,9 @@ update(AccountId) ->
 	gen_server:cast(Pid, update).
 
 
+mark_update(Index, AccountId)
+
+
 
 
 %% behavior callbacks
@@ -52,10 +56,11 @@ start_link(AccountId, Guid) ->
 init({AccountId, Guid}) ->
 	process_flag(trap_exit, true),
 	io:format("char SERVER started for ~p~n", [Guid]),
-	char_data:init_session(Guid),
+
+	EmptyMask = update_mask:empty(),
 
 	{ok, TRef} = timer:apply_interval(?update_timer_interval, ?MODULE, update, [AccountId]),
-	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now(), last_swing=0}}.
+	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now(), last_swing=0, mask=EmptyMask}}.
 
 
 handle_cast(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing}) ->
@@ -119,7 +124,6 @@ code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
 terminate(_Reason, #state{guid=Guid, update_timer=Timer}) ->
-	char_data:close_session(Guid),
 	timer:cancel(Timer),
 	io:format("WORLD: shutting down char: ~p~n", [Guid]),
 	ok.
