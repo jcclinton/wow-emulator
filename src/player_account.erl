@@ -8,7 +8,7 @@
 
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([get_pid/1, send/3, handle_packet/4]).
+-export([handle_packet/4]).
 
 
 -include("include/binary.hrl").
@@ -16,14 +16,6 @@
 
 
 %% public api
-
-send(Name, OpAtom, Payload) ->
-	RouterPid = player_controller:get_pid(Name),
-	player_controller:send(RouterPid, OpAtom, Payload).
-
-get_pid(AccountId) ->
-	world:build_pid(AccountId, "account").
-
 
 handle_packet(AccountId, OpAtom, Callback, Payload) ->
 	Pid = get_pid(AccountId),
@@ -34,11 +26,12 @@ handle_packet(AccountId, OpAtom, Callback, Payload) ->
 %% behavior callbacks
 
 start_link(AccountId) ->
-	Pid = get_pid(AccountId),
-	gen_server:start_link(Pid, ?MODULE, {AccountId}, []).
+	gen_server:start_link(?MODULE, {AccountId}, []).
 
 init({AccountId}) ->
 	io:format("account SERVER: started~n"),
+	Key = build_pid_key(AccountId),
+	gproc:reg({n, l, Key}, none),
 	{ok, #state{account_id=AccountId}}.
 
 handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId}) ->
@@ -65,3 +58,18 @@ code_change(_OldVsn, State, _Extra) ->
 terminate(_Reason, _State) ->
 	io:format("WORLD: shutting down account~n"),
 	ok.
+
+
+
+
+%%%%%%%%%%%%%%%%
+%% private
+
+
+build_pid_key(AccountId) ->
+	AccountId ++ "account".
+
+get_pid(AccountId) ->
+	Key = build_pid_key(AccountId),
+	gproc:lookup_pid({n, l, Key}).
+

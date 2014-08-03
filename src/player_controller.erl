@@ -10,7 +10,7 @@
 
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([get_pid/1, packet_received/3, login_char/2, logout_char/2, send/3]).
+-export([packet_received/3, login_char/2, logout_char/2, send/3]).
 
 
 -include("include/binary.hrl").
@@ -19,20 +19,12 @@
 
 %% public api
 
-build_pid_key(AccountId) ->
-	AccountId ++ "controller".
-
-get_pid(AccountId) ->
-	Key = build_pid_key(AccountId),
-	gproc:lookup_pid({n, l, Key}).
-
-
 packet_received(AccountId, Opcode, Payload) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {packet_rcvd, Opcode, Payload}).
 
-send(Name, OpAtom, Payload) ->
-	Pid = get_pid(Name),
+send(AccountId, OpAtom, Payload) ->
+	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {send_to_client, OpAtom, Payload}).
 
 login_char(AccountId, Guid) ->
@@ -114,3 +106,18 @@ code_change(_OldVsn, State, _Extra) ->
 terminate(_Reason, _State) ->
 	io:format("WORLD: shutting down controller~n"),
 	ok.
+
+
+
+
+%%%%%%%%%%%%%%%%
+%% private
+
+
+build_pid_key(AccountId) ->
+	AccountId ++ "controller".
+
+get_pid(AccountId) ->
+	Key = build_pid_key(AccountId),
+	gproc:lookup_pid({n, l, Key}).
+
