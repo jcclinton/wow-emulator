@@ -1,3 +1,6 @@
 *.dbc
 *.dets
+ebin/*
 *.beam
+.rebar/*
+.eunit/*
