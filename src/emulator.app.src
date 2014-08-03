@@ -1,0 +1,17 @@
+{application, emulator,
+ [
+  {description, "wow emulator"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+									gproc
+                 ]},
+  {mod, { emulator_app, []}},
+  {env,
+	 [{realm_port, 3724},
+	 {world_port, 8899},
+	 {world_ip, "127.0.0.1"}
+	 ]}
+ ]}.

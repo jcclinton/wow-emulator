@@ -1,3 +1,9 @@
 *.dbc
 *.dets
+
+*.app
 *.beam
+.rebar/
+.eunit/
+deps/
+erl_crash.dump

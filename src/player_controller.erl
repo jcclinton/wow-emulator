@@ -10,7 +10,7 @@
 
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([get_pid/1, packet_received/3, login_char/2, logout_char/2, send/3]).
+-export([packet_received/3, login_char/2, logout_char/2, send/3]).
 
 
 -include("include/binary.hrl").
@@ -19,16 +19,12 @@
 
 %% public api
 
-get_pid(AccountId) ->
-	world:build_pid(AccountId, "controller").
-
-
 packet_received(AccountId, Opcode, Payload) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {packet_rcvd, Opcode, Payload}).
 
-send(Name, OpAtom, Payload) ->
-	Pid = get_pid(Name),
+send(AccountId, OpAtom, Payload) ->
+	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {send_to_client, OpAtom, Payload}).
 
 login_char(AccountId, Guid) ->
@@ -45,11 +41,12 @@ logout_char(AccountId, Guid) ->
 %% behavior callbacks
 
 start_link(AccountId, SendPid, ParentPid) ->
-	Pid = get_pid(AccountId),
-	gen_server:start_link(Pid, ?MODULE, {AccountId, SendPid, ParentPid}, []).
+	gen_server:start_link(?MODULE, {AccountId, SendPid, ParentPid}, []).
 
 init({AccountId, SendPid, ParentPid}) ->
 	io:format("controller SERVER: started~n"),
+	Key = build_pid_key(AccountId),
+	gproc:reg({n, l, Key}, none),
 	{ok, #state{account_id=AccountId, send_pid=SendPid, parent_pid=ParentPid}}.
 
 
@@ -109,3 +106,18 @@ code_change(_OldVsn, State, _Extra) ->
 terminate(_Reason, _State) ->
 	io:format("WORLD: shutting down controller~n"),
 	ok.
+
+
+
+
+%%%%%%%%%%%%%%%%
+%% private
+
+
+build_pid_key(AccountId) ->
+	AccountId ++ "controller".
+
+get_pid(AccountId) ->
+	Key = build_pid_key(AccountId),
+	gproc:lookup_pid({n, l, Key}).
+

@@ -13,7 +13,7 @@
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([get_pid/1, send/3, handle_packet/4, update/1]).
+-export([update/1, handle_packet/4]).
 
 
 -include("include/binary.hrl").
@@ -24,15 +24,6 @@
 
 
 %% public api
-
-send(Name, OpAtom, Payload) ->
-	RouterPid = player_controller:get_pid(Name),
-	player_controller:send(RouterPid, OpAtom, Payload).
-
-get_pid(AccountId) ->
-	world:build_pid(AccountId, "char").
-
-
 handle_packet(AccountId, OpAtom, Callback, Payload) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {packet_rcvd, OpAtom, Callback, Payload}).
@@ -46,16 +37,19 @@ mark_update(Index, AccountId)
 
 
 
-
 %% behavior callbacks
 
 start_link(AccountId, Guid) ->
-	Pid = get_pid(AccountId),
-	gen_server:start_link(Pid, ?MODULE, {AccountId, Guid}, []).
+	gen_server:start_link(?MODULE, {AccountId, Guid}, []).
 
 init({AccountId, Guid}) ->
 	process_flag(trap_exit, true),
 	io:format("char SERVER started for ~p~n", [Guid]),
+
+	Key = build_pid_key(AccountId),
+	gproc:reg({n, l, Key}, none),
+	gproc:reg({n, l, Guid}, none),
+	char_data:init_session(Guid),
 
 	EmptyMask = update_mask:empty(),
 
@@ -127,3 +121,18 @@ terminate(_Reason, #state{guid=Guid, update_timer=Timer}) ->
 	timer:cancel(Timer),
 	io:format("WORLD: shutting down char: ~p~n", [Guid]),
 	ok.
+
+
+
+%%%%%%%%%%%
+%% private
+
+build_pid_key(AccountId) ->
+	AccountId ++ "char".
+
+get_pid(Guid) when is_number(Guid) ->
+	gproc:lookup_pid({n, l, Guid});
+get_pid(AccountId) when is_list(AccountId) ->
+	Key = build_pid_key(AccountId),
+	gproc:lookup_pid({n, l, Key}).
+	
