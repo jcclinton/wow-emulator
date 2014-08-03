@@ -1,5 +1,5 @@
 ## Overview
-This is a functional WoW emulator written in Erlang. Currently it supports authentication, character creation, world login, update data (ie you can see other players in the world) and movement data. It has been tested on vanilla WoW; may work with TBC but won't work with newer versions.
+This is a functional WoW emulator written in Erlang. Currently it supports authentication, character creation, world login, update data (ie you can see other players in the world), inventory and movement data. It has been tested on vanilla WoW; may work with TBC but won't work with newer versions.
 
 The emulator is made up of two parts, the login server and the world server.
 
