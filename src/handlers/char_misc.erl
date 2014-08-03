@@ -19,9 +19,10 @@ far_sight(Data) ->
 	ok.
 
 set_selection(Data) ->
+	% TargetGuid is 0 when a target is deselected
 	<<TargetGuid?Q>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
-	char_data:store_selection(Guid, TargetGuid),
+	char_sess:store_target(Guid, TargetGuid),
 	ok.
 
 tutorial_flag(_Data) ->

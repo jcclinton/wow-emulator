@@ -84,9 +84,8 @@ upgrade() -> ok.
 store_dummy_session_key(Account) ->
 	Prime = srp:getPrime(),
 	Generator = srp:getGenerator(),
-	Private = srp:generatePrivate(),
 	Salt = srp:generatePrivate(),
-	Public = srp:getClientPublic(Generator, Prime, Private),
+	{Public, Private} = srp:getClientPublicPrivate(Generator, Prime),
 	DerivedKey = srp:getDerivedKey(<<"dummy">>, <<"data">>, Salt),
 	Verifier = srp:getVerifier(Generator, Prime, DerivedKey),
 	Skey = srp:computeServerKey(Private, Public, Public, Prime, Verifier),

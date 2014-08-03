@@ -63,7 +63,7 @@ set_uint32_mark_if_needed(Field, NewValue, Values) ->
 set_uint32_mark_if_needed(Field, NewValue, Values, MarkUpdate) ->
 	Value = object_values:get_uint32_value(Field, Values),
 	if Value /= NewValue ->
-			if MarkUpdate -> mark_update(Field, Values);
+			if MarkUpdate -> mark_update(Field, Values, 32);
 				true -> ok
 			end,
 			object_values:set_uint32_value(Field, NewValue, Values);
@@ -90,7 +90,7 @@ set_byte_mark_if_needed(Field, NewValue, Values, Offset) ->
 set_byte_mark_if_needed(Field, NewValue, Values, Offset, MarkUpdate) ->
 	Value = object_values:get_byte_value(Field, Values, Offset),
 	if Value /= NewValue ->
-			if MarkUpdate -> mark_update(Field, Values);
+			if MarkUpdate -> mark_update(Field, Values, 32);
 				true -> ok
 			end,
 			object_values:set_byte_value(Field, NewValue, Values, Offset);
@@ -162,16 +162,17 @@ item(Slot, Values) ->
 
 %% private
 
+mark_update(Field, Values, 32) when is_atom(Field) ->
+	Index = update_fields:fields(Field),
+	mark_update(Index, Values, 32);
+mark_update(Index, Values, 32) ->
+	mark_update([Index], Values);
 mark_update(Field, Values, 64) when is_atom(Field) ->
 	Index = update_fields:fields(Field),
 	mark_update(Index, Values, 64);
 mark_update(Index, Values, 64) ->
-	mark_update(Index + 1, Values),
-	mark_update(Index, Values).
+	mark_update([Index, Index + 1], Values).
 
-mark_update(Field, Values) ->
+mark_update(Indices, Values) when is_list(Indices) ->
 	Guid = get(guid, Values),
-	Mask = char_data:get_mask(Guid),
-	NewMask = update_mask:set_bit(Field, Mask),
-	char_data:store_mask(Guid, NewMask),
-	ok.
+	char_sess:mark_update(Guid, Indices).

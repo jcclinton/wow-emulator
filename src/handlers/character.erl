@@ -62,7 +62,9 @@ logout(Data) ->
 
 	ok = world:remove_from_map(Guid),
 
-	player_controller:logout_char(AccountId, Guid),
+	% after a few seconds, kill player controller
+	% this will give the client time to send any shutdown commands
+	timer:apply_after(2000, player_controller, logout_char, [AccountId, Guid]),
 	ok.
 
 

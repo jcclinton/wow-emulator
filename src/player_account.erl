@@ -35,7 +35,7 @@ init({AccountId}) ->
 	{ok, #state{account_id=AccountId}}.
 
 handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId}) ->
-	Args = [{payload, Payload}, {account_id, AccountId}, {op_atom, OpAtom}],
+	Args = [{account_id, AccountId}, {payload, Payload}, {op_atom, OpAtom}],
 	player_workers_sup:start_worker({Callback, Args}, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->

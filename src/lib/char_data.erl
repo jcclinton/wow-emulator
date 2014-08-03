@@ -6,8 +6,6 @@
 -export([equip_starting_items/1]).
 -export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
 -export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2]).
--export([store_selection/2, store_mask/2, clear_mask/1]).
--export([get_mask/1]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -58,6 +56,7 @@ cleanup() ->
 
 
 
+
 % authorized connection data
 
 store_connected_client(AccountId, Key) ->
@@ -68,28 +67,6 @@ get_session_key(AccountId) ->
 	[{_, Key}] = ets:lookup(?conn, AccountId),
 	Key.
 
-
-store_selection(Guid, Target) ->
-	Sess = get_sess(Guid),
-	NewSess = Sess#char_sess{target=Target},
-	ets:insert(?char_sess, {Guid, NewSess}).
-
-store_mask(Guid, Mask) ->
-	Sess = get_sess(Guid),
-	NewSess = Sess#char_sess{update_mask=Mask},
-	ets:insert(?char_sess, {Guid, NewSess}).
-
-get_mask(Guid) ->
-	Sess = get_sess(Guid),
-	Sess#char_sess.update_mask.
-
-clear_mask(Guid) ->
-	EmptyMask = update_mask:empty(),
-	store_mask(Guid, EmptyMask).
-
-get_sess(Guid) ->
-	[{Guid, Sess}] = ets:lookup(?char_sess, Guid),
-	Sess.
 
 
 
