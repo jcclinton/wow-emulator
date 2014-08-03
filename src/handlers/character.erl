@@ -378,7 +378,13 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_STAT4', Spirit, uint32},
     {'UNIT_FIELD_BASE_HEALTH', Health, uint32},
     {'UNIT_FIELD_BASE_MANA', Power, uint32},
-    {'UNIT_FIELD_RESISTANCES', 0, uint32},
+    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 0}}, % base armor
+    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 1}}, % unknown
+    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 2}}, % base fire res
+    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 3}}, % base nature res
+    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 4}}, % base frost res
+    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 5}}, % base shadow res
+    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 6}}, % base arcane res
     {'UNIT_FIELD_BASEATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_OFFHANDATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_RANGEDATTACKTIME', DefaultAttackTime, float},
