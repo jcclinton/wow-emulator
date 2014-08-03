@@ -64,7 +64,7 @@ logout(Data) ->
 
 	% after a few seconds, kill player controller
 	% this will give the client time to send any shutdown commands
-	timer:apply_after(2000, player_controller, logout_char, [AccountId, Guid]),
+	timer:apply_after(1000, player_controller, logout_char, [AccountId, Guid]),
 	ok.
 
 

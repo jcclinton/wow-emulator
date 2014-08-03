@@ -33,7 +33,11 @@ login_char(AccountId, Guid) ->
 
 logout_char(AccountId, Guid) ->
 	Pid = get_pid(AccountId),
-	gen_server:cast(Pid, {logout_char, Guid}).
+	% this may error if client is shutdown suddenly
+	% because the player_character process waits several seconds to shutdown
+	% but it is not important at that point
+	% so just ignore the error
+	catch gen_server:cast(Pid, {logout_char, Guid}).
 
 
 
@@ -119,5 +123,6 @@ build_pid_key(AccountId) ->
 
 get_pid(AccountId) ->
 	Key = build_pid_key(AccountId),
-	gproc:lookup_pid({n, l, Key}).
+	% this may error if client is shutdown suddenly
+	catch gproc:lookup_pid({n, l, Key}).
 
