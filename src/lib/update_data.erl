@@ -178,15 +178,18 @@ is_float_field(Index) ->
 	end.
 		
 
+% adds uint32 number to acc
 build_uint32(Index, Values, Bin) ->
 	Value = object_values:get_value(Index, Values),
 	<<Bin/binary, Value?L>>.
 
+% converts float to uint32
 build_float(Index, Values, Bin) ->
 	Value = object_values:get_float_value(Index, Values),
 	UintValue = round(Value),
 	<<Bin/binary, UintValue?L>>.
 
+% converts positive float to uint32
 build_non_neg_float(Index, Values, Bin) ->
 	RawValue = object_values:get_float_value(Index, Values),
 	Value = if RawValue < 0 -> 0;
