@@ -7,13 +7,15 @@
 	update_timer,
 	last_swing,
 	timestamp,
-	marked_indices
+	marked_indices,
+	is_melee_attacking
 }).
 
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([handle_packet/4, mark_update/2]).
+-export([start_melee_attack/1, stop_melee_attack/1]).
 
 
 -include("include/binary.hrl").
@@ -32,6 +34,15 @@ handle_packet(AccountId, OpAtom, Callback, Payload) ->
 mark_update(Guid, Indices) when is_list(Indices) ->
 	Pid = get_pid(Guid),
 	gen_server:cast(Pid, {mark_update, Indices}).
+
+
+start_melee_attack(Guid) ->
+	Pid = get_pid(Guid),
+	gen_server:cast(Pid, start_melee_attack).
+
+stop_melee_attack(Guid) ->
+	Pid = get_pid(Guid),
+	gen_server:cast(Pid, stop_melee_attack).
 	
 
 
@@ -53,9 +64,16 @@ init({AccountId, Guid}) ->
 	gproc:reg({n, l, Guid}, none),
 
 	{ok, TRef} = timer:send_interval(?update_timer_interval, update),
-	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now(), last_swing=0, marked_indices=[]}}.
+	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now(), last_swing=0, marked_indices=[], is_melee_attacking=false}}.
 
 
+handle_cast(start_melee_attack, State = #state{is_melee_attacking=IsAttacking, last_swing=LastSwing}) ->
+	NewLastSwing = if IsAttacking -> LastSwing;
+		not IsAttacking -> 0
+	end,
+	{noreply, State#state{is_melee_attacking=true, last_swing=NewLastSwing}};
+handle_cast(stop_melee_attack, State) ->
+	{noreply, State#state{is_melee_attacking=false, last_swing=0}};
 handle_cast({mark_update, Indices}, State = #state{marked_indices=StoredIndices}) ->
 	NewIndices = Indices ++ StoredIndices,
 	{noreply, State#state{marked_indices=NewIndices}};
@@ -72,30 +90,36 @@ handle_call(_Msg, _From, State) ->
 	{reply, ok, State}.
 
 
-handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing, marked_indices=Indices}) ->
+handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing, marked_indices=Indices, is_melee_attacking=IsAttacking}) ->
+
 	CurrentTs = now(),
-	% now_diff returns diff in microseconds
-	Diff = timer:now_diff(CurrentTs, Ts) div 1000,
 
-	NextLastSwing = if LastSwing > 2000 ->
-			AttackOpAtom = smsg_attackerstateupdate,
+	NextLastSwing = if IsAttacking ->
+			% now_diff returns diff in microseconds
+			Diff = timer:now_diff(CurrentTs, Ts) div 1000,
 
-			HitInfo = ?hitinfo_normalswing,
-			PackGuid = guid:pack(Guid),
-			TargetGuid = char_sess:get_target(Guid),
-			TargetPackGuid = guid:pack(TargetGuid),
-			Damage = 5,
-			DamageSchoolMask = 0,
-			Absorb = 0,
-			Resist = 0,
-			TargetState = ?victimstate_normal,
-			Blocked = 0,
+			if LastSwing > 2000 ->
+					AttackOpAtom = smsg_attackerstateupdate,
 
-			Payload = <<HitInfo?L, PackGuid/binary, TargetPackGuid/binary, Damage?L, 1?B, DamageSchoolMask?L, Damage?f, Damage?L, Absorb?L, Resist?L, TargetState?L, 0?L, 0?L, Blocked?L>>,
-			%world:send_to_all(AttackOpAtom, Payload),
-			0;
-		true ->
-			Diff + LastSwing
+					HitInfo = ?hitinfo_normalswing,
+					PackGuid = guid:pack(Guid),
+					TargetGuid = char_sess:get_target(Guid),
+					TargetPackGuid = guid:pack(TargetGuid),
+					Damage = 5,
+					DamageSchoolMask = 0,
+					Absorb = 0,
+					Resist = 0,
+					TargetState = ?victimstate_normal,
+					Blocked = 0,
+
+					Payload = <<HitInfo?L, PackGuid/binary, TargetPackGuid/binary, Damage?L, 1?B, DamageSchoolMask?L, Damage?f, Damage?L, Absorb?L, Resist?L, TargetState?L, 0?L, 0?L, Blocked?L>>,
+					world:send_to_all(AttackOpAtom, Payload),
+					0;
+				true ->
+					Diff + LastSwing
+			end;
+		not IsAttacking ->
+			LastSwing
 	end,
 
 

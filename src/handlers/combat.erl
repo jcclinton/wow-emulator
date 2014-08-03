@@ -8,20 +8,27 @@
 attack_swing(Data) ->
 	Guid = recv_data:get(guid, Data),
 	<<TargetGuid?Q>> = recv_data:get(payload, Data),
-	io:format("attack swing~n"),
+	io:format("start attack~n"),
 
 	StartPayload = <<Guid?Q, TargetGuid?Q>>,
 	OpAtom = smsg_attackstart,
 	world:send_to_all(OpAtom, StartPayload),
+
+	player_character:start_melee_attack(Guid),
 	ok.
 
-	%error case
-	%PackGuid = <<16#FF?B, Guid?Q>>,
-	%TargetPackGuid = <<16#FF?B, TargetGuid?Q>>,
-	%StopPayload = <<PackGuid/binary, TargetPackGuid/binary, 0?L>>,
-	%{smsg_attackstop, StopPayload}.
 
-attack_stop(_Data) ->
+attack_stop(Data) ->
 	% payload is empty
-	io:format("attack stop~n"),
-	ok.
+	Guid = recv_data:get(guid, Data),
+	player_character:stop_melee_attack(Guid),
+	io:format("stop attack~n"),
+
+	% normally this is when a fight ends,
+	% or on an error
+	% but for now just end it when the client stops auto-attacking
+	PackGuid = guid:pack(Guid),
+	TargetGuid = char_sess:get_target(Guid),
+	TargetPackGuid = guid:pack(TargetGuid),
+	StopPayload = <<PackGuid/binary, TargetPackGuid/binary, 0?L>>,
+	{smsg_attackstop, StopPayload}.
