@@ -4,3 +4,6 @@
 
 -define(default_scale, 1).
 -define(default_attack_time, 2000.0).
+
+-define(standing, 0).
+-define(sitting, 1).
