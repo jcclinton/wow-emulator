@@ -22,9 +22,11 @@ set_sheathed(Value, Values) ->
 % sitting 1
 % standing 0
 set_anim_state(AnimState, Values) ->
+	set_anim_state(AnimState, Values, true).
+set_anim_state(AnimState, Values, MarkUpdate) ->
 	Field = 'UNIT_FIELD_BYTES_1',
 	Offset = 0,
-	set_byte_mark_if_needed(Field, AnimState, Values, Offset).
+	set_byte_mark_if_needed(Field, AnimState, Values, Offset, MarkUpdate).
 
 
 
@@ -150,6 +152,13 @@ class(Values) ->
 
 gender(Values) ->
 	object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 2).
+
+swing_timer(Values) ->
+	object_values:get_float_value('UNIT_FIELD_BASEATTACKTIME', Values).
+
+anim_state(Values) ->
+	object_values:get_byte_value('UNIT_FIELD_BYTES_1', Values, 0).
+
 
 %returns guid of item in a given slot
 item(Slot, Values) ->

@@ -98,23 +98,13 @@ handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing
 			% now_diff returns diff in microseconds
 			Diff = timer:now_diff(CurrentTs, Ts) div 1000,
 
-			if LastSwing > 2000 ->
-					AttackOpAtom = smsg_attackerstateupdate,
-
-					HitInfo = ?hitinfo_normalswing,
-					PackGuid = guid:pack(Guid),
-					TargetGuid = char_sess:get_target(Guid),
-					TargetPackGuid = guid:pack(TargetGuid),
-					Damage = 5,
-					DamageSchoolMask = 0,
-					Absorb = 0,
-					Resist = 0,
-					TargetState = ?victimstate_normal,
-					Blocked = 0,
-
-					Payload = <<HitInfo?L, PackGuid/binary, TargetPackGuid/binary, Damage?L, 1?B, DamageSchoolMask?L, Damage?f, Damage?L, Absorb?L, Resist?L, TargetState?L, 0?L, 0?L, Blocked?L>>,
-					world:send_to_all(AttackOpAtom, Payload),
-					0;
+			CharValues = char_data:get_values(Guid),
+			SwingTimer = char_values:get(swing_timer, CharValues),
+			if LastSwing >= SwingTimer ->
+					Swung = melee:swing(Guid),
+					if Swung -> 0;
+						not Swung -> LastSwing
+					end;
 				true ->
 					Diff + LastSwing
 			end;
@@ -125,8 +115,7 @@ handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing
 
 
 	% if any values have been changed, do update
-	Len = length(Indices),
-	if Len > 0 ->
+	if Indices /= [] ->
 			Mask = lists:foldl(fun(Index, MaskAcc) ->
 				update_mask:set_bit(Index, MaskAcc)
 			end, update_mask:empty_player(), Indices),
@@ -135,7 +124,7 @@ handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing
 			{OpAtom, Msg} = update_data:build_update_packet(Mask, Values),
 			world:send_to_all(OpAtom, Msg),
 			ok;
-		Len == 0 -> ok
+		Indices == [] -> ok
 	end,
 
 	{noreply, State#state{timestamp=CurrentTs, last_swing=NextLastSwing, marked_indices=[]}};
