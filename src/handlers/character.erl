@@ -340,10 +340,10 @@ create_char_values(Data, Guid) ->
 
 	Health = CreateInfo#char_create_info.health,
 	Power = CreateInfo#char_create_info.power,
-	{Mana, Rage, Energy} = case CreateInfo#char_create_info.power_type of
-		rage -> {0, Power, 0};
-		energy -> {0, 0, Power};
-		_ -> {Power, 0, 0}
+	{PowerType, Mana, Rage, Energy} = case CreateInfo#char_create_info.power_type of
+		rage -> {?power_rage, 0, Power, 0};
+		energy -> {?power_energy, 0, 0, Power};
+		_ -> {?power_mana, Power, 0, 0}
 	end,
 
 	% ffa
@@ -362,6 +362,7 @@ create_char_values(Data, Guid) ->
 		{'UNIT_FIELD_BYTES_0', Race, byte_0},
 		{'UNIT_FIELD_BYTES_0', Class, byte_1},
 		{'UNIT_FIELD_BYTES_0', Gender, byte_2},
+		{'UNIT_FIELD_BYTES_0', PowerType, byte_3},
     {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, byte_1},
     {'UNIT_FIELD_LEVEL', 1, uint32}, % level
     {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
@@ -396,18 +397,18 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_BASEATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_OFFHANDATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_RANGEDATTACKTIME', DefaultAttackTime, float},
-    {'UNIT_FIELD_MAXPOWER1', Mana, uint32},
-    {'UNIT_FIELD_MAXPOWER2', Rage, uint32},
-    {'UNIT_FIELD_MAXPOWER3', 0, uint32},
-    {'UNIT_FIELD_MAXPOWER4', Energy, uint32},
-    {'UNIT_FIELD_MAXPOWER5', 0, uint32},
+    {'UNIT_FIELD_MAXPOWER1', Mana, uint32}, %mana
+    {'UNIT_FIELD_MAXPOWER2', Rage, uint32}, %rage
+    {'UNIT_FIELD_MAXPOWER3', 0, uint32}, %focus
+    {'UNIT_FIELD_MAXPOWER4', Energy, uint32}, %energy
+    {'UNIT_FIELD_MAXPOWER5', 0, uint32}, %happiness
     {'UNIT_FIELD_POWER1', Mana, uint32},
     {'UNIT_FIELD_POWER2', Rage, uint32},
     {'UNIT_FIELD_POWER3', 0, uint32},
     {'UNIT_FIELD_POWER4', Energy, uint32},
     {'UNIT_FIELD_POWER5', 0, uint32},
     {'UNIT_FIELD_MAXHEALTH', Health, uint32},
-    {'UNIT_FIELD_FLAGS', 16#0008, uint32},
+    {'UNIT_FIELD_FLAGS', 16#0008, uint32}, % flags like non-selectable, non-movable, taxi-flight, silecenced, non-attackable, many more
     {'UNIT_FIELD_HEALTH', Health, uint32},
     {'UNIT_FIELD_BYTES_1', 16#EE, byte_1},
     {'PLAYER_EXPLORED_ZONES_1', 0, uint64},

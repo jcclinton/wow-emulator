@@ -1,3 +1,12 @@
+-define(power_mana, 0).
+-define(power_rage, 1).
+-define(power_focus, 2).
+-define(power_energy, 3).
+-define(power_happiness, 4).
+-define(power_all, 127).
+-define(power_health, 16#FFFFFFFE).
+-define(max_powers, 5).
+
 
 -define(player_slot_start, 0).
 -define(player_slot_end, 118).

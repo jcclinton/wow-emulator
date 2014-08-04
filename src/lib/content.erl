@@ -5,8 +5,7 @@
 -include("include/database_records.hrl").
 
 %% @type race() = human | orc | dwarf | night_elf |
-%%                undead | tauren | gnome | troll |
-%%                blood_elf | draenei.
+%%                undead | tauren | gnome | troll.
 %% @type class() = warrior | paladin | hunter | rogue |
 %%                 priest | death_knight | shaman |
 %%                 mage | warlock | druid.
@@ -22,29 +21,23 @@ char_create_info(Race, Class) ->
 
 
 %% @spec race_class_create_info(race(), class(), tuple()) -> tuple().
-race_class_create_info(human,     warrior, Rec) -> Rec#char_create_info{health = 60, power = 100};
-race_class_create_info(orc,       warrior, Rec) -> Rec#char_create_info{health = 80, power = 100};
-race_class_create_info(dwarf,     warrior, Rec) -> Rec#char_create_info{health = 90, power = 100};
-race_class_create_info(night_elf, warrior, Rec) -> Rec#char_create_info{health = 50, power = 100};
-race_class_create_info(undead,    warrior, Rec) -> Rec#char_create_info{health = 70, power = 100};
-race_class_create_info(tauren,    warrior, Rec) -> Rec#char_create_info{health = 80, power = 100};
-race_class_create_info(gnome,     warrior, Rec) -> Rec#char_create_info{health = 50, power = 100};
-race_class_create_info(troll,     warrior, Rec) -> Rec#char_create_info{health = 70, power = 100};
-race_class_create_info(blood_elf, warrior, Rec) -> Rec#char_create_info{health = 50, power = 100};
-race_class_create_info(draenei,   warrior, Rec) -> Rec#char_create_info{health = 70, power = 100};
+race_class_create_info(human,     warrior, Rec) -> Rec#char_create_info{health = 60, power = 1000};
+race_class_create_info(orc,       warrior, Rec) -> Rec#char_create_info{health = 80, power = 1000};
+race_class_create_info(dwarf,     warrior, Rec) -> Rec#char_create_info{health = 90, power = 1000};
+race_class_create_info(night_elf, warrior, Rec) -> Rec#char_create_info{health = 50, power = 1000};
+race_class_create_info(undead,    warrior, Rec) -> Rec#char_create_info{health = 70, power = 1000};
+race_class_create_info(tauren,    warrior, Rec) -> Rec#char_create_info{health = 80, power = 1000};
+race_class_create_info(gnome,     warrior, Rec) -> Rec#char_create_info{health = 50, power = 1000};
+race_class_create_info(troll,     warrior, Rec) -> Rec#char_create_info{health = 70, power = 1000};
 
 race_class_create_info(human,     paladin, Rec) -> Rec#char_create_info{health = 58, power = 80};
 race_class_create_info(dwarf,     paladin, Rec) -> Rec#char_create_info{health = 88, power = 79};
-race_class_create_info(blood_elf, paladin, Rec) -> Rec#char_create_info{health = 38, power = 140};
-race_class_create_info(draenei,   paladin, Rec) -> Rec#char_create_info{health = 48, power = 95};
 
 race_class_create_info(orc,       hunter, Rec) -> Rec#char_create_info{health = 76, power = 82};
 race_class_create_info(dwarf,     hunter, Rec) -> Rec#char_create_info{health = 86, power = 84};
 race_class_create_info(night_elf, hunter, Rec) -> Rec#char_create_info{health = 46, power = 85};
 race_class_create_info(tauren,    hunter, Rec) -> Rec#char_create_info{health = 76, power = 80};
 race_class_create_info(troll,     hunter, Rec) -> Rec#char_create_info{health = 66, power = 81};
-race_class_create_info(blood_elf, hunter, Rec) -> Rec#char_create_info{health = 45, power = 145};
-race_class_create_info(draenei,   hunter, Rec) -> Rec#char_create_info{health = 46, power = 100};
 
 race_class_create_info(human,     rogue, Rec) -> Rec#char_create_info{health = 55, power = 100};
 race_class_create_info(orc,       rogue, Rec) -> Rec#char_create_info{health = 75, power = 100};
@@ -53,15 +46,12 @@ race_class_create_info(night_elf, rogue, Rec) -> Rec#char_create_info{health = 4
 race_class_create_info(undead,    rogue, Rec) -> Rec#char_create_info{health = 65, power = 100};
 race_class_create_info(gnome,     rogue, Rec) -> Rec#char_create_info{health = 45, power = 100};
 race_class_create_info(troll,     rogue, Rec) -> Rec#char_create_info{health = 65, power = 100};
-race_class_create_info(blood_elf, rogue, Rec) -> Rec#char_create_info{health = 44, power = 100};
 
 race_class_create_info(human,     priest, Rec) -> Rec#char_create_info{health = 52, power = 160};
 race_class_create_info(dwarf,     priest, Rec) -> Rec#char_create_info{health = 82, power = 145};
 race_class_create_info(night_elf, priest, Rec) -> Rec#char_create_info{health = 51, power = 160};
 race_class_create_info(undead,    priest, Rec) -> Rec#char_create_info{health = 62, power = 130};
 race_class_create_info(troll,     priest, Rec) -> Rec#char_create_info{health = 62, power = 128};
-race_class_create_info(blood_elf, priest, Rec) -> Rec#char_create_info{health = 50, power = 220};
-race_class_create_info(draenei,   priest, Rec) -> Rec#char_create_info{health = 51, power = 175};
 
 % TODO: find death knight start values
 race_class_create_info(human,     death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
@@ -72,26 +62,20 @@ race_class_create_info(undead,    death_knight, Rec) -> Rec#char_create_info{hea
 race_class_create_info(tauren,    death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
 race_class_create_info(gnome,     death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
 race_class_create_info(troll,     death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(blood_elf, death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(draenei,   death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
 
 race_class_create_info(orc,       shaman, Rec) -> Rec#char_create_info{health = 77, power = 73};
 race_class_create_info(tauren,    shaman, Rec) -> Rec#char_create_info{health = 77, power = 71};
 race_class_create_info(troll,     shaman, Rec) -> Rec#char_create_info{health = 67, power = 72};
-race_class_create_info(draenei,   shaman, Rec) -> Rec#char_create_info{health = 47, power = 105};
 
 race_class_create_info(human,     mage, Rec) -> Rec#char_create_info{health = 52, power = 165};
 race_class_create_info(undead,    mage, Rec) -> Rec#char_create_info{health = 62, power = 135};
 race_class_create_info(gnome,     mage, Rec) -> Rec#char_create_info{health = 51, power = 210};
 race_class_create_info(troll,     mage, Rec) -> Rec#char_create_info{health = 62, power = 119};
-race_class_create_info(blood_elf, mage, Rec) -> Rec#char_create_info{health = 50, power = 225};
-race_class_create_info(draenei,   mage, Rec) -> Rec#char_create_info{health = 51, power = 180};
 
 race_class_create_info(human,     warlock, Rec) -> Rec#char_create_info{health = 53, power = 140};
 race_class_create_info(orc,       warlock, Rec) -> Rec#char_create_info{health = 73, power = 109};
 race_class_create_info(undead,    warlock, Rec) -> Rec#char_create_info{health = 63, power = 110};
 race_class_create_info(gnome,     warlock, Rec) -> Rec#char_create_info{health = 43, power = 185};
-race_class_create_info(blood_elf, warlock, Rec) -> Rec#char_create_info{health = 42, power = 200};
 
 race_class_create_info(night_elf, druid, Rec) -> Rec#char_create_info{health = 53, power = 100};
 race_class_create_info(tauren,    druid, Rec) -> Rec#char_create_info{health = 74, power = 67};
