@@ -9,11 +9,15 @@
 swing(Guid) ->
 	AttackOpAtom = smsg_attackerstateupdate,
 
+	Values = char_data:get_values(Guid),
+	MaxDamage = char_values:get(max_damage, Values),
+	MinDamage = char_values:get(min_damage, Values),
+	Damage = round(random:uniform() * (MaxDamage - MinDamage) + MinDamage),
+
 	HitInfo = ?hitinfo_normalswing,
 	PackGuid = guid:pack(Guid),
 	TargetGuid = char_sess:get_target(Guid),
 	TargetPackGuid = guid:pack(TargetGuid),
-	Damage = 5,
 	DamageSchoolMask = 0,
 	Absorb = 0,
 	Resist = 0,

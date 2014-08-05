@@ -156,6 +156,12 @@ gender(Values) ->
 swing_timer(Values) ->
 	object_values:get_float_value('UNIT_FIELD_BASEATTACKTIME', Values).
 
+max_damage(Values) ->
+	object_values:get_float_value('UNIT_FIELD_MAXDAMAGE', Values).
+
+min_damage(Values) ->
+	object_values:get_float_value('UNIT_FIELD_MINDAMAGE', Values).
+
 anim_state(Values) ->
 	object_values:get_byte_value('UNIT_FIELD_BYTES_1', Values, 0).
 
