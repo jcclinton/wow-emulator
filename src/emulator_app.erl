@@ -5,10 +5,6 @@
 
 
 start(normal, _Args) ->
-	% seed prng
-	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-	random:seed({A,B,C}),
-
 	char_data:init(),
 	char_sess:init(),
 	item_data:init(),

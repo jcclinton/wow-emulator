@@ -8,7 +8,8 @@
 	last_swing,
 	timestamp,
 	marked_indices,
-	is_melee_attacking
+	is_melee_attacking,
+	seed
 }).
 
 
@@ -56,6 +57,10 @@ init({AccountId, Guid}) ->
 	process_flag(trap_exit, true),
 	io:format("char SERVER started for ~p~n", [Guid]),
 
+	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
+	Seed = {A,B,C},
+	random:seed(Seed),
+
 	% create session for this char
 	char_sess:create(Guid),
 
@@ -64,7 +69,7 @@ init({AccountId, Guid}) ->
 	gproc:reg({n, l, Guid}, none),
 
 	{ok, TRef} = timer:send_interval(?update_timer_interval, update),
-	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now(), last_swing=0, marked_indices=[], is_melee_attacking=false}}.
+	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now(), last_swing=0, marked_indices=[], is_melee_attacking=false, seed=Seed}}.
 
 
 handle_cast(start_melee_attack, State = #state{is_melee_attacking=IsAttacking, last_swing=LastSwing}) ->
@@ -77,8 +82,8 @@ handle_cast(stop_melee_attack, State) ->
 handle_cast({mark_update, Indices}, State = #state{marked_indices=StoredIndices}) ->
 	NewIndices = Indices ++ StoredIndices,
 	{noreply, State#state{marked_indices=NewIndices}};
-handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
-	Args = [{op_atom, OpAtom}, {guid, Guid}, {payload, Payload}, {account_id, AccountId}],
+handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId, guid=Guid, seed=Seed}) ->
+	Args = [{op_atom, OpAtom}, {guid, Guid}, {payload, Payload}, {account_id, AccountId}, {seed, Seed}],
 	player_workers_sup:start_worker({Callback, Args}, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->
@@ -90,26 +95,27 @@ handle_call(_Msg, _From, State) ->
 	{reply, ok, State}.
 
 
-handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing, marked_indices=Indices, is_melee_attacking=IsAttacking}) ->
+handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing, marked_indices=Indices, is_melee_attacking=IsAttacking, seed=Seed}) ->
 
 	CurrentTs = now(),
 
-	NextLastSwing = if IsAttacking ->
+	{NextLastSwing, NextSeed} = if IsAttacking ->
 			% now_diff returns diff in microseconds
 			Diff = timer:now_diff(CurrentTs, Ts) div 1000,
 
 			CharValues = char_data:get_values(Guid),
 			SwingTimer = char_values:get(swing_timer, CharValues),
 			if LastSwing >= SwingTimer ->
-					Swung = melee:swing(Guid),
-					if Swung -> 0;
+					{Swung, NewSeed} = melee:swing(Guid, Seed),
+					NewLastSwing = if Swung -> 0;
 						not Swung -> LastSwing
-					end;
+					end,
+					{NewLastSwing, NewSeed};
 				true ->
-					Diff + LastSwing
+					{Diff + LastSwing, Seed}
 			end;
 		not IsAttacking ->
-			LastSwing
+			{LastSwing, Seed}
 	end,
 
 
@@ -127,7 +133,7 @@ handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing
 		Indices == [] -> ok
 	end,
 
-	{noreply, State#state{timestamp=CurrentTs, last_swing=NextLastSwing, marked_indices=[]}};
+	{noreply, State#state{timestamp=CurrentTs, last_swing=NextLastSwing, marked_indices=[], seed=NextSeed}};
 handle_info(Msg, State) ->
 	io:format("unknown message: ~p~n", [Msg]),
 	{noreply, State}.
