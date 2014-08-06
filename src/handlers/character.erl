@@ -439,10 +439,10 @@ create_char_values(Data, Guid) ->
     {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 6}},
 
     {'PLAYER_FIELD_POSSTAT0', 0.0, float}, % stat buff mods for strength
-    {'PLAYER_FIELD_POSSTAT1', 0.0, float}, % stat buff mods
-    {'PLAYER_FIELD_POSSTAT2', 0.0, float}, % stat buff mods
-    {'PLAYER_FIELD_POSSTAT3', 0.0, float}, % stat buff mods
-    {'PLAYER_FIELD_POSSTAT4', 0.0, float}, % stat buff mods
+    {'PLAYER_FIELD_POSSTAT1', 0.0, float}, % stat buff mods for agi
+    {'PLAYER_FIELD_POSSTAT2', 0.0, float}, % stat buff mods sta
+    {'PLAYER_FIELD_POSSTAT3', 0.0, float}, % stat buff mods int
+    {'PLAYER_FIELD_POSSTAT4', 0.0, float}, % stat buff mods spi
     {'PLAYER_FIELD_NEGSTAT0', 0.0, float}, % stat buff mods for strength
     {'PLAYER_FIELD_NEGSTAT1', 0.0, float}, % stat buff mods
     {'PLAYER_FIELD_NEGSTAT2', 0.0, float}, % stat buff mods

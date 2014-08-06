@@ -165,6 +165,21 @@ min_damage(Values) ->
 anim_state(Values) ->
 	object_values:get_byte_value('UNIT_FIELD_BYTES_1', Values, 0).
 
+mod_strength(Values) ->
+	object_values:get_float_value('PLAYER_FIELD_POSSTAT0', Values).
+
+mod_agility(Values) ->
+	object_values:get_float_value('PLAYER_FIELD_POSSTAT1', Values).
+
+mod_stamina(Values) ->
+	object_values:get_float_value('PLAYER_FIELD_POSSTAT2', Values).
+
+mod_intellect(Values) ->
+	object_values:get_float_value('PLAYER_FIELD_POSSTAT3', Values).
+
+mod_spirit(Values) ->
+	object_values:get_float_value('PLAYER_FIELD_POSSTAT4', Values).
+
 
 %returns guid of item in a given slot
 item(Slot, Values) ->

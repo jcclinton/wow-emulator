@@ -387,11 +387,12 @@ equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 	NewCharSlotValues = <<Head/binary, ItemGuid?Q, Rest/binary>>,
 	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
 
-	Values = char_data:get_values(OwnerGuid),
-	NewValues = char_values:set_item(DestSlot, ItemGuid, Values, true),
-	char_data:update_values(OwnerGuid, NewValues),
-
+	CharValues = char_data:get_values(OwnerGuid),
+	NewCharValues = char_values:set_item(DestSlot, ItemGuid, CharValues, true),
 	ItemValues = item_data:get_values(ItemGuid),
+	CharValuesOut = stats:update_values(NewCharValues, ItemValues),
+	char_data:update_values(OwnerGuid, CharValuesOut),
+
 	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
 	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
 	item_data:store_values(NewItemValues).
