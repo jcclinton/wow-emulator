@@ -22,6 +22,6 @@ update_values(CharValues, ItemId) when is_number(ItemId), is_binary(CharValues) 
 	Block = ItemProto#item_proto.block,
 
 	%io:format("stat type1: ~p~n stat value1: ~p~nstat type2: ~p~nstat value2: ~p~n", [StatType1, StatValue1, StatType2, StatValue2]),
-	io:format("armor: ~p~nblock: ~p~n", [Armor, Block]),
+	%io:format("armor: ~p~nblock: ~p~n", [Armor, Block]),
 
 	CharValues.

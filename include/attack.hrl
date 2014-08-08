@@ -23,3 +23,5 @@
 -define(victimstate_evades, 6).
 -define(victimstate_is_immune, 7).
 -define(victimstate_deflects, 8).
+
+-define(base_meleerange_offset, 1.33).
