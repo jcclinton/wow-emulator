@@ -48,6 +48,7 @@ handle_movement(Data) ->
 			Guid = recv_data:get(guid, Data),
 
 			char_data:update_coords(Guid, X, Y, Z, O, MoveData),
+			%io:format("o: ~p~n", [O]),
 			%io:format("coords: ~p, ~p, ~p~n", [X, Y, Z]),
 
 			PackGuid = <<7?B, Guid?G>>,
