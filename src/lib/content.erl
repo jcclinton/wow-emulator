@@ -530,11 +530,14 @@ lookup_item(ItemId) ->
 			DmgType5 = element(60, ItemProto),
 
 			Armor = element(61, ItemProto),
-			FireRes = element(62, ItemProto),
-			NatureRes = element(63, ItemProto),
-			FrostRes = element(64, ItemProto),
-			ShadowRes = element(65, ItemProto),
-			ArcaneRes = element(66, ItemProto),
+			HolyRes = element(62, ItemProto),
+			FireRes = element(63, ItemProto),
+			NatureRes = element(64, ItemProto),
+			FrostRes = element(65, ItemProto),
+			ShadowRes = element(66, ItemProto),
+			ArcaneRes = element(67, ItemProto),
+
+			Delay = element(68, ItemProto),
 
 			Block = element(116, ItemProto),
 
@@ -586,11 +589,14 @@ lookup_item(ItemId) ->
 				dmg_type5=DmgType5,
 
 				armor=Armor,
+				holy_res=HolyRes,
 				fire_res=FireRes,
 				nature_res=NatureRes,
 				frost_res=FrostRes,
 				shadow_res=ShadowRes,
 				arcane_res=ArcaneRes,
+
+				delay=Delay,
 
 				block=Block,
 

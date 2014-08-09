@@ -13,6 +13,60 @@
 
 % sets
 
+set(Type, Value, Input) ->
+	Values = if is_binary(Input) -> Input;
+		is_number(Input) ->
+			% input is the guid, lookup the values object
+			char_data:get_values(Input)
+	end,
+	try ?MODULE:Type(Value, Values) of
+		Val -> Val
+	catch
+		Error ->
+			io:format("ERROR trying to set ~p on type ~p for char_value: ~p~n", [Type, Value, Error]),
+			Values
+	end.
+
+
+armor(Value, Values) ->
+	Field = 'UNIT_FIELD_RESISTANCES',
+	Index = update_fields:fields(Field),
+	set_uint32_mark_if_needed(Index, Value, Values).
+
+block(Value, Values) ->
+	Field = 'PLAYER_BLOCK_PERCENTAGE',
+	Index = update_fields:fields(Field),
+	set_uint32_mark_if_needed(Index, Value, Values).
+
+delay(Value, Values) when not is_float(Value) ->
+	NewValue = float(Value),
+	delay(NewValue, Values);
+delay(Value, Values) ->
+	Field = 'UNIT_FIELD_BASEATTACKTIME',
+	Index = update_fields:fields(Field),
+	set_float_mark_if_needed(Index, Value, Values).
+
+min_damage(Value, Values) when not is_float(Value) ->
+	NewValue = float(Value),
+	min_damage(NewValue, Values);
+min_damage(Value, Values) ->
+	Field = 'UNIT_FIELD_MINDAMAGE',
+	Index = update_fields:fields(Field),
+	set_float_mark_if_needed(Index, Value, Values).
+
+max_damage(Value, Values) when not is_float(Value) ->
+	NewValue = float(Value),
+	max_damage(NewValue, Values);
+max_damage(Value, Values) ->
+	Field = 'UNIT_FIELD_MAXDAMAGE',
+	Index = update_fields:fields(Field),
+	set_float_mark_if_needed(Index, Value, Values).
+
+
+
+
+
+
 set_sheathed(Value, Values) ->
 	Field = 'UNIT_FIELD_BYTES_2',
 	Offset = 0,
@@ -59,6 +113,18 @@ set_visible_item(Slot, ItemId, Values, MarkUpdate) ->
 
 
 % private helpers
+
+set_float_mark_if_needed(Field, NewValue, Values) ->
+	set_float_mark_if_needed(Field, NewValue, Values, true).
+set_float_mark_if_needed(Field, NewValue, Values, MarkUpdate) ->
+	Value = object_values:get_float_value(Field, Values),
+	if Value /= NewValue ->
+			if MarkUpdate -> mark_update(Field, Values, 32);
+				true -> ok
+			end,
+			object_values:set_float_value(Field, NewValue, Values);
+		true -> Values
+	end.
 
 set_uint32_mark_if_needed(Field, NewValue, Values) ->
 	set_uint32_mark_if_needed(Field, NewValue, Values, true).
@@ -114,7 +180,7 @@ get(Type, Input) ->
 	catch
 		Error ->
 			io:format("ERROR trying to get char_value: ~p~n", [Error]),
-			0
+			Values
 	end.
 
 

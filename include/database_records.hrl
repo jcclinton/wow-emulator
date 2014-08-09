@@ -64,11 +64,14 @@
 	dmg_type5,
 
 	armor,
+	holy_res,
 	fire_res,
 	nature_res,
 	frost_res,
 	shadow_res,
 	arcane_res,
+
+	delay,
 
 	block,
 

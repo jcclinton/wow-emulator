@@ -390,7 +390,12 @@ equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 	CharValues = char_data:get_values(OwnerGuid),
 	NewCharValues = char_values:set_item(DestSlot, ItemGuid, CharValues, true),
 	ItemValues = item_data:get_values(ItemGuid),
-	CharValuesOut = stats:update_values(NewCharValues, ItemValues),
+
+	IsEquipSlot = is_equip_slot(DestSlot),
+	CharValuesOut = if IsEquipSlot ->
+			stats:update_values(NewCharValues, ItemValues);
+		true -> NewCharValues
+	end,
 	char_data:update_values(OwnerGuid, CharValuesOut),
 
 	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
