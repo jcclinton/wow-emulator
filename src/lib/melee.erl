@@ -9,16 +9,6 @@
 
 
 swing(Guid, Seed) ->
-	AttackOpAtom = smsg_attackerstateupdate,
-
-	Values = char_data:get_values(Guid),
-	MaxDamage = char_values:get(max_damage, Values),
-	MinDamage = char_values:get(min_damage, Values),
-	{Rand, NewSeed} = random:uniform_s(Seed),
-	Damage = round(Rand * (MaxDamage - MinDamage) + MinDamage),
-
-	HitInfo = ?hitinfo_normalswing,
-	PackGuid = guid:pack(Guid),
 	TargetGuid = char_sess:get_target(Guid),
 
 	TargetCharMove = char_data:get_char_move(TargetGuid),
@@ -39,18 +29,32 @@ swing(Guid, Seed) ->
 
 
 	%io:format("is facing: ~p is in distance: ~p~n", [IsFacing, IsInDistance]),
-	if IsFacing andalso IsInDistance ->
+	NewSeed = if IsFacing andalso IsInDistance ->
+			AttackOpAtom = smsg_attackerstateupdate,
+
+			Values = char_data:get_values(Guid),
+			MaxDamage = char_values:get(max_damage, Values),
+			MinDamage = char_values:get(min_damage, Values),
+			{Rand, NewSeed1} = random:uniform_s(Seed),
+			Damage = round(Rand * (MaxDamage - MinDamage) + MinDamage),
+			%io:format("max ~p min ~p dam ~p rand ~p~n", [MaxDamage, MinDamage, Damage, Rand]),
+
+			PackGuid = guid:pack(Guid),
 			TargetPackGuid = guid:pack(TargetGuid),
+
+			HitInfo = ?hitinfo_normalswing,
 			DamageSchoolMask = 0,
 			Absorb = 0,
 			Resist = 0,
 			TargetState = ?victimstate_normal,
 			Blocked = 0,
 
+			char_data:take_damage(Damage, TargetGuid),
+
 			Payload = <<HitInfo?L, PackGuid/binary, TargetPackGuid/binary, Damage?L, 1?B, DamageSchoolMask?L, Damage?f, Damage?L, Absorb?L, Resist?L, TargetState?L, 0?L, 0?L, Blocked?L>>,
 			world:send_to_all(AttackOpAtom, Payload),
-			ok;
-		true -> ok
+			NewSeed1;
+		true -> Seed
 	end,
 
 	{true, NewSeed}.
@@ -95,7 +99,7 @@ is_facing(O, {X, Y, _}, {Tx, Ty, _}) ->
 		LowerBound < UpperBound ->
 			Angle > LowerBound andalso Angle < UpperBound
 	end,
-	io:format("o: ~.2f lower: ~.2f upper: ~.2f angle: ~.2f result: ~p~n", [O, LowerBound, UpperBound, Angle, Result]),
+	%io:format("o: ~.2f lower: ~.2f upper: ~.2f angle: ~.2f result: ~p~n", [O, LowerBound, UpperBound, Angle, Result]),
 	Result.
 
 within_distance({X, Y, Z}, {Tx, Ty, Tz}) ->

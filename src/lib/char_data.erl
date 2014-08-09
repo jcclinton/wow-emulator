@@ -6,7 +6,7 @@
 -export([equip_starting_items/1]).
 -export([get_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
 -export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2]).
--export([stand/1]).
+-export([stand/1, take_damage/2]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -211,3 +211,13 @@ stand(Guid) ->
 			NewValues = char_values:set_anim_state(?standing, Values, false),
 			update_values(Guid, NewValues)
 	end.
+
+take_damage(Damage, Guid) ->
+	Values = get_values(Guid),
+	OldAmount = char_values:get(health, Values),
+	NewAmount = if OldAmount >= Damage ->
+			OldAmount - Damage;
+		OldAmount < Damage -> 0
+	end,
+	NewValues = char_values:set(health, NewAmount, Values),
+	update_values(Guid, NewValues).

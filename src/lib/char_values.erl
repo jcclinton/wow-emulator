@@ -33,6 +33,11 @@ armor(Value, Values) ->
 	Index = update_fields:fields(Field),
 	set_uint32_mark_if_needed(Index, Value, Values).
 
+health(Value, Values) ->
+	Field = 'UNIT_FIELD_HEALTH',
+	Index = update_fields:fields(Field),
+	set_uint32_mark_if_needed(Index, Value, Values).
+
 block(Value, Values) ->
 	Field = 'PLAYER_BLOCK_PERCENTAGE',
 	Index = update_fields:fields(Field),
@@ -245,6 +250,12 @@ mod_intellect(Values) ->
 
 mod_spirit(Values) ->
 	object_values:get_float_value('PLAYER_FIELD_POSSTAT4', Values).
+
+health(Values) ->
+	object_values:get_uint32_value('UNIT_FIELD_HEALTH', Values).
+
+max_health(Values) ->
+	object_values:get_uint32_value('UNIT_FIELD_MAXHEALTH', Values).
 
 
 %returns guid of item in a given slot
