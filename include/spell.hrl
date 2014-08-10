@@ -179,3 +179,227 @@
 -define(target_flag_unk1, 16#00004000).       %%< 199 spells, opening object/lock
 -define(target_flag_corpse, 16#00008000).       %%< pguid, resurrection spells
 -define(target_flag_unk2, 16#00010000).       %%< pguid, not used in any spells (can be set dynamically)
+
+
+
+
+
+-define(spellfamily_generic, 0).
+-define(spellfamily_environment, 1). % EVENTS, HOLIDAys, mostly aura related spells
+    % 2 - unused
+-define(spellfamily_mage, 3).
+-define(spellfamily_warrior, 4).
+-define(spellfamily_warlock, 5).
+-define(spellfamily_priest, 6).
+-define(spellfamily_druid, 7).
+-define(spellfamily_rogue, 8).
+-define(spellfamily_hunter, 9).
+-define(spellfamily_paladin, 10).
+-define(spellfamily_shaman, 11).
+    % 12 - unused
+-define(spellfamily_potion, 13).
+
+
+
+
+
+
+
+
+
+
+
+
+-define(spell_aura_none, 0).
+-define(spell_aura_bind_sight, 1).
+-define(spell_aura_mod_possess, 2).
+-define(spell_aura_periodic_damage, 3).
+-define(spell_aura_dummy, 4).
+-define(spell_aura_mod_confuse, 5).
+-define(spell_aura_mod_charm, 6).
+-define(spell_aura_mod_fear, 7).
+-define(spell_aura_periodic_heal, 8).
+-define(spell_aura_mod_attackspeed, 9).
+-define(spell_aura_mod_threat, 10).
+-define(spell_aura_mod_taunt, 11).
+-define(spell_aura_mod_stun, 12).
+-define(spell_aura_mod_damage_done, 13).
+-define(spell_aura_mod_damage_taken, 14).
+-define(spell_aura_damage_shield, 15).
+-define(spell_aura_mod_stealth, 16).
+-define(spell_aura_mod_stealth_detect, 17).
+-define(spell_aura_mod_invisibility, 18).
+-define(spell_aura_mod_invisibility_detection, 19).
+-define(spell_aura_obs_mod_health, 20).                         % 20,21 unofficial
+-define(spell_aura_obs_mod_mana, 21).
+-define(spell_aura_mod_resistance, 22).
+-define(spell_aura_periodic_trigger_spell, 23).
+-define(spell_aura_periodic_energize, 24).
+-define(spell_aura_mod_pacify, 25).
+-define(spell_aura_mod_root, 26).
+-define(spell_aura_mod_silence, 27).
+-define(spell_aura_reflect_spells, 28).
+-define(spell_aura_mod_stat, 29).
+-define(spell_aura_mod_skill, 30).
+-define(spell_aura_mod_increase_speed, 31).
+-define(spell_aura_mod_increase_mounted_speed, 32).
+-define(spell_aura_mod_decrease_speed, 33).
+-define(spell_aura_mod_increase_health, 34).
+-define(spell_aura_mod_increase_energy, 35).
+-define(spell_aura_mod_shapeshift, 36).
+-define(spell_aura_effect_immunity, 37).
+-define(spell_aura_state_immunity, 38).
+-define(spell_aura_school_immunity, 39).
+-define(spell_aura_damage_immunity, 40).
+-define(spell_aura_dispel_immunity, 41).
+-define(spell_aura_proc_trigger_spell, 42).
+-define(spell_aura_proc_trigger_damage, 43).
+-define(spell_aura_track_creatures, 44).
+-define(spell_aura_track_resources, 45).
+-define(spell_aura_46, 46).                                     % Ignore all Gear test spells
+-define(spell_aura_mod_parry_percent, 47).
+-define(spell_aura_48, 48).                                     % One periodic spell
+-define(spell_aura_mod_dodge_percent, 49).
+-define(spell_aura_mod_block_skill, 50).
+-define(spell_aura_mod_block_percent, 51).
+-define(spell_aura_mod_crit_percent, 52).
+-define(spell_aura_periodic_leech, 53).
+-define(spell_aura_mod_hit_chance, 54).
+-define(spell_aura_mod_spell_hit_chance, 55).
+-define(spell_aura_transform, 56).
+-define(spell_aura_mod_spell_crit_chance, 57).
+-define(spell_aura_mod_increase_swim_speed, 58).
+-define(spell_aura_mod_damage_done_creature, 59).
+-define(spell_aura_mod_pacify_silence, 60).
+-define(spell_aura_mod_scale, 61).
+-define(spell_aura_periodic_health_funnel, 62).
+-define(spell_aura_periodic_mana_funnel, 63).
+-define(spell_aura_periodic_mana_leech, 64).
+-define(spell_aura_mod_casting_speed_not_stack, 65).
+-define(spell_aura_feign_death, 66).
+-define(spell_aura_mod_disarm, 67).
+-define(spell_aura_mod_stalked, 68).
+-define(spell_aura_school_absorb, 69).
+-define(spell_aura_extra_attacks, 70).
+-define(spell_aura_mod_spell_crit_chance_school, 71).
+-define(spell_aura_mod_power_cost_school_pct, 72).
+-define(spell_aura_mod_power_cost_school, 73).
+-define(spell_aura_reflect_spells_school, 74).
+-define(spell_aura_mod_language, 75).
+-define(spell_aura_far_sight, 76).
+-define(spell_aura_mechanic_immunity, 77).
+-define(spell_aura_mounted, 78).
+-define(spell_aura_mod_damage_percent_done, 79).
+-define(spell_aura_mod_percent_stat, 80).
+-define(spell_aura_split_damage_pct, 81).
+-define(spell_aura_water_breathing, 82).
+-define(spell_aura_mod_base_resistance, 83).
+-define(spell_aura_mod_regen, 84).
+-define(spell_aura_mod_power_regen, 85).
+-define(spell_aura_channel_death_item, 86).
+-define(spell_aura_mod_damage_percent_taken, 87).
+-define(spell_aura_mod_health_regen_percent, 88).
+-define(spell_aura_periodic_damage_percent, 89).
+-define(spell_aura_mod_resist_chance, 90).
+-define(spell_aura_mod_detect_range, 91).
+-define(spell_aura_prevents_fleeing, 92).
+-define(spell_aura_mod_unattackable, 93).
+-define(spell_aura_interrupt_regen, 94).
+-define(spell_aura_ghost, 95).
+-define(spell_aura_spell_magnet, 96).
+-define(spell_aura_mana_shield, 97).
+-define(spell_aura_mod_skill_talent, 98).
+-define(spell_aura_mod_attack_power, 99).
+-define(spell_aura_auras_visible, 100).
+-define(spell_aura_mod_resistance_pct, 101).
+-define(spell_aura_mod_melee_attack_power_versus, 102).
+-define(spell_aura_mod_total_threat, 103).
+-define(spell_aura_water_walk, 104).
+-define(spell_aura_feather_fall, 105).
+-define(spell_aura_hover, 106).
+-define(spell_aura_add_flat_modifier, 107).
+-define(spell_aura_add_pct_modifier, 108).
+-define(spell_aura_add_target_trigger, 109).
+-define(spell_aura_mod_power_regen_percent, 110).
+-define(spell_aura_add_caster_hit_trigger, 111).
+-define(spell_aura_override_class_scripts, 112).
+-define(spell_aura_mod_ranged_damage_taken, 113).
+-define(spell_aura_mod_ranged_damage_taken_pct, 114).
+-define(spell_aura_mod_healing, 115).
+-define(spell_aura_mod_regen_during_combat, 116).
+-define(spell_aura_mod_mechanic_resistance, 117).
+-define(spell_aura_mod_healing_pct, 118).
+-define(spell_aura_share_pet_tracking, 119).
+-define(spell_aura_untrackable, 120).
+-define(spell_aura_empathy, 121).
+-define(spell_aura_mod_offhand_damage_pct, 122).
+-define(spell_aura_mod_target_resistance, 123).
+-define(spell_aura_mod_ranged_attack_power, 124).
+-define(spell_aura_mod_melee_damage_taken, 125).
+-define(spell_aura_mod_melee_damage_taken_pct, 126).
+-define(spell_aura_ranged_attack_power_attacker_bonus, 127).
+-define(spell_aura_mod_possess_pet, 128).
+-define(spell_aura_mod_speed_always, 129).
+-define(spell_aura_mod_mounted_speed_always, 130).
+-define(spell_aura_mod_ranged_attack_power_versus, 131).
+-define(spell_aura_mod_increase_energy_percent, 132).
+-define(spell_aura_mod_increase_health_percent, 133).
+-define(spell_aura_mod_mana_regen_interrupt, 134).
+-define(spell_aura_mod_healing_done, 135).
+-define(spell_aura_mod_healing_done_percent, 136).
+-define(spell_aura_mod_total_stat_percentage, 137).
+-define(spell_aura_mod_melee_haste, 138).
+-define(spell_aura_force_reaction, 139).
+-define(spell_aura_mod_ranged_haste, 140).
+-define(spell_aura_mod_ranged_ammo_haste, 141).
+-define(spell_aura_mod_base_resistance_pct, 142).
+-define(spell_aura_mod_resistance_exclusive, 143).
+-define(spell_aura_safe_fall, 144).
+-define(spell_aura_charisma, 145).
+-define(spell_aura_persuaded, 146).
+-define(spell_aura_mechanic_immunity_mask, 147).
+-define(spell_aura_retain_combo_points, 148).
+-define(spell_aura_resist_pushback , 149).                      %    Resist Pushback
+-define(spell_aura_mod_shield_blockvalue_pct, 150).
+-define(spell_aura_track_stealthed , 151).                      %    Track Stealthed
+-define(spell_aura_mod_detected_range, 152).                    %    Mod Detected Range
+-define(spell_aura_split_damage_flat, 153).                     %    Split Damage Flat
+-define(spell_aura_mod_stealth_level, 154).                     %    Stealth Level Modifier
+-define(spell_aura_mod_water_breathing, 155).                   %    Mod Water Breathing
+-define(spell_aura_mod_reputation_gain, 156).                   %    Mod Reputation Gain
+-define(spell_aura_pet_damage_multi, 157).                      %    Mod Pet Damage
+-define(spell_aura_mod_shield_blockvalue, 158).
+-define(spell_aura_no_pvp_credit, 159).
+-define(spell_aura_mod_aoe_avoidance, 160).                   %/< Reduces the hit chance for AOE spells
+-define(spell_aura_mod_health_regen_in_combat, 161).
+-define(spell_aura_power_burn_mana, 162).
+-define(spell_aura_mod_crit_damage_bonus, 163).
+-define(spell_aura_164, 164).
+-define(spell_aura_melee_attack_power_attacker_bonus, 165).
+-define(spell_aura_mod_attack_power_pct, 166).
+-define(spell_aura_mod_ranged_attack_power_pct, 167).
+-define(spell_aura_mod_damage_done_versus, 168).
+-define(spell_aura_mod_crit_percent_versus, 169).
+-define(spell_aura_detect_amore, 170).
+-define(spell_aura_mod_speed_not_stack, 171).
+-define(spell_aura_mod_mounted_speed_not_stack, 172).
+-define(spell_aura_allow_champion_spells, 173).
+-define(spell_aura_mod_spell_damage_of_stat_percent, 174).      % in 1.12.1 only dependent spirit case
+-define(spell_aura_mod_spell_healing_of_stat_percent, 175).
+-define(spell_aura_spirit_of_redemption, 176).
+-define(spell_aura_aoe_charm, 177).
+-define(spell_aura_mod_debuff_resistance, 178).
+-define(spell_aura_mod_attacker_spell_crit_chance, 179).
+-define(spell_aura_mod_flat_spell_damage_versus, 180).
+-define(spell_aura_mod_flat_spell_crit_damage_versus, 181).     % unused - possible flat spell crit damage versus
+-define(spell_aura_mod_resistance_of_stat_percent, 182).
+-define(spell_aura_mod_critical_threat, 183).
+-define(spell_aura_mod_attacker_melee_hit_chance, 184).
+-define(spell_aura_mod_attacker_ranged_hit_chance, 185).
+-define(spell_aura_mod_attacker_spell_hit_chance, 186).
+-define(spell_aura_mod_attacker_melee_crit_chance, 187).
+-define(spell_aura_mod_attacker_ranged_crit_chance, 188).
+-define(spell_aura_mod_rating, 189).
+-define(spell_aura_mod_faction_reputation_gain, 190).
+-define(spell_aura_use_normal_movement_speed, 191).
+
