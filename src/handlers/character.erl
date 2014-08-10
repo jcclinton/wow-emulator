@@ -5,6 +5,8 @@
 -include("include/database_records.hrl").
 -include("include/types.hrl").
 -include("include/character.hrl").
+-include("include/unit.hrl").
+-include("include/object.hrl").
 -include("include/shared_defines.hrl").
 
 
@@ -324,11 +326,16 @@ create_char_values(Data, Guid) ->
 
 
 	ObjectType = ?typemask_object bor ?typemask_unit bor ?typemask_player,
-	Unk3 = 16#08,
-	Unk5 = 16#20,
+	Unk3 = ?unit_byte2_flag_unk3,
+	Unk5 = ?unit_byte2_flag_unk5,
 	ModelId = CreateInfo#char_create_info.display_id + Gender,
 	NativeModelId = CreateInfo#char_create_info.display_id + Gender,
-	Scale = CreateInfo#char_create_info.scale,
+	Scale = if RaceName == tauren ->
+			if Gender == ?gender_male -> ?default_tauren_male_scale;
+				Gender == ?gender_female -> ?default_tauren_female_scale
+			end;
+		RaceName /= tauren -> ?default_object_scale
+	end,
 
 	Strength = erlang:round(CreateInfo#char_create_info.strength),
 	Agility = erlang:round(CreateInfo#char_create_info.agility),
@@ -347,7 +354,7 @@ create_char_values(Data, Guid) ->
 	end,
 
 	% ffa
-	PlayerFlags = 16#80,
+	PlayerFlags = ?player_flags_ffa_pvp,
 
 	DefaultAttackTime = ?default_attack_time,
 
@@ -367,7 +374,7 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_LEVEL', 1, uint32}, % level
     {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
     {'UNIT_FIELD_NATIVEDISPLAYID', NativeModelId, uint32},
-    {'UNIT_FIELD_FACTIONTEMPLATE', FactionTemplate, uint32}, %not sure what this should be
+    {'UNIT_FIELD_FACTIONTEMPLATE', FactionTemplate, uint32},
     {'UNIT_FIELD_CHARM', 0, uint64},
     {'UNIT_FIELD_CHANNEL_OBJECT', 0, uint64},
     {'UNIT_CHANNEL_SPELL', 0, uint32},
@@ -397,6 +404,7 @@ create_char_values(Data, Guid) ->
     {'UNIT_FIELD_BASEATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_OFFHANDATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_RANGEDATTACKTIME', DefaultAttackTime, float},
+    {'UNIT_MOD_CAST_SPEED', 1.0, float},
     {'UNIT_FIELD_MAXPOWER1', Mana, uint32}, %mana
     {'UNIT_FIELD_MAXPOWER2', Rage, uint32}, %rage
     {'UNIT_FIELD_MAXPOWER3', 0, uint32}, %focus
@@ -419,9 +427,10 @@ create_char_values(Data, Guid) ->
     {'PLAYER_BYTES', HairColor, byte_3},
     {'PLAYER_BYTES_2', FacialHair, byte_0},
     {'PLAYER_BYTES_2', 2, byte_3}, %rest state
-    {'PLAYER_BYTES_3', 0, uint16_0}, %drunk
+    {'PLAYER_BYTES_3', Gender, uint16_0}, % (drunk band 16#FFFE) bor Gender
+    {'PLAYER_BYTES_3', 0, byte_3}, % battlefield arena faction
     {'PLAYER_FLAGS', PlayerFlags, uint32},
-    {'PLAYER_FIELD_WATCHED_FACTION_INDEX', 16#ffff, uint32},
+    {'PLAYER_FIELD_WATCHED_FACTION_INDEX', -1, int32},
     {'PLAYER_FIELD_BYTES', 0, byte_2},
     {'PLAYER_CHARACTER_POINTS2', 2, uint32}, %num primary trade professions
     {'PLAYER_FARSIGHT', 0, uint64},

@@ -86,7 +86,6 @@ race_class_create_info(_, _, _) ->
 race_create_info(human, Rec) ->
     Rec#char_create_info{faction_template = 1, 
                          display_id       = 49, 
-                         scale            = 1, 
                          map_id           = 0, 
                          %zone_id          = 12, 
                          zone_id          = 33, 
@@ -106,7 +105,6 @@ race_create_info(human, Rec) ->
 race_create_info(orc, Rec) ->
     Rec#char_create_info{faction_template = 2, 
                          display_id       = 51, 
-                         scale            = 1, 
                          map_id           = 0, 
                          zone_id          = 33, 
 												 % temporarily spawn orcs in elwynn with humans
@@ -128,7 +126,6 @@ race_create_info(orc, Rec) ->
 race_create_info(dwarf, Rec) ->
     Rec#char_create_info{faction_template = 1, 
                          display_id       = 53, 
-                         scale            = 1, 
                          map_id           = 0, 
                          zone_id          = 1, 
                          intro            = 41,
@@ -144,7 +141,6 @@ race_create_info(dwarf, Rec) ->
 race_create_info(night_elf, Rec) ->
     Rec#char_create_info{faction_template = 1, 
                          display_id       = 55, 
-                         scale            = 1, 
                          map_id           = 1, 
                          zone_id          = 141, 
                          intro            = 61,
@@ -160,7 +156,6 @@ race_create_info(night_elf, Rec) ->
 race_create_info(undead, Rec) ->
     Rec#char_create_info{faction_template = 2, 
                          display_id       = 57, 
-                         scale            = 1, 
                          map_id           = 0, 
                          zone_id          = 85, 
                          intro            = 2,
@@ -176,7 +171,6 @@ race_create_info(undead, Rec) ->
 race_create_info(tauren, Rec) ->
     Rec#char_create_info{faction_template = 2, 
                          display_id       = 59, 
-                         scale            = 1.3, 
                          map_id           = 1, 
                          zone_id          = 215, 
                          intro            = 141,
@@ -192,7 +186,6 @@ race_create_info(tauren, Rec) ->
 race_create_info(gnome, Rec) ->
     Rec#char_create_info{faction_template = 1, 
                          display_id       = 1563, 
-                         scale            = 1, 
                          map_id           = 0, 
                          zone_id          = 1, 
                          intro            = 101,
@@ -208,7 +201,6 @@ race_create_info(gnome, Rec) ->
 race_create_info(troll, Rec) ->
     Rec#char_create_info{faction_template = 2, 
                          display_id       = 1478, 
-                         scale            = 1, 
                          map_id           = 1, 
                          zone_id          = 14, 
                          intro            = 121,

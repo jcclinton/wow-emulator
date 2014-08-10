@@ -60,3 +60,30 @@
 		%32 slots
 -define(keyring_slot_start, 81).
 -define(keyring_slot_end, 97).
+
+
+
+
+
+
+% used in the PLAYER_FLAGS field
+-define(player_flags_none, 16#00000000).
+-define(player_flags_group_leader, 16#00000001).
+-define(player_flags_afk, 16#00000002).
+-define(player_flags_dnd, 16#00000004).
+-define(player_flags_gm, 16#00000008).
+-define(player_flags_ghost, 16#00000010).
+-define(player_flags_resting, 16#00000020).
+-define(player_flags_unk7, 16#00000040).       %% admin?
+-define(player_flags_ffa_pvp, 16#00000080).
+-define(player_flags_contested_pvp, 16#00000100).       %% Player has been involved in a PvP combat and will be attacked by contested guards
+-define(player_flags_in_pvp, 16#00000200).
+-define(player_flags_hide_helm, 16#00000400).
+-define(player_flags_hide_cloak, 16#00000800).
+-define(player_flags_partial_play_time, 16#00001000).       %% played long time
+-define(player_flags_no_play_time, 16#00002000).       %% played too long time
+-define(player_flags_unk15, 16#00004000).
+-define(player_flags_unk16, 16#00008000).       %% strange visual effect (2.0.1), looks like PLAYER_FLAGS_GHOST flag
+-define(player_flags_sanctuary, 16#00010000).       %% player entered sanctuary
+-define(player_flags_taxi_benchmark, 16#00020000).       %% taxi benchmark mode (on/off) (2.0.1)
+-define(player_flags_pvp_timer, 16#00040000).       %% 3.0.2, pvp timer active (after you disable pvp manually)

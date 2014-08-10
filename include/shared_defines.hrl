@@ -7,3 +7,8 @@
 
 -define(standing, 0).
 -define(sitting, 1).
+
+
+-define(gender_male, 0).
+-define(gender_female, 1).
+-define(gender_none, 2).

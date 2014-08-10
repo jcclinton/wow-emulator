@@ -1,0 +1,3 @@
+-define(default_object_scale, 1.0).
+-define(default_tauren_male_scale, 1.35).
+-define(default_tauren_female_scale, 1.25).
