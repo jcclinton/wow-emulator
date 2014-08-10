@@ -1,4 +1,5 @@
 % network defines
+-define(SIL, /signed-little-integer).
 -define(IL, /unsigned-little-integer).
 -define(IB, /unsigned-big-integer).
 -define(f, :32/float-little).
@@ -12,14 +13,15 @@
 -define(QQB, :256?IB).
 -define(QH, :128?IL).
 
--define(SL, :320?IL). % sha1
--define(SLB, :320?IB). % sha1
+-define(SD, :320?IL). % sha1 double
+-define(SDB, :320?IB). % sha1 double big endian
 -define(SH, :160?IL). % sha1
--define(SHB, :160?IB). % sha1
+-define(SHB, :160?IB). % sha1 big endian
 
 -define(Q, :64?IL). % quad
 -define(QB, :64?IB). % quad
 -define(L, :32?IL). % long
+-define(SL, :32?SIL). % signed long
 -define(LB, :32?IB). % long
 -define(G, :24?IL). % used for guid
 -define(W, :16?IL). % word

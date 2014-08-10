@@ -221,8 +221,8 @@ l_to_b_endian(Msg, 160) ->
 	<<Num?SH>> = Msg,
 	<<Num?SHB>>;
 l_to_b_endian(Msg, 320) ->
-	<<Num?SL>> = Msg,
-	<<Num?SLB>>.
+	<<Num?SD>> = Msg,
+	<<Num?SDB>>.
 
 b_to_l_endian(Msg, 1024) ->
 	<<Num?KB>> = Msg,
@@ -234,5 +234,5 @@ b_to_l_endian(Msg, 160) ->
 	<<Num?SHB>> = Msg,
 	<<Num?SH>>;
 b_to_l_endian(Msg, 320) ->
-	<<Num?SLB>> = Msg,
-	<<Num?SL>>.
+	<<Num?SDB>> = Msg,
+	<<Num?SD>>.

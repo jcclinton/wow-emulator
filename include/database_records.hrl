@@ -130,6 +130,25 @@
 	equipped_item_class,
 	equipped_item_sub_class_mask,
 	equipped_item_inventory_type_mask,
+	effects,
+	spell_visual,
+	spell_icon_id,
+	active_icon_id,
+	spell_name,
+	rank,
+	mana_cost_percentage,
+	start_recovery_category,
+	start_recovery_time,
+	max_target_level,
+	spell_family_name,
+	spell_family_flags,
+	max_affected_targets,
+	dmg_class,
+	prevention_type,
+	dmg_multiplier}).
+
+
+-record(spell_effect, {
 	effect,
 	effect_die_sides,
 	effect_base_dice,
@@ -147,19 +166,5 @@
 	effect_item_type,
 	effect_misc_value,
 	effect_trigger_spell,
-	effect_points_per_combo_point,
-	spell_visual,
-	spell_icon_id,
-	active_icon_id,
-	spell_name,
-	rank,
-	mana_cost_percentage,
-	start_recovery_category,
-	start_recovery_time,
-	max_target_level,
-	spell_family_name,
-	spell_family_flags,
-	max_affected_targets,
-	dmg_class,
-	prevention_type,
-	dmg_multiplier}).
+	effect_points_per_combo_point
+}).

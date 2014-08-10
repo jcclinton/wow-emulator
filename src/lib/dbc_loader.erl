@@ -124,24 +124,62 @@ load_spells(Data, Strings) ->
 	EquippedItemClass?L,
 	EquippedItemSubClassMask?L,
 	EquippedItemInventoryTypeMask?L,
-	Effect?E, % array
-	EffectDieSides?E, %array, signed
-	EffectBaseDice?E, %array
-	EffectDicePerLevel?E, % array, floats
-	EffectRealPointsPerLevel?E, % array, floats
-	EffectBasePoints?E, % array, signed
-	EffectMechanic?E, % array
-	EffectImplicitTargetA?E, % array
-	EffectImplicitTargetB?E, % array
-	EffectRadiusIndex?E, % array
-	EffectApplyAuraName?E, % array
-	EffectAmplitude?E, % array
-	EffectMultipleValue?E, % array, floats
-	EffectChainTarget?E, % array
-	EffectItemType?E, % array
-	EffectMiscValue?E, % array, signed
-	EffectTriggerSpell?E, % array
-	EffectPointsPerComboPoint?E, % array, floats
+
+	Effect1?L,
+	Effect2?L,
+	Effect3?L,
+	EffectDieSides1?SL,
+	EffectDieSides2?SL,
+	EffectDieSides3?SL,
+	EffectBaseDice1?L,
+	EffectBaseDice2?L,
+	EffectBaseDice3?L,
+	EffectDicePerLevel1?f,
+	EffectDicePerLevel2?f,
+	EffectDicePerLevel3?f,
+	EffectRealPointsPerLevel1?f,
+	EffectRealPointsPerLevel2?f,
+	EffectRealPointsPerLevel3?f,
+	EffectBasePoints1?SL,
+	EffectBasePoints2?SL,
+	EffectBasePoints3?SL,
+	EffectMechanic1?L,
+	EffectMechanic2?L,
+	EffectMechanic3?L,
+	EffectImplicitTargetA1?L,
+	EffectImplicitTargetA2?L,
+	EffectImplicitTargetA3?L,
+	EffectImplicitTargetB1?L,
+	EffectImplicitTargetB2?L,
+	EffectImplicitTargetB3?L,
+	EffectRadiusIndex1?L,
+	EffectRadiusIndex2?L,
+	EffectRadiusIndex3?L,
+	EffectApplyAuraName1?L,
+	EffectApplyAuraName2?L,
+	EffectApplyAuraName3?L,
+	EffectAmplitude1?L,
+	EffectAmplitude2?L,
+	EffectAmplitude3?L,
+	EffectMultipleValue1?f,
+	EffectMultipleValue2?f,
+	EffectMultipleValue3?f,
+	EffectChainTarget1?L,
+	EffectChainTarget2?L,
+	EffectChainTarget3?L,
+	EffectItemType1?L,
+	EffectItemType2?L,
+	EffectItemType3?L,
+	EffectMiscValue1?SL,
+	EffectMiscValue2?SL,
+	EffectMiscValue3?SL,
+	EffectTriggerSpell1?L,
+	EffectTriggerSpell2?L,
+	EffectTriggerSpell3?L,
+	EffectPointsPerComboPoint1?f,
+	EffectPointsPerComboPoint2?f,
+	EffectPointsPerComboPoint3?f,
+
 	SpellVisual?L,
 	_SpellVisual2?L,
 	SpellIconId?L,
@@ -165,12 +203,81 @@ load_spells(Data, Strings) ->
 	DmgClass?L,
 	PreventionType?L,
 	_StanceBarOrder?L,
-	DmgMultiplier?E, % array, floats
+	DmgMultiplier1?f,
+	DmgMultiplier2?f,
+	DmgMultiplier3?f,
 	_MinFactionId?L,
 	_MinReputation?L,
 	_RequiredAuraVision?L,
 
 	Rest/binary>> = Data,
+
+
+
+	Effect3Rec = #spell_effect{
+		effect=Effect3,
+		effect_die_sides=EffectDieSides3,
+		effect_base_dice=EffectBaseDice3,
+		effect_dice_per_level=EffectDicePerLevel3,
+		effect_real_points_per_level=EffectRealPointsPerLevel3,
+		effect_base_points=EffectBasePoints3,
+		effect_mechanic=EffectMechanic3,
+		effect_implicit_target_a=EffectImplicitTargetA3,
+		effect_implicit_target_b=EffectImplicitTargetB3,
+		effect_radius_index=EffectRadiusIndex3,
+		effect_apply_aura_name=EffectApplyAuraName3,
+		effect_amplitude=EffectAmplitude3,
+		effect_multiple_value=EffectMultipleValue3,
+		effect_chain_target=EffectChainTarget3,
+		effect_item_type=EffectItemType3,
+		effect_misc_value=EffectMiscValue3,
+		effect_trigger_spell=EffectTriggerSpell3,
+		effect_points_per_combo_point=EffectPointsPerComboPoint3
+	},
+	Effect2Rec = #spell_effect{
+		effect=Effect2,
+		effect_die_sides=EffectDieSides2,
+		effect_base_dice=EffectBaseDice2,
+		effect_dice_per_level=EffectDicePerLevel2,
+		effect_real_points_per_level=EffectRealPointsPerLevel2,
+		effect_base_points=EffectBasePoints2,
+		effect_mechanic=EffectMechanic2,
+		effect_implicit_target_a=EffectImplicitTargetA2,
+		effect_implicit_target_b=EffectImplicitTargetB2,
+		effect_radius_index=EffectRadiusIndex2,
+		effect_apply_aura_name=EffectApplyAuraName2,
+		effect_amplitude=EffectAmplitude2,
+		effect_multiple_value=EffectMultipleValue2,
+		effect_chain_target=EffectChainTarget2,
+		effect_item_type=EffectItemType2,
+		effect_misc_value=EffectMiscValue2,
+		effect_trigger_spell=EffectTriggerSpell2,
+		effect_points_per_combo_point=EffectPointsPerComboPoint2
+	},
+	Effect1Rec = #spell_effect{
+		effect=Effect1,
+		effect_die_sides=EffectDieSides1,
+		effect_base_dice=EffectBaseDice1,
+		effect_dice_per_level=EffectDicePerLevel1,
+		effect_real_points_per_level=EffectRealPointsPerLevel1,
+		effect_base_points=EffectBasePoints1,
+		effect_mechanic=EffectMechanic1,
+		effect_implicit_target_a=EffectImplicitTargetA1,
+		effect_implicit_target_b=EffectImplicitTargetB1,
+		effect_radius_index=EffectRadiusIndex1,
+		effect_apply_aura_name=EffectApplyAuraName1,
+		effect_amplitude=EffectAmplitude1,
+		effect_multiple_value=EffectMultipleValue1,
+		effect_chain_target=EffectChainTarget1,
+		effect_item_type=EffectItemType1,
+		effect_misc_value=EffectMiscValue1,
+		effect_trigger_spell=EffectTriggerSpell1,
+		effect_points_per_combo_point=EffectPointsPerComboPoint1
+	},
+
+	Effects = lists:filter(fun(EffRec) ->
+		EffRec#spell_effect.effect /= 0
+	end, [Effect1Rec, Effect2Rec, Effect3Rec]),
 
 	Name = lookup_string(SpellName, Strings),
 	RankName = lookup_string(Rank, Strings),
@@ -220,24 +327,9 @@ load_spells(Data, Strings) ->
 		equipped_item_class=EquippedItemClass,
 		equipped_item_sub_class_mask=EquippedItemSubClassMask,
 		equipped_item_inventory_type_mask=EquippedItemInventoryTypeMask,
-		effect=Effect,
-		effect_die_sides=EffectDieSides,
-		effect_base_dice=EffectBaseDice,
-		effect_dice_per_level=EffectDicePerLevel,
-		effect_real_points_per_level=EffectRealPointsPerLevel,
-		effect_base_points=EffectBasePoints,
-		effect_mechanic=EffectMechanic,
-		effect_implicit_target_a=EffectImplicitTargetA,
-		effect_implicit_target_b=EffectImplicitTargetB,
-		effect_radius_index=EffectRadiusIndex,
-		effect_apply_aura_name=EffectApplyAuraName,
-		effect_amplitude=EffectAmplitude,
-		effect_multiple_value=EffectMultipleValue,
-		effect_chain_target=EffectChainTarget,
-		effect_item_type=EffectItemType,
-		effect_misc_value=EffectMiscValue,
-		effect_trigger_spell=EffectTriggerSpell,
-		effect_points_per_combo_point=EffectPointsPerComboPoint,
+
+		effects=Effects,
+
 		spell_visual=SpellVisual,
 		spell_icon_id=SpellIconId,
 		active_icon_id=ActiveIconId,
@@ -252,7 +344,7 @@ load_spells(Data, Strings) ->
 		max_affected_targets=MaxAffectedTargets,
 		dmg_class=DmgClass,
 		prevention_type=PreventionType,
-		dmg_multiplier=DmgMultiplier
+		dmg_multiplier=[DmgMultiplier1, DmgMultiplier2, DmgMultiplier3]
 	},
 	{spell_store, Id, Record, Rest}.
 
