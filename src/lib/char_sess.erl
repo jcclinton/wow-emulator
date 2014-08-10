@@ -28,6 +28,12 @@ get_sess(Guid) ->
 	[{Guid, Sess}] = ets:lookup(?sess, Guid),
 	Sess.
 
+is_logged_in(Guid) ->
+	case ets:lookup(?sess, Guid) of
+		[] -> false;
+		_ -> true
+	end.
+
 
 get_target(Guid) ->
 	Sess = get_sess(Guid),
@@ -42,4 +48,8 @@ store_target(Guid, Target) ->
 
 
 mark_update(Guid, Indices) ->
-	player_character:mark_update(Guid, Indices).
+	IsLoggedIn = is_logged_in(Guid),
+	if IsLoggedIn ->
+			player_character:mark_update(Guid, Indices);
+		not IsLoggedIn -> ok
+	end.

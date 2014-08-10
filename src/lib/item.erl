@@ -6,6 +6,7 @@
 -export([get_item_guids/1, get_equipped_item_guids/1]).
 -export([slot_empty/2, get_item_guid_at_slot/2]).
 -export([get_slot/1]).
+-export([is_equippable/1]).
 -export([destroy/3]).
 
 -compile([export_all]).
@@ -247,13 +248,13 @@ swap_slots(SrcSlot, DestSlot, Guid) ->
 
 	equip_slot(SrcItemGuid, DestSlot, Guid),
 	if DestIsEquipSlot ->
-			visualize_item(Guid, SrcItemGuid, DestSlot, true);
+			visualize_item(Guid, SrcItemGuid, DestSlot);
 		DestIsInvSlot -> ok
 	end,
 
 	equip_slot(DestItemGuid, SrcSlot, Guid),
 	if SrcIsEquipSlot ->
-			visualize_item(Guid, DestItemGuid, SrcSlot, true);
+			visualize_item(Guid, DestItemGuid, SrcSlot);
 		SrcIsInvSlot -> ok
 	end,
 
@@ -272,7 +273,7 @@ store_from_slot(SrcSlot, DestSlot, Guid) ->
 equip_from_slot(SrcSlot, DestSlot, Guid) ->
 	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	remove(SrcSlot, Guid),
-	visualize_item(Guid, ItemGuid, DestSlot, true),
+	visualize_item(Guid, ItemGuid, DestSlot),
 	equip(ItemGuid, DestSlot, Guid).
 
 
@@ -301,7 +302,8 @@ remove(Slot, OwnerGuid) ->
 	NewSlotValues = <<Head/binary, 0?Q, Rest/binary>>,
 	char_data:update_slot_values(OwnerGuid, NewSlotValues),
 
-	set_visual_item_slot(OwnerGuid, 0, Slot, true),
+	set_visual_item_slot(OwnerGuid, 0, Slot),
+	stats:update_all(OwnerGuid),
 	ok.
 
 
@@ -363,13 +365,13 @@ init_char_slot_values() ->
 
 
 
-equip_item_at_slot(Slot, ItemGuid, OwnerGuid, MarkUpdate) ->
+equip_item_at_slot(Slot, ItemGuid, OwnerGuid) ->
 	SlotValues = char_data:get_slot_values(OwnerGuid),
 	Offset = Slot * 8,
 	<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
 	NewCharSlotValues = <<Head/binary, ItemGuid?Q, Rest/binary>>,
 	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
-	visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate).
+	visualize_item(OwnerGuid, ItemGuid, Slot).
 
 
 
@@ -377,7 +379,8 @@ equip_new(ItemId, CharSlotValues, OwnerGuid) ->
 	ItemGuid = world:get_guid(?highguid_item, 0),
 	ItemValues = item_values:create(ItemGuid, ItemId, OwnerGuid),
 	item_data:store_values(ItemValues),
-	equip_out_of_game(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false).
+	equip_out_of_game(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false),
+	stats:update_all(OwnerGuid).
 
 
 equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
@@ -392,11 +395,11 @@ equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 	ItemValues = item_data:get_values(ItemGuid),
 
 	IsEquipSlot = is_equip_slot(DestSlot),
-	CharValuesOut = if IsEquipSlot ->
-			stats:update_values(NewCharValues, ItemValues);
-		true -> NewCharValues
+	if IsEquipSlot ->
+			stats:update_all(OwnerGuid);
+		true -> ok
 	end,
-	char_data:update_values(OwnerGuid, CharValuesOut),
+	char_data:update_values(OwnerGuid, NewCharValues),
 
 	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
 	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
@@ -408,7 +411,6 @@ equip(ItemGuid, DestSlot, OwnerGuid) ->
 
 % need to do everything manually because this is done out of game when a char is created
 equip_out_of_game(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
-	MarkUpdate = false,
 	ItemProto = content:lookup_item(ItemId),
 	Class = ItemProto#item_proto.class,
 	if Class == ?item_class_weapon orelse Class == ?item_class_armor ->
@@ -419,7 +421,7 @@ equip_out_of_game(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
 				Offset = Slot * 8,
 				<<_:Offset/binary, OldItemGuid?Q, _/binary>> = SlotValues,
 				if OldItemGuid == 0 orelse Swap ->
-						equip_item_at_slot(Slot, NewItemGuid, OwnerGuid, MarkUpdate),
+						equip_item_at_slot(Slot, NewItemGuid, OwnerGuid),
 						ok;
 					true ->
 						ok
@@ -434,7 +436,7 @@ equip_out_of_game(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
 						<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
 						NewCharSlotValues = <<Head/binary, NewItemGuid?Q, Rest/binary>>,
 						char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
-				NewValues = char_values:set_item(Slot, NewItemGuid, Values, MarkUpdate),
+				NewValues = char_values:set_item(Slot, NewItemGuid, Values),
 				char_data:update_values(OwnerGuid, NewValues),
 
 				ItemValues = item_data:get_values(NewItemGuid),
@@ -458,9 +460,9 @@ get_first_empty_inv_slot(Values, Slot) ->
 	end.
 
 
-visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
+visualize_item(OwnerGuid, ItemGuid, Slot) ->
 	Values = char_data:get_values(OwnerGuid),
-	NewValues = char_values:set_item(Slot, ItemGuid, Values, MarkUpdate),
+	NewValues = char_values:set_item(Slot, ItemGuid, Values),
 	char_data:update_values(OwnerGuid, NewValues),
 
 	ItemValues = item_data:get_values(ItemGuid),
@@ -468,10 +470,10 @@ visualize_item(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
 	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
 	item_data:store_values(NewItemValues),
 
-	set_visual_item_slot(OwnerGuid, ItemGuid, Slot, MarkUpdate).
+	set_visual_item_slot(OwnerGuid, ItemGuid, Slot).
 
 
-set_visual_item_slot(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
+set_visual_item_slot(OwnerGuid, ItemGuid, Slot) ->
 	IsEquipSlot = is_equip_slot(Slot),
 	if IsEquipSlot ->
 			Values = char_data:get_values(OwnerGuid),
@@ -480,7 +482,7 @@ set_visual_item_slot(OwnerGuid, ItemGuid, Slot, MarkUpdate) ->
 					item_values:get_item_id(ItemValues);
 				true -> 0
 			end,
-			NewValues = char_values:set_visible_item(Slot, ItemId, Values, MarkUpdate),
+			NewValues = char_values:set_visible_item(Slot, ItemId, Values),
 			char_data:update_values(OwnerGuid, NewValues);
 		true -> ok
 	end.
@@ -515,3 +517,8 @@ get_slot(InvType) ->
 		?invtype_rangedright -> ?equipment_slot_ranged;
 		_ -> -1
 	end.
+
+is_equippable(ItemProto) ->
+	InvType = ItemProto#item_proto.inventory_type,
+	Slot = item:get_slot(InvType),
+	Slot >= 0.
