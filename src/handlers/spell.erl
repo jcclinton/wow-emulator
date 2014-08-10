@@ -4,18 +4,24 @@
 
 -include("include/binary.hrl").
 -include("include/spell.hrl").
+-include("include/database_records.hrl").
 
 
 cast(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
-	<<SpellId?L, TargetMask?W, Targets/binary>> = Payload,
-	io:format("cast id ~p with mask ~p and targets ~p~n", [SpellId, TargetMask, Targets]),
+	<<SpellId?L, TargetMask?W, TargetsIn/binary>> = Payload,
+	%io:format("cast id ~p with mask ~p and targets ~p~n", [SpellId, TargetMask, TargetsIn]),
+	%Spell = static_store:lookup_spell(SpellId),
+	%io:format("spell: ~p~n", [Spell]),
+	%io:format("spell effect: ~p~n", [Spell#spell_store.effect]),
 
 	PackGuid = guid:pack(Guid),
 	CastFlag = ?cast_flag_unknown9,
-	NumTargets = 0,
-	OutPayload = <<PackGuid/binary, PackGuid/binary, SpellId?L, CastFlag?W, NumTargets?B, 0?B, TargetMask?W>>,
+	{TargetsOut, NumTargets} = if TargetMask == ?target_flag_self -> {<<>>, 0};
+		TargetMask == ?target_flag_unit -> {guid:unpack(TargetsIn), 1}
+	end,
+	OutPayload = <<PackGuid/binary, PackGuid/binary, SpellId?L, CastFlag?W, NumTargets?B, 0?B, TargetMask?W, TargetsOut/binary>>,
 	OpAtom = smsg_spell_go,
 	world:send_to_all(OpAtom, OutPayload),
 

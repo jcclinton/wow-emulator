@@ -1,6 +1,8 @@
 -module(guid).
 
--export([pack/1, format/3]).
+-export([format/3]).
+-export([pack/1, unpack/1]).
+-export([int_to_bin/1, bin_to_int/1]).
 
 -include("include/binary.hrl").
 
@@ -19,6 +21,21 @@ pack(Guid) when is_integer(Guid), Guid > 0 ->
 pack(<<0?B, Rest/binary>>, Count, Mask) ->
 	pack(Rest, Count-1, Mask bsr 1);
 pack(_, Count, Mask) -> {Count, Mask}.
+
+
+unpack(<<Mask?B, PackGuid/binary>>) ->
+	unpack(Mask, PackGuid).
+unpack(16#FF, PackGuid) -> PackGuid;
+unpack(Mask, PackGuid) ->
+	NewMask = (Mask bsl 1) bor 1,
+	unpack(NewMask, <<PackGuid/binary, 0?B>>).
+
+int_to_bin(Guid) when is_integer(Guid) ->
+	<<Guid?Q>>.
+
+bin_to_int(GuidBin) when is_binary(GuidBin) ->
+	<<Guid?Q>> = GuidBin,
+	Guid.
 
 
 format(HighGuid, Entry, LowGuid) ->
