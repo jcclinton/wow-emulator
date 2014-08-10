@@ -14,6 +14,7 @@
 -export([logout/0, logout/1]).
 -export([sit/0, sit/1]).
 -export([stand/0, stand/1]).
+-export([cast/0]).
 -export([get_dummy_account/0]).
 
 
@@ -50,6 +51,11 @@ logout(AccountId) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, logout).
 
+cast() ->
+	AccountId = get_dummy_account(),
+	Pid = get_pid(AccountId),
+	gen_server:cast(Pid, cast).
+
 
 tcp_packet_received(AccountId, Opcode, Payload) ->
 	Msg = {tcp_packet_rcvd, {Opcode, Payload}},
@@ -78,6 +84,11 @@ init({AccountId, SendPid}) ->
 
 handle_cast(stop, State) ->
 	{stop, done, State};
+handle_cast(cast, State) ->
+	OpAtom = cmsg_cast_spell,
+	Payload = <<687?L, 0?W>>,
+	gen_server:cast(self(), {send_to_server, {OpAtom, Payload}}),
+	{noreply, State};
 handle_cast(stand, State) ->
 	OpAtom = cmsg_standstatechange,
 	AnimState = 0,

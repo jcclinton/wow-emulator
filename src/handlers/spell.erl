@@ -14,9 +14,10 @@ cast(Data) ->
 
 	PackGuid = guid:pack(Guid),
 	CastFlag = ?cast_flag_unknown9,
-	OutPayload = <<PackGuid/binary, PackGuid/binary, SpellId?L, CastFlag?W, 1?B, 0?B, Targets/binary>>,
+	NumTargets = 0,
+	OutPayload = <<PackGuid/binary, PackGuid/binary, SpellId?L, CastFlag?W, NumTargets?B, 0?B, TargetMask?W>>,
 	OpAtom = smsg_spell_go,
-	%world:send_to_all(OpAtom, OutPayload),
+	world:send_to_all(OpAtom, OutPayload),
 
 	{smsg_cast_failed, <<SpellId?L, 0?B>>}.
 
