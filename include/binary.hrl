@@ -18,6 +18,7 @@
 -define(SHB, :160?IB). % sha1
 
 -define(Q, :64?IL). % quad
+-define(QB, :64?IB). % quad
 -define(L, :32?IL). % long
 -define(LB, :32?IB). % long
 -define(G, :24?IL). % used for guid
