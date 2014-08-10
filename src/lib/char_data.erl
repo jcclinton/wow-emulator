@@ -208,7 +208,7 @@ stand(Guid) ->
 	OldState = char_values:get(anim_state, Values),
 	if OldState == ?standing -> ok;
 		OldState /= ?standing ->
-			NewValues = char_values:set_anim_state(?standing, Values, false),
+			NewValues = char_values:set(anim_state, ?standing, Values, false),
 			update_values(Guid, NewValues)
 	end.
 

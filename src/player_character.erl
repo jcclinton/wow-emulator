@@ -104,7 +104,7 @@ handle_info(update, State = #state{guid=Guid, timestamp=Ts, last_swing=LastSwing
 			Diff = timer:now_diff(CurrentTs, Ts) div 1000,
 
 			CharValues = char_data:get_values(Guid),
-			SwingTimer = char_values:get(swing_timer, CharValues),
+			SwingTimer = char_values:get(base_attack_time, CharValues),
 			if LastSwing >= SwingTimer ->
 					{Swung, NewSeed} = melee:swing(Guid, Seed),
 					NewLastSwing = if Swung -> 0;

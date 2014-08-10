@@ -1,9 +1,7 @@
 -module(char_values).
 
 
--export([set_anim_state/2, set_sheathed/2]).
--export([set_item/3]).
--export([set_visible_item/3]).
+-export([set_item/3, set_visible_item/3]).
 -export([get/2, set/3]).
 -compile([export_all]). % needed to call functions through get/1
 
@@ -70,24 +68,24 @@ max_damage(Value, Values) ->
 	Index = update_fields:fields(Field),
 	set_float_mark_if_needed(Index, Value, Values).
 
+anim_state(AnimState, Values) ->
+	Field = 'UNIT_FIELD_BYTES_1',
+	Offset = 0,
+	set_byte_mark_if_needed(Field, AnimState, Values, Offset).
 
-
-
-
-
-set_sheathed(Value, Values) ->
+sheathed(Value, Values) ->
 	Field = 'UNIT_FIELD_BYTES_2',
 	Offset = 0,
 	set_byte_mark_if_needed(Field, Value, Values, Offset).
 
 
+
+
+
+
+
 % sitting 1
 % standing 0
-set_anim_state(AnimState, Values) ->
-	Field = 'UNIT_FIELD_BYTES_1',
-	Offset = 0,
-	set_byte_mark_if_needed(Field, AnimState, Values, Offset).
-
 
 
 set_item(Slot, ItemGuid, Values) ->
