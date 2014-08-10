@@ -45,6 +45,8 @@ get_callback_by_num(cmsg_areatrigger) ->
 	#callback{type=character, module=char_misc, function=area_trigger};
 get_callback_by_num(cmsg_setsheathed) ->
 	#callback{type=character, module=char_misc, function=set_sheathed};
+get_callback_by_num(cmsg_repop_request) ->
+	#callback{type=character, module=char_misc, function=repop_request};
 
 get_callback_by_num(cmsg_messagechat) ->
 	#callback{type=character, module=chat, function=message_chat};

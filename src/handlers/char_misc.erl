@@ -8,7 +8,14 @@
 -include("include/database_records.hrl").
 
 
+repop_request(Data) ->
+	% sent when the player dies
+	io:format("cmsg repop request~n"),
+	ok.
+
 area_trigger(_Data) ->
+	% not needed
+	% used when character enters different areas
 	ok.
 
 far_sight(Data) ->
