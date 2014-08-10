@@ -20,6 +20,7 @@ unset_values(Values) ->
 
 % resets all item modification values and then resets them all
 update_all(Guid) ->
+	%io:format("UPDATING ALL~n"),
 	Values = char_data:get_values(Guid),
 	BaseValues = unset_values(Values),
 
@@ -27,6 +28,7 @@ update_all(Guid) ->
 
 	NewValues = lists:foldl(fun(ItemGuid, AccValues) ->
 		if ItemGuid > 0 ->
+				%io:format("~nitem guid: ~p~n", [ItemGuid]),
 				update_one(ItemGuid, AccValues);
 			ItemGuid == 0 -> AccValues
 		end
@@ -49,6 +51,7 @@ update_one(ItemGuid, CharValues) ->
 				CurrentValue = char_values:get(Type, AccValues),
 				if Value > 0 ->
 						NewValue = Value + CurrentValue,
+						%io:format("setting ~p from ~p to ~p~n", [Type, CurrentValue, NewValue]),
 						char_values:set(Type, NewValue, AccValues);
 					Value == 0 -> AccValues
 				end

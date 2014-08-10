@@ -293,7 +293,7 @@ remove(Slot, OwnerGuid) ->
 	%ItemGuid = get_item_guid_at_slot(Slot, OwnerGuid),
 
 	Values = char_data:get_values(OwnerGuid),
-	NewValues = char_values:set_item(Slot, 0, Values, true),
+	NewValues = char_values:set_item(Slot, 0, Values),
 	char_data:update_values(OwnerGuid, NewValues),
 
 	SlotValues = char_data:get_slot_values(OwnerGuid),
@@ -379,7 +379,7 @@ equip_new(ItemId, CharSlotValues, OwnerGuid) ->
 	ItemGuid = world:get_guid(?highguid_item, 0),
 	ItemValues = item_values:create(ItemGuid, ItemId, OwnerGuid),
 	item_data:store_values(ItemValues),
-	equip_out_of_game(OwnerGuid, ItemId, CharSlotValues, ItemGuid, false),
+	equip_out_of_game(OwnerGuid, ItemId, CharSlotValues, ItemGuid, _Swap=false),
 	stats:update_all(OwnerGuid).
 
 
@@ -391,16 +391,16 @@ equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
 
 	CharValues = char_data:get_values(OwnerGuid),
-	NewCharValues = char_values:set_item(DestSlot, ItemGuid, CharValues, true),
-	ItemValues = item_data:get_values(ItemGuid),
+	NewCharValues = char_values:set_item(DestSlot, ItemGuid, CharValues),
+	char_data:update_values(OwnerGuid, NewCharValues),
 
 	IsEquipSlot = is_equip_slot(DestSlot),
 	if IsEquipSlot ->
 			stats:update_all(OwnerGuid);
 		true -> ok
 	end,
-	char_data:update_values(OwnerGuid, NewCharValues),
 
+	ItemValues = item_data:get_values(ItemGuid),
 	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
 	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
 	item_data:store_values(NewItemValues).
