@@ -157,3 +157,25 @@
 -define(spell_failed_min_skill, 16#90).
 -define(spell_failed_unknown, 16#91).
 -define(spell_cast_ok, 16#FF).      % custom value). don't must be send to client
+
+
+
+
+-define(target_flag_self, 16#00000000).
+-define(target_flag_unused1, 16#00000001).       %%< not used in any spells (can be set dynamically)
+-define(target_flag_unit, 16#00000002).       %%< pguid
+-define(target_flag_unused2, 16#00000004).       %%< not used in any spells (can be set dynamically)
+-define(target_flag_unused3, 16#00000008).       %%< not used in any spells (can be set dynamically)
+-define(target_flag_item, 16#00000010).       %%< pguid
+-define(target_flag_source_location, 16#00000020).       %%< 3 float
+-define(target_flag_dest_location, 16#00000040).       %%< 3 float
+-define(target_flag_object_unk, 16#00000080).       %%< used in 7 spells only
+-define(target_flag_unit_unk, 16#00000100).       %%< looks like self target (389 spells)
+-define(target_flag_pvp_corpse, 16#00000200).       %%< pguid
+-define(target_flag_unit_corpse, 16#00000400).       %%< 10 spells (gathering professions)
+-define(target_flag_object, 16#00000800).       %%< pguid, 0 spells
+-define(target_flag_trade_item, 16#00001000).       %%< pguid, 0 spells
+-define(target_flag_string, 16#00002000).       %%< string, 0 spells
+-define(target_flag_unk1, 16#00004000).       %%< 199 spells, opening object/lock
+-define(target_flag_corpse, 16#00008000).       %%< pguid, resurrection spells
+-define(target_flag_unk2, 16#00010000).       %%< pguid, not used in any spells (can be set dynamically)

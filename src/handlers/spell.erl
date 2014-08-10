@@ -9,14 +9,14 @@
 cast(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
-	<<SpellId?L, Targets/binary>> = Payload,
-	io:format("cast id ~p with targets ~p~n", [SpellId, Targets]),
+	<<SpellId?L, TargetMask?W, Targets/binary>> = Payload,
+	io:format("cast id ~p with mask ~p and targets ~p~n", [SpellId, TargetMask, Targets]),
 
 	PackGuid = guid:pack(Guid),
 	CastFlag = ?cast_flag_unknown9,
 	OutPayload = <<PackGuid/binary, PackGuid/binary, SpellId?L, CastFlag?W, 1?B, 0?B, Targets/binary>>,
 	OpAtom = smsg_spell_go,
-	world:send_to_all(OpAtom, OutPayload),
+	%world:send_to_all(OpAtom, OutPayload),
 
 	{smsg_cast_failed, <<SpellId?L, 0?B>>}.
 
