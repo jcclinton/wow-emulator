@@ -5,6 +5,7 @@
 -include("include/shared_defines.hrl").
 
 
+% character callbacks
 get_callback_by_num(cmsg_char_create) ->
 	#callback{type=account, module=character, function=create};
 get_callback_by_num(cmsg_char_enum) ->
@@ -15,44 +16,46 @@ get_callback_by_num(cmsg_player_login) ->
 	#callback{type=account, module=character, function=login};
 get_callback_by_num(cmsg_update_account_data) ->
 	#callback{type=account, module=character, function=update_account_data};
-
 get_callback_by_num(cmsg_logout_request) ->
 	#callback{type=character, module=character, function=logout};
 
+% misc callbacks
 get_callback_by_num(cmsg_name_query) ->
-	#callback{type=character, module=char_misc, function=name_query};
+	#callback{type=character, module=misc, function=name_query};
 get_callback_by_num(cmsg_tutorial_flag) ->
-	#callback{type=character, module=char_misc, function=tutorial_flag};
+	#callback{type=character, module=misc, function=tutorial_flag};
 get_callback_by_num(cmsg_cancel_trade) ->
-	#callback{type=character, module=char_misc, function=cancel_trade};
+	#callback{type=character, module=misc, function=cancel_trade};
 get_callback_by_num(cmsg_zoneupdate) ->
-	#callback{type=character, module=char_misc, function=zone_update};
+	#callback{type=character, module=misc, function=zone_update};
 get_callback_by_num(cmsg_gmticket_getticket) ->
-	#callback{type=character, module=char_misc, function=gmticket_getticket};
+	#callback{type=character, module=misc, function=gmticket_getticket};
 get_callback_by_num(msg_query_next_mail_time) ->
-	#callback{type=character, module=char_misc, function=query_next_mail_time};
+	#callback{type=character, module=misc, function=query_next_mail_time};
 get_callback_by_num(cmsg_meetingstone_info) ->
-	#callback{type=character, module=char_misc, function=meetingstone_info};
+	#callback{type=character, module=misc, function=meetingstone_info};
 get_callback_by_num(cmsg_request_raid_info) ->
-	#callback{type=character, module=char_misc, function=request_raid_info};
+	#callback{type=character, module=misc, function=request_raid_info};
 get_callback_by_num(cmsg_battlefield_status) ->
-	#callback{type=character, module=char_misc, function=battlefield_status};
+	#callback{type=character, module=misc, function=battlefield_status};
 get_callback_by_num(cmsg_far_sight) ->
-	#callback{type=character, module=char_misc, function=far_sight};
+	#callback{type=character, module=misc, function=far_sight};
 get_callback_by_num(cmsg_set_selection) ->
-	#callback{type=character, module=char_misc, function=set_selection};
+	#callback{type=character, module=misc, function=set_selection};
 get_callback_by_num(cmsg_areatrigger) ->
-	#callback{type=character, module=char_misc, function=area_trigger};
+	#callback{type=character, module=misc, function=area_trigger};
 get_callback_by_num(cmsg_setsheathed) ->
-	#callback{type=character, module=char_misc, function=set_sheathed};
+	#callback{type=character, module=misc, function=set_sheathed};
 get_callback_by_num(cmsg_repop_request) ->
-	#callback{type=character, module=char_misc, function=repop_request};
+	#callback{type=character, module=misc, function=repop_request};
 
+% chat callbacks
 get_callback_by_num(cmsg_messagechat) ->
 	#callback{type=character, module=chat, function=message_chat};
 get_callback_by_num(cmsg_join_channel) ->
 	#callback{type=character, module=chat, function=join_channel};
 
+% movement callbacks
 get_callback_by_num(msg_move_start_forward) ->
 	#callback{type=character, module=movement, function=handle_movement};
 get_callback_by_num(msg_move_start_backward) ->
@@ -99,7 +102,6 @@ get_callback_by_num(cmsg_move_fall_reset) ->
 	#callback{type=character, module=movement, function=handle_movement};
 get_callback_by_num(cmsg_move_chng_transport) ->
 	#callback{type=character, module=movement, function=handle_movement};
-
 get_callback_by_num(cmsg_standstatechange) ->
 	#callback{type=character, module=movement, function=stand_state_change};
 get_callback_by_num(cmsg_set_active_mover) ->
@@ -107,17 +109,19 @@ get_callback_by_num(cmsg_set_active_mover) ->
 get_callback_by_num(cmsg_move_time_skipped) ->
 	#callback{type=character, module=movement, function=move_time_skipped};
 
+% spell callbacks
 get_callback_by_num(cmsg_cast_spell) ->
 	#callback{type=character, module=spell, function=cast};
 get_callback_by_num(cmsg_cancel_cast) ->
 	#callback{type=character, module=spell, function=cancel_cast};
 
+% combat callbacks
 get_callback_by_num(cmsg_attackswing) ->
 	#callback{type=character, module=combat, function=attack_swing};
 get_callback_by_num(cmsg_attackstop) ->
 	#callback{type=character, module=combat, function=attack_stop};
 
-
+% inventory callbacks
 get_callback_by_num(cmsg_autoequip_item) ->
 	#callback{type=character, module=inventory, function=autoequip_item};
 get_callback_by_num(cmsg_use_item) ->
@@ -131,6 +135,7 @@ get_callback_by_num(cmsg_item_query_single) ->
 get_callback_by_num(cmsg_destroyitem) ->
 	#callback{type=character, module=inventory, function=destroy_item};
 
+% server callbacks
 get_callback_by_num(cmsg_query_time) ->
 	#callback{type=account, module=server, function=query_time};
 get_callback_by_num(cmsg_ping) ->

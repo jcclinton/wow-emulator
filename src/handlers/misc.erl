@@ -1,4 +1,4 @@
--module(char_misc).
+-module(misc).
 -export([request_raid_info/1, name_query/1, cancel_trade/1, gmticket_getticket/1]).
 -export([query_next_mail_time/1, battlefield_status/1, meetingstone_info/1, zone_update/1]).
 -export([tutorial_flag/1, far_sight/1, set_selection/1, area_trigger/1]).
