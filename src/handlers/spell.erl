@@ -16,6 +16,9 @@ cast(Data) ->
 	io:format("spell: ~p~n", [Spell]),
 	%io:format("spell effect: ~p~n", [Spell#spell_store.effect]),
 
+	TargetInfo = spell_target_info:read(TargetMask, TargetsIn, Guid),
+	%io:format("target info: ~p~n", [TargetInfo]),
+
 	PackGuid = guid:pack(Guid),
 	CastFlag = ?cast_flag_unknown9,
 	{TargetsOut, NumTargets} = if TargetMask == ?target_flag_self -> {<<>>, 0};
