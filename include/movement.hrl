@@ -1,5 +1,4 @@
 
-%% Byte 1 (Resets on Movement Key Press)
 -define(moveflag_move_stop, 16#00000000).
 -define(moveflag_move_forward, 16#00000001).
 -define(moveflag_move_backward, 16#00000002).
@@ -10,7 +9,6 @@
 -define(moveflag_pitch_up, 16#00000040).
 -define(moveflag_pitch_down, 16#00000080).
 
-%% Byte 2 (Resets on Situation Change)
 -define(moveflag_walk_mode, 16#00000100).
 -define(moveflag_taxi, 16#02000000).
 
@@ -21,7 +19,6 @@
 -define(moveflag_falling_far, 16#00004000).
 -define(moveflag_free_falling, 16#00008000).
 
-%% Byte 3 (Set by server. TB, Third Byte. Completely unconfirmed.)
 -define(moveflag_tb_pending_stop, 16#00010000).
 -define(moveflag_tb_pending_unstrafe, 16#00020000).
 -define(moveflag_tb_pending_fall, 16#00040000).
@@ -31,7 +28,6 @@
 -define(moveflag_flying_pitch_up, 16#00400000),
 -define(moveflag_tb_moved, 16#00800000).
 
-%% Byte 4 (Script Based Flags. Never reset, only turned on or off.)
 -define(moveflag_air_suspension, 16#01000000).
 -define(moveflag_spline_mover, 16#04000000).
 -define(moveflag_immobilized, 16#08000000).
@@ -40,7 +36,6 @@
 -define(moveflag_levitate, 16#40000000).
 -define(moveflag_local, 16#80000000).
 
-%% Masks
 -define(moveflag_moving_mask, 16#03).
 -define(moveflag_strafing_mask, 16#0C).
 -define(moveflag_turning_mask, 16#30).
