@@ -1,10 +1,17 @@
 -module(spell_target_info).
 
+-export([lookup/2]).
 -export([read/3]).
 
 -include("include/binary.hrl").
 -include("include/spell.hrl").
 -include("include/database_records.hrl").
+
+lookup(Key, TargetInfo) ->
+	case dict:find(Key, TargetInfo) of
+		{ok, Value} -> Value;
+		Res -> Res
+	end.
 
 
 read(TargetMask, TargetData, CasterGuid) ->
@@ -97,12 +104,9 @@ read(TargetMask, TargetData, CasterGuid) ->
 
 	{_, DictOut} = lists:foldl(fun({Flag, Fun}, {DataIn, Dict}) ->
 		HasFlag = util:has_flag(TargetMask, Flag) or (Flag == 0 andalso TargetMask == 0),
-					io:format("flag: ~p~n", [Flag]),
 		if HasFlag ->
-					io:format("calling fun~n"),
 				{DataNext, ListOut} = Fun(DataIn),
 				DictNext = lists:foldl(fun({Key, Value}, DictAcc) ->
-					io:format("storing ~p with value ~p~n", [Key, Value]),
 					dict:store(Key, Value, DictAcc)
 				end, Dict, ListOut),
 				{DataNext, DictNext};
@@ -111,4 +115,4 @@ read(TargetMask, TargetData, CasterGuid) ->
 		end
 	end, {TargetData, dict:new()}, Funs),
 
-	DictOut.
+	dict:store(target_mask, TargetMask, DictOut).

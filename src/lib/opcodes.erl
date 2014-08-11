@@ -111,9 +111,9 @@ get_callback_by_num(cmsg_move_time_skipped) ->
 
 % spell callbacks
 get_callback_by_num(cmsg_cast_spell) ->
-	#callback{type=character, module=spell, function=cast};
+	#callback{type=character, module=spell_callbacks, function=cast};
 get_callback_by_num(cmsg_cancel_cast) ->
-	#callback{type=character, module=spell, function=cancel_cast};
+	#callback{type=character, module=spell_callbacks, function=cancel_cast};
 
 % combat callbacks
 get_callback_by_num(cmsg_attackswing) ->
