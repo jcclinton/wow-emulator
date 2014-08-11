@@ -1,12 +1,23 @@
 -module(util).
 
 -export([has_flag/2]).
+-export([extract_string/1]).
 -export([game_time/0, game_speed/0]).
 -export([file_pread/3, file_open/2, file_close/1]).
+
+-include("include/binary.hrl").
 
 
 has_flag(Flags, Flag) ->
 	Flags band Flag /= 0.
+
+% pulls out data until first zero byte
+% then returns string plus rest of bin
+extract_string(Bin) ->
+	extract_string(Bin, <<>>).
+extract_string(<<0?B, Rest/binary>>, Str) -> {Str, Rest};
+extract_string(<<Char?B, Rest/binary>>, Str) ->
+	extract_string(Rest, <<Str/binary, Char?B>>).
 
 
 game_speed() ->

@@ -35,7 +35,8 @@ int_to_bin(Guid) when is_integer(Guid) ->
 	<<Guid?Q>>.
 
 bin_to_int(GuidBin) when is_binary(GuidBin) ->
-	<<Guid?Q>> = GuidBin,
+	Size = byte_size(GuidBin) * 8,
+	<<Guid:Size/unsigned-little-integer>> = GuidBin,
 	Guid.
 
 
