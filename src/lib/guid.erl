@@ -3,6 +3,7 @@
 -export([format/3]).
 -export([pack/1, unpack/1]).
 -export([int_to_bin/1, bin_to_int/1]).
+-export([extract_packed/1]).
 
 -include("include/binary.hrl").
 
@@ -40,3 +41,13 @@ bin_to_int(GuidBin) when is_binary(GuidBin) ->
 
 format(HighGuid, Entry, LowGuid) ->
 	LowGuid bor (Entry bsl 24) bor (HighGuid bsl 48).
+
+
+
+% takes a binary with a leading packed guid
+% extracts the guid and returns the guid and the rest of the bin
+extract_packed(<<Mask?B, Rest/binary>>) ->
+	extract_packed(Mask, Rest, <<>>).
+extract_packed(0, Rest, Guid) -> {Guid, Rest};
+extract_packed(Mask, <<Digit?B, Rest/binary>>, Acc) ->
+	extract_packed(Mask bsr 1, Rest, <<Acc/binary, Digit?B>>).
