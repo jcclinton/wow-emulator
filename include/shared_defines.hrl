@@ -1,5 +1,7 @@
 -record(callback, {type, module, function}).
 
+-define(game_tick, 30).
+
 -define(max_action_buttons, 120).
 
 -define(default_scale, 1).

@@ -23,7 +23,6 @@
 -include("include/shared_defines.hrl").
 -include("include/attack.hrl").
 
--define(update_timer_interval, 50).
 
 
 %% public api
@@ -68,7 +67,7 @@ init({AccountId, Guid}) ->
 	gproc:reg({n, l, Key}, none),
 	gproc:reg({n, l, Guid}, none),
 
-	{ok, TRef} = timer:send_interval(?update_timer_interval, update),
+	{ok, TRef} = timer:send_interval(?game_tick, update),
 	{ok, #state{account_id=AccountId, guid=Guid, update_timer=TRef, timestamp=now(), last_swing=0, marked_indices=[], is_melee_attacking=false, seed=Seed}}.
 
 
