@@ -57,13 +57,15 @@ send_spell_go(CasterGuid, TargetInfo, Spell) ->
 	CastFlag = ?cast_flag_unknown9,
 	TargetGuid = spell_target_info:lookup(target_guid, TargetInfo),
 
-	{TargetsOut, NumTargets} = if TargetMask == ?target_flag_self -> {<<>>, 0};
+	{TargetsOut, HitTargets, NumTargets} = if TargetMask == ?target_flag_self ->
+			{<<>>, <<>>, 0};
 		TargetMask == ?target_flag_unit ->
-			{guid:int_to_bin(TargetGuid), 1}
+			TargetGuidBin = guid:int_to_bin(TargetGuid),
+			{TargetGuidBin, TargetGuidBin, 1}
 	end,
 
 	SpellId = Spell#spell_store.id,
-	OutPayload = <<PackGuid/binary, PackGuid/binary, SpellId?L, CastFlag?W, NumTargets?B, 0?B, TargetMask?W, TargetsOut/binary>>,
+	OutPayload = <<PackGuid/binary, PackGuid/binary, SpellId?L, CastFlag?W, NumTargets?B, HitTargets/binary, 0?B, TargetMask?W, TargetsOut/binary>>,
 	OpAtom = smsg_spell_go,
 	world:send_to_all(OpAtom, OutPayload),
 	ok.
