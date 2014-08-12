@@ -1,4 +1,4 @@
--record(callback, {type, module, function}).
+-record(callback, {type, module, function, send_priority}).
 
 -define(game_tick, 30).
 
@@ -14,3 +14,7 @@
 -define(gender_male, 0).
 -define(gender_female, 1).
 -define(gender_none, 2).
+
+% prioritys for how response packets are sent
+-define(send_priority_fast, fast).
+-define(send_priority_enqueue, enqueue). % default

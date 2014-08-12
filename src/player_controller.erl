@@ -10,7 +10,7 @@
 
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([packet_received/3, login_char/2, logout_char/2, send/3]).
+-export([packet_received/3, login_char/2, logout_char/2, send/3, send/4]).
 
 
 -include("include/binary.hrl").
@@ -23,9 +23,15 @@ packet_received(AccountId, Opcode, Payload) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {packet_rcvd, Opcode, Payload}).
 
+% normal send enqueues outgoing packets and sends them all at once
+% packets can be sent straight through by passing in the fast atom as the type
 send(AccountId, OpAtom, Payload) ->
+	% enqueue is the default
+	send(AccountId, OpAtom, Payload, ?send_priority_enqueue).
+send(AccountId, OpAtom, Payload, Type) ->
 	Pid = get_pid(AccountId),
-	gen_server:cast(Pid, {send_to_client, OpAtom, Payload}).
+	gen_server:cast(Pid, {send_to_client, OpAtom, Payload, Type}).
+
 
 login_char(AccountId, Guid) ->
 	Pid = get_pid(AccountId),
@@ -71,10 +77,10 @@ handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId}
 			end
 	end,
 	{noreply, State};
-handle_cast({send_to_client, OpAtom, Payload}, State=#state{send_pid = SendPid}) ->
+handle_cast({send_to_client, OpAtom, Payload, Type}, State=#state{send_pid = SendPid}) ->
 	Opcode = opcodes:get_num_by_atom(OpAtom),
 	%io:format("sending ~p to client~n", [OpAtom]),
-	player_send:send_msg(SendPid, Opcode, Payload),
+	player_send:send_msg(SendPid, Opcode, Payload, Type),
 	{noreply, State};
 handle_cast({login_char, Guid}, State=#state{account_id = AccountId, parent_pid = ParentPid}) ->
 

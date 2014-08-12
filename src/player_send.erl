@@ -6,11 +6,12 @@
 				 handle_info/3, terminate/3, code_change/4]).
 -export([send/2]).
 -export([upgrade/0]).
--export([send_msg/3]).
+-export([send_msg/4]).
 
 -include("include/binary.hrl").
 -include("include/network_defines.hrl").
 -include("include/shared_defines.hrl").
+
 
 -record(state, {
 	socket,
@@ -21,8 +22,15 @@
 }).
 
 %% public api
-send_msg(SendPid, Opcode, Payload) ->
-	gen_fsm:send_event(SendPid, {enqueue, Opcode, Payload}).
+send_msg(SendPid, Opcode, Payload, Type) ->
+	Msg = case Type of
+		% to add a new priority:
+		% add it here
+		% add it as a shared_define
+		?send_priority_fast -> {fast_send, Opcode, Payload};
+		?send_priority_enqueue -> {enqueue, Opcode, Payload}
+	end,
+	gen_fsm:send_event(SendPid, Msg).
 
 
 
@@ -38,6 +46,9 @@ init({Socket, KeyState}) ->
 
 
 send({enqueue, Opcode, Payload}, State = #state{queue=Queue, timer=Timer}) ->
+	% enqueue this data
+	% start timer if it has not already been started
+	%io:format("enqueue ~p~n", [Opcode]),
 	NewQueue = queue:in({Opcode, Payload}, Queue),
 	NewTimer = if Timer /= none ->
 			Timer;
@@ -47,8 +58,18 @@ send({enqueue, Opcode, Payload}, State = #state{queue=Queue, timer=Timer}) ->
 	end,
 	{next_state, send, State#state{queue=NewQueue, timer=NewTimer}};
 send(flush, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen, queue=Queue}) ->
+	%io:format("send~n"),
+	% send all data from queue to client
 	try network:send_queue(Queue, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
 		NewKeyState -> {next_state, send, State#state{key_state=NewKeyState, queue=queue:new(), timer=none}}
+	catch
+		Error -> {stop, Error, State}
+	end;
+send({fast_send, Opcode, Payload}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen}) ->
+	%io:format("fast send ~p~n", [Opcode]),
+	% send straight through and ignore queue and timer
+	try network:send_packet(Opcode, Payload, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
+		NewKeyState -> {next_state, send, State#state{key_state=NewKeyState}}
 	catch
 		Error -> {stop, Error, State}
 	end.
