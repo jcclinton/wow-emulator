@@ -58,6 +58,7 @@ send_spell_go(CasterGuid, TargetInfo, Spell) ->
 	TargetGuid = spell_target_info:lookup(target_guid, TargetInfo),
 
 	{TargetsOut, HitTargets, NumTargets} = if TargetMask == ?target_flag_self ->
+			spell_aura:add(CasterGuid, Spell),
 			{<<>>, <<>>, 0};
 		TargetMask == ?target_flag_unit ->
 			TargetGuidBin = guid:int_to_bin(TargetGuid),

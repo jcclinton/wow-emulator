@@ -2,6 +2,7 @@
 
 
 -export([set_item/3, set_visible_item/3]).
+-export([set_aura/3, set_aura_level/3, set_aura_application/2, set_aura_flag/2]).
 -export([get/2, set/3]).
 -compile([export_all]). % needed to call functions through get/1
 
@@ -86,6 +87,51 @@ sheathed(Value, Values) ->
 
 % sitting 1
 % standing 0
+
+set_aura(Slot, SpellId, Values) ->
+	Field = 'UNIT_FIELD_AURA',
+	Index = update_fields:fields(Field) + Slot,
+	NextIndex = update_fields:fields('UNIT_FIELD_AURA_LAST'),
+	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
+		true -> ok
+	end,
+	set_uint32_mark_if_needed(Index, SpellId, Values).
+
+set_aura_flag(Slot, Values) ->
+	SlotIndex = Slot bsr 3,
+	Field = 'UNIT_FIELD_AURAFLAGS',
+	Index = update_fields:fields(Field) + SlotIndex,
+	Flags = object_values:get_uint32_value(Index, Values),
+	Byte = (Slot band 7) bsl 2,
+	FlagMask = 9,
+	NewFlags = Flags bor (FlagMask bsl Byte),
+	set_uint32_mark_if_needed(Index, NewFlags, Values).
+
+set_aura_level(Slot, Level, Values) ->
+	SlotIndex = Slot div 4,
+	Byte = (Slot rem 4) * 8,
+	Field = 'UNIT_FIELD_AURALEVELS',
+	Index = update_fields:fields(Field) + SlotIndex,
+	OldLevels = object_values:get_uint32_value(Index, Values),
+
+	Tmp = OldLevels band (bnot (16#FF bsl Byte)),
+	NewLevels = Tmp bor (Level bsl Byte),
+
+	set_uint32_mark_if_needed(Index, NewLevels, Values).
+
+set_aura_application(Slot, Values) ->
+	SlotIndex = Slot div 4,
+	Byte = (Slot rem 4) * 8,
+	Field = 'UNIT_FIELD_AURAAPPLICATIONS',
+	Index = update_fields:fields(Field) + SlotIndex,
+	OldApp = object_values:get_uint32_value(Index, Values),
+
+	NewApp = OldApp bor (0 bsl Byte),
+
+	set_uint32_mark_if_needed(Index, NewApp, Values).
+
+
+
 
 
 set_item(Slot, ItemGuid, Values) ->
