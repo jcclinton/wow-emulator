@@ -81,8 +81,8 @@ handle_cast(stop_melee_attack, State) ->
 handle_cast({mark_update, Indices}, State = #state{marked_indices=StoredIndices}) ->
 	NewIndices = Indices ++ StoredIndices,
 	{noreply, State#state{marked_indices=NewIndices}};
-handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId, guid=Guid, seed=Seed}) ->
-	Args = [{op_atom, OpAtom}, {guid, Guid}, {payload, Payload}, {account_id, AccountId}, {seed, Seed}],
+handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
+	Args = [{op_atom, OpAtom}, {guid, Guid}, {payload, Payload}, {account_id, AccountId}],
 	player_workers_sup:start_worker({Callback, Args}, AccountId),
 	{noreply, State};
 handle_cast(Msg, State) ->
