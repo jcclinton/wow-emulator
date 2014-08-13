@@ -11,7 +11,7 @@
 
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([packet_received/3, login_char/2, logout_char/2, send/3, send/4]).
+-export([packet_received/3, login_char/2, logout_char/1, send/3, send/4]).
 
 
 -include("include/binary.hrl").
@@ -38,13 +38,12 @@ login_char(AccountId, Guid) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {login_char, Guid}).
 
-logout_char(AccountId, Guid) ->
+logout_char(AccountId) ->
 	Pid = get_pid(AccountId),
 	% this may error if client is shutdown suddenly
-	% because the player_character process waits several seconds to shutdown
 	% but it is not important at that point
 	% so just ignore the error
-	catch gen_server:cast(Pid, {logout_char, Guid}).
+	catch gen_server:cast(Pid, logout_char).
 
 
 
@@ -93,17 +92,24 @@ handle_cast({send_to_client, OpAtom, Payload, Type}, State=#state{send_pid = Sen
 	%io:format("sending ~p to client~n", [OpAtom]),
 	player_send:send_msg(SendPid, Opcode, Payload, Type),
 	{noreply, State};
-handle_cast({login_char, Guid}, State=#state{account_id = AccountId, parent_pid = ParentPid}) ->
+handle_cast({login_char, Guid}, State=#state{account_id = AccountId, parent_pid = ParentPid, guid=OldGuid}) ->
+	if OldGuid > 0 -> throw(badarg);
+		OldGuid == 0 -> ok
+	end,
 
-	Name = player_character,
+	char_sess:create(Guid),
+
+	Name = player_ephemeral_sup,
 	Spec = {Name,
 		{Name, start_link, [AccountId, Guid]},
-		transient, 1000, worker, [Name]},
+		permanent, 2000, supervisor, [Name]},
 	{ok, _Pid} = supervisor:start_child(ParentPid, Spec),
 
 	{noreply, State#state{guid=Guid}};
-handle_cast({logout_char, _Guid}, State=#state{parent_pid = ParentPid}) ->
-	Name = player_character,
+handle_cast(logout_char, State=#state{parent_pid = ParentPid, guid=Guid}) ->
+	char_sess:delete(Guid),
+
+	Name = player_ephemeral_sup,
 	supervisor:terminate_child(ParentPid, Name),
 	supervisor:delete_child(ParentPid, Name),
 	{noreply, State#state{guid=0}};
@@ -135,7 +141,7 @@ terminate(_Reason, _State) ->
 %% private
 
 
-build_pid_key(AccountId) ->
+build_pid_key(AccountId) when is_list(AccountId) ->
 	AccountId ++ "controller".
 
 get_pid(AccountId) ->

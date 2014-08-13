@@ -50,6 +50,6 @@ store_target(Guid, Target) ->
 mark_update(Guid, Indices) ->
 	IsLoggedIn = is_logged_in(Guid),
 	if IsLoggedIn ->
-			player_character:mark_update(Guid, Indices);
+			player_updater:mark_update(Guid, Indices);
 		not IsLoggedIn -> ok
 	end.

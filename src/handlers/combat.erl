@@ -14,14 +14,14 @@ attack_swing(Data) ->
 	OpAtom = smsg_attackstart,
 	world:send_to_all(OpAtom, StartPayload),
 
-	player_character:start_melee_attack(Guid),
+	player_melee:start_melee_attack(Guid),
 	ok.
 
 
 attack_stop(Data) ->
 	% payload is empty
 	Guid = recv_data:get(guid, Data),
-	player_character:stop_melee_attack(Guid),
+	player_melee:stop_melee_attack(Guid),
 	io:format("stop attack~n"),
 
 	% normally this is when a fight ends,
