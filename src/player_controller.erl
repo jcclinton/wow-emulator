@@ -71,7 +71,8 @@ handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId}
 		Callback ->
 			case Callback#callback.type of
 				account ->
-					player_account:handle_packet(AccountId, OpAtom, Callback, Payload);
+					Args = [{account_id, AccountId}, {payload, Payload}, {op_atom, OpAtom}],
+					player_workers_sup:start_worker({Callback, Args}, AccountId);
 				character ->
 					player_character:handle_packet(AccountId, OpAtom, Callback, Payload)
 			end

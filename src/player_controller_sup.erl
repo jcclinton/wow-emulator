@@ -10,13 +10,9 @@ start_link(AccountId, SendPid) ->
 
 init({AccountId, SendPid}) ->
 	Controller = player_controller,
-	Account = player_account,
 	{ok, {{one_for_one, 3, 5},
 				[
 					{Controller,
 						{Controller, start_link, [AccountId, SendPid, self()]},
-						transient, 1000, worker, [Controller]},
-					{Account,
-						{Account, start_link, [AccountId]},
-						transient, 1000, worker, [Account]}
+						transient, 1000, worker, [Controller]}
 				]}}.
