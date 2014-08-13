@@ -65,11 +65,16 @@ send(flush, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen, qu
 	catch
 		Error -> {stop, Error, State}
 	end;
-send({fast_send, Opcode, Payload}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen}) ->
+send({fast_send, Opcode, Payload}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen, queue=Queue, timer=Timer}) ->
 	%io:format("fast send ~p~n", [Opcode]),
-	% send straight through and ignore queue and timer
-	try network:send_packet(Opcode, Payload, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
-		NewKeyState -> {next_state, send, State#state{key_state=NewKeyState}}
+	if Timer /= none -> timer:cancel(Timer);
+		Timer == none -> ok
+	end,
+	% add packet to front of queue
+	% then flush entire queue
+	NewQueue = queue:in_r({Opcode, Payload}, Queue),
+	try network:send_queue(NewQueue, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
+		NewKeyState -> {next_state, send, State#state{key_state=NewKeyState, queue=queue:new(), timer=none}}
 	catch
 		Error -> {stop, Error, State}
 	end.
