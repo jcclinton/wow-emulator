@@ -15,7 +15,7 @@
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
--export([handle_packet/4, mark_update/2]).
+-export([mark_update/2]).
 -export([start_melee_attack/1, stop_melee_attack/1]).
 
 
@@ -26,11 +26,6 @@
 
 
 %% public api
-handle_packet(AccountId, OpAtom, Callback, Payload) ->
-	Pid = get_pid(AccountId),
-	gen_server:cast(Pid, {packet_rcvd, OpAtom, Callback, Payload}).
-
-
 mark_update(Guid, Indices) when is_list(Indices) ->
 	Pid = get_pid(Guid),
 	gen_server:cast(Pid, {mark_update, Indices}).
@@ -81,10 +76,6 @@ handle_cast(stop_melee_attack, State) ->
 handle_cast({mark_update, Indices}, State = #state{marked_indices=StoredIndices}) ->
 	NewIndices = Indices ++ StoredIndices,
 	{noreply, State#state{marked_indices=NewIndices}};
-handle_cast({packet_rcvd, OpAtom, Callback, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
-	Args = [{op_atom, OpAtom}, {guid, Guid}, {payload, Payload}, {account_id, AccountId}],
-	player_workers_sup:start_worker({Callback, Args}, AccountId),
-	{noreply, State};
 handle_cast(Msg, State) ->
 	io:format("unknown casted message: ~p~n", [Msg]),
 	{noreply, State}.

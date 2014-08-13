@@ -3,6 +3,7 @@
 
 -record(state, {
 	account_id,
+	guid,
   parent_pid,
 	send_pid
 }).
@@ -57,10 +58,10 @@ init({AccountId, SendPid, ParentPid}) ->
 	io:format("controller SERVER: started~n"),
 	Key = build_pid_key(AccountId),
 	gproc:reg({n, l, Key}, none),
-	{ok, #state{account_id=AccountId, send_pid=SendPid, parent_pid=ParentPid}}.
+	{ok, #state{account_id=AccountId, send_pid=SendPid, parent_pid=ParentPid, guid=0}}.
 
 
-handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId}) ->
+handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId, guid=Guid}) ->
 	%io:format("looking up opcode ~p for ~p~n", [Opcode, AccountId]),
 	OpAtom = opcodes:get_atom_by_num(Opcode),
 
@@ -69,12 +70,21 @@ handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId}
 			io:format("unknown callback: ~p~n", [OpAtom]),
 			ok;
 		Callback ->
-			case Callback#callback.type of
-				account ->
-					Args = [{account_id, AccountId}, {payload, Payload}, {op_atom, OpAtom}],
+
+			% the args are roughly in order by how often they are accessed
+			Args1 = [{payload, Payload}, {op_atom, OpAtom}, {account_id, AccountId}],
+			Args = if Guid > 0 -> [{guid, Guid} | Args1];
+				Guid == 0 -> Args1
+			end,
+
+			% if a character callback type is called and the guid is 0
+			% then do nothing
+			% you cant call a character callback when a player is not logged in
+			if Callback#callback.type /= character orelse Guid > 0 ->
 					player_workers_sup:start_worker({Callback, Args}, AccountId);
-				character ->
-					player_character:handle_packet(AccountId, OpAtom, Callback, Payload)
+				true ->
+					io:format("character callback type with guid = 0 called~n"),
+					ok
 			end
 	end,
 	{noreply, State};
@@ -91,12 +101,12 @@ handle_cast({login_char, Guid}, State=#state{account_id = AccountId, parent_pid 
 		transient, 1000, worker, [Name]},
 	{ok, _Pid} = supervisor:start_child(ParentPid, Spec),
 
-	{noreply, State};
+	{noreply, State#state{guid=Guid}};
 handle_cast({logout_char, _Guid}, State=#state{parent_pid = ParentPid}) ->
 	Name = player_character,
 	supervisor:terminate_child(ParentPid, Name),
 	supervisor:delete_child(ParentPid, Name),
-	{noreply, State};
+	{noreply, State#state{guid=0}};
 handle_cast(Msg, State) ->
 	io:format("unknown casted message: ~p~n", [Msg]),
 	{noreply, State}.
