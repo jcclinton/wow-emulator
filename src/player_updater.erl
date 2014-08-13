@@ -12,6 +12,7 @@
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([mark_update/2]).
+-export([update/0]).
 
 
 -include("include/binary.hrl").
@@ -23,6 +24,8 @@
 mark_update(Guid, Indices) when is_list(Indices) ->
 	Pid = get_pid(Guid),
 	gen_server:cast(Pid, {mark_update, Indices}).
+
+update() -> ok.
 
 
 
@@ -37,7 +40,7 @@ init({AccountId, Guid}) ->
 	Key = build_pid_key(Guid),
 	gproc:reg({n, l, Key}, none),
 
-	{ok, #state{account_id=AccountId, guid=Guid, timer=none}}.
+	{ok, #state{account_id=AccountId, guid=Guid, timer=none, marked_indices=[]}}.
 
 
 handle_cast({mark_update, Indices}, State = #state{marked_indices=StoredIndices, timer=Timer}) ->
