@@ -1,6 +1,9 @@
 shell:
 	erl -pa ebin/ deps/*/ebin -eval "application:start(gproc)"
 
+resh: clean compile
+	@make shell
+
 re: clean compile
 	echo "cleaned and compiled"
 

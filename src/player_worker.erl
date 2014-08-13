@@ -25,7 +25,7 @@ call({Callback, Args}) ->
 		{OpAtom, Payload} ->
 
 			Type = case Callback#callback.send_priority of
-				undefined -> ?send_priority_enqueue;
+				undefined -> enqueue;
 				Prio -> Prio
 			end,
 

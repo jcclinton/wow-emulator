@@ -24,11 +24,8 @@
 %% public api
 send_msg(SendPid, Opcode, Payload, Type) ->
 	Msg = case Type of
-		% to add a new priority:
-		% add it here
-		% add it as a shared_define
-		?send_priority_fast -> {fast_send, Opcode, Payload};
-		?send_priority_enqueue -> {enqueue, Opcode, Payload}
+		fast -> {fast_send, Opcode, Payload};
+		enqueue -> {enqueue, Opcode, Payload}
 	end,
 	gen_fsm:send_event(SendPid, Msg).
 

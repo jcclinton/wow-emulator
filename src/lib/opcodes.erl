@@ -139,7 +139,7 @@ get_callback_by_num(cmsg_destroyitem) ->
 get_callback_by_num(cmsg_query_time) ->
 	#callback{type=account, module=server, function=query_time};
 get_callback_by_num(cmsg_ping) ->
-	#callback{type=account, module=server, function=pong, send_priority=?send_priority_fast};
+	#callback{type=account, module=server, function=pong, send_priority=fast};
 get_callback_by_num(cmsg_auth_session) ->
 	#callback{type=account, module=server, function=accept_challenge};
 

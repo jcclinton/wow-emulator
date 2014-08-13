@@ -27,7 +27,7 @@ packet_received(AccountId, Opcode, Payload) ->
 % packets can be sent straight through by passing in the fast atom as the type
 send(AccountId, OpAtom, Payload) ->
 	% enqueue is the default
-	send(AccountId, OpAtom, Payload, ?send_priority_enqueue).
+	send(AccountId, OpAtom, Payload, enqueue).
 send(AccountId, OpAtom, Payload, Type) ->
 	Pid = get_pid(AccountId),
 	gen_server:cast(Pid, {send_to_client, OpAtom, Payload, Type}).
