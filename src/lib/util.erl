@@ -4,8 +4,22 @@
 -export([extract_string/1]).
 -export([game_time/0, game_speed/0]).
 -export([file_pread/3, file_open/2, file_close/1]).
+-export([reg_proc/2, get_pid/2, build_pid_key/2]).
 
 -include("include/binary.hrl").
+
+
+reg_proc(Name, Id) ->
+	Key = build_pid_key(Name, Id),
+	gproc:reg({n, l, Key}, none).
+
+get_pid(Name, Id) ->
+	Key = build_pid_key(Name, Id),
+	gproc:lookup_pid({n, l, Key}).
+
+build_pid_key(Name, Id) ->
+	{Name, Id}.
+
 
 
 has_flag(Flags, Flag) ->

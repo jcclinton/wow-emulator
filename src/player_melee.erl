@@ -22,11 +22,11 @@
 
 %% public api
 start_melee_attack(Guid) ->
-	Pid = get_pid(Guid),
+	Pid = util:get_pid(?MODULE, Guid),
 	gen_fsm:send_event(Pid, start).
 
 stop_melee_attack(Guid) ->
-	Pid = get_pid(Guid),
+	Pid = util:get_pid(?MODULE, Guid),
 	gen_fsm:send_event(Pid, stop).
 
 update() -> ok.
@@ -35,17 +35,16 @@ update() -> ok.
 %% behavior callbacks
 
 start_link(AccountId, Guid) ->
-    gen_fsm:start_link(?MODULE, {AccountId, Guid}, []).
+	gen_fsm:start_link(?MODULE, {AccountId, Guid}, []).
 
 init({AccountId, Guid}) ->
-	io:format("starting player spell~n"),
+	io:format("starting player melee~n"),
 
 	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	Seed = {A,B,C},
 	random:seed(Seed),
 
-	Key = build_pid_key(Guid),
-	gproc:reg({n, l, Key}, none),
+	util:reg_proc(?MODULE, Guid),
 
 	{ok, idle, #state{account_id=AccountId, guid=Guid, timer=none, seed=Seed}}.
 
@@ -89,13 +88,6 @@ code_change(_OldVsn, State, Data, _Extra) ->
 
 %%%%%%%%%%%
 %% private
-
-build_pid_key(Guid) ->
-	{?MODULE, Guid}.
-
-get_pid(Guid) when is_number(Guid) ->
-	Key = build_pid_key(Guid),
-	gproc:lookup_pid({n, l, Key}).
 
 schedule_swing(Guid) ->
 	TimerSwing = char_values:get(base_attack_time, Guid),

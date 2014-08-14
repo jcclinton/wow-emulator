@@ -64,7 +64,7 @@ tcp_packet_received(AccountId, Opcode, Payload) ->
 	gen_server:cast(Pid, Msg).
 
 get_pid(Name) ->
-	world:build_pid(Name, "client").
+	util:get_pid(?MODULE, Name).
 
 
 
@@ -78,6 +78,8 @@ start_link(AccountId, SendPid) ->
 init({AccountId, SendPid}) ->
 	io:format("controller SERVER: started~n"),
 	process_flag(trap_exit, true),
+
+	util:reg_proc(?MODULE, AccountId),
 
 	{ok, #state{send_pid=SendPid, account_id=AccountId}}.
 
@@ -144,7 +146,6 @@ handle_info(Msg, State) ->
 
 
 code_change(_OldVsn, State, _Extra) ->
-	io:format("code change~n"),
 	{ok, State}.
 
 terminate(_Reason, _State) ->

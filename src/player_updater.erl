@@ -22,7 +22,7 @@
 
 %% public api
 mark_update(Guid, Indices) when is_list(Indices) ->
-	Pid = get_pid(Guid),
+	Pid = util:get_pid(?MODULE, Guid),
 	gen_server:cast(Pid, {mark_update, Indices}).
 
 update() -> ok.
@@ -37,8 +37,7 @@ start_link(AccountId, Guid) ->
 init({AccountId, Guid}) ->
 	io:format("char updater started for ~p~n", [Guid]),
 
-	Key = build_pid_key(Guid),
-	gproc:reg({n, l, Key}, none),
+	util:reg_proc(?MODULE, Guid),
 
 	{ok, #state{account_id=AccountId, guid=Guid, timer=none, marked_indices=[]}}.
 
@@ -84,20 +83,7 @@ handle_info(Msg, State) ->
 
 
 code_change(_OldVsn, State, _Extra) ->
-	io:format("code change~n"),
 	{ok, State}.
 
 terminate(_Reason, _State) ->
 	ok.
-
-
-
-%%%%%%%%%%%
-%% private
-
-build_pid_key(Guid) ->
-	{?MODULE, Guid}.
-
-get_pid(Guid) when is_number(Guid) ->
-	Key = build_pid_key(Guid),
-	gproc:lookup_pid({n, l, Key}).

@@ -17,7 +17,7 @@
 
 %% public api
 cast(CasterGuid, SpellId, TargetInfo) ->
-	Pid = get_pid(CasterGuid),
+	Pid = util:get_pid(?MODULE, CasterGuid),
 	gen_fsm:send_event(Pid, {prepare, CasterGuid, SpellId, TargetInfo}).
 
 
@@ -29,8 +29,7 @@ start_link(AccountId, Guid) ->
 init({AccountId, Guid}) ->
 	io:format("starting player spell~n"),
 
-	Key = build_pid_key(Guid),
-	gproc:reg({n, l, Key}, none),
+	util:reg_proc(?MODULE, Guid),
 
 	{ok, idle, #state{account_id=AccountId, guid=Guid}}.
 
@@ -53,15 +52,3 @@ terminate(_Reason, _State, _Data) ->
 
 code_change(_OldVsn, State, Data, _Extra) ->
 	{ok, State, Data}.
-
-
-
-%%%%%%%%%%%
-%% private
-
-build_pid_key(Guid) ->
-	{?MODULE, Guid}.
-
-get_pid(Guid) when is_number(Guid) ->
-	Key = build_pid_key(Guid),
-	gproc:lookup_pid({n, l, Key}).

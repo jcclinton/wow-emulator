@@ -9,8 +9,6 @@
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([get_guid/2]).
--export([get_pid/1]).
--export([build_pid/1, build_pid/2]).
 -export([add_to_map/1, remove_from_map/1]).
 -export([send_to_all_but_player/3, send_to_all/2]).
 
@@ -33,18 +31,6 @@ send_to_all_but_player(OpAtom, Payload, Guid) ->
 
 send_to_all(OpAtom, Payload) ->
 	gen_server:cast(?MODULE, {send_to_all_but_player, OpAtom, Payload, 0}).
-
-
-get_pid(Pid) when is_pid(Pid) -> Pid;
-	% only atoms can be used as names locally
-	% so this is global so we dont have to dynamically generate atoms
-get_pid(Name) when is_list(Name) -> build_pid(Name).
-
-% used to create new named processes
-build_pid(Name) -> build_pid(Name, "").
-build_pid(Name, Suffix) ->
-	NewName = Name ++ "_" ++ Suffix,
-	{global, NewName}.
 
 
 

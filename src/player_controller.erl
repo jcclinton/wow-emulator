@@ -21,7 +21,7 @@
 %% public api
 
 packet_received(AccountId, Opcode, Payload) ->
-	Pid = get_pid(AccountId),
+	Pid = util:get_pid(?MODULE, AccountId),
 	gen_server:cast(Pid, {packet_rcvd, Opcode, Payload}).
 
 % normal send enqueues outgoing packets and sends them all at once
@@ -30,20 +30,17 @@ send(AccountId, OpAtom, Payload) ->
 	% enqueue is the default
 	send(AccountId, OpAtom, Payload, enqueue).
 send(AccountId, OpAtom, Payload, Type) ->
-	Pid = get_pid(AccountId),
+	Pid = util:get_pid(?MODULE, AccountId),
 	gen_server:cast(Pid, {send_to_client, OpAtom, Payload, Type}).
 
 
 login_char(AccountId, Guid) ->
-	Pid = get_pid(AccountId),
+	Pid = util:get_pid(?MODULE, AccountId),
 	gen_server:cast(Pid, {login_char, Guid}).
 
 logout_char(AccountId) ->
-	Pid = get_pid(AccountId),
-	% this may error if client is shutdown suddenly
-	% but it is not important at that point
-	% so just ignore the error
-	catch gen_server:cast(Pid, logout_char).
+	Pid = util:get_pid(?MODULE, AccountId),
+	gen_server:cast(Pid, logout_char).
 
 
 
@@ -55,8 +52,7 @@ start_link(AccountId, SendPid, ParentPid) ->
 
 init({AccountId, SendPid, ParentPid}) ->
 	io:format("controller SERVER: started~n"),
-	Key = build_pid_key(AccountId),
-	gproc:reg({n, l, Key}, none),
+	util:reg_proc(?MODULE, AccountId),
 	{ok, #state{account_id=AccountId, send_pid=SendPid, parent_pid=ParentPid, guid=0}}.
 
 
@@ -127,25 +123,8 @@ handle_info(Msg, State) ->
 
 
 code_change(_OldVsn, State, _Extra) ->
-	io:format("code change~n"),
 	{ok, State}.
 
 terminate(_Reason, _State) ->
 	io:format("WORLD: shutting down controller~n"),
 	ok.
-
-
-
-
-%%%%%%%%%%%%%%%%
-%% private
-
-
-build_pid_key(AccountId) when is_list(AccountId) ->
-	AccountId ++ "controller".
-
-get_pid(AccountId) ->
-	Key = build_pid_key(AccountId),
-	% this may error if client is shutdown suddenly
-	catch gproc:lookup_pid({n, l, Key}).
-

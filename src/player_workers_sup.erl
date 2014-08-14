@@ -6,23 +6,19 @@
 
 %% api
 start_worker(WorkerData, AccountId) ->
-	Pid = get_pid(AccountId),
+	Pid = util:get_pid(?MODULE, AccountId),
 	supervisor:start_child(Pid, [WorkerData]).
-
-
-get_pid(AccountId) ->
-	world:build_pid(AccountId, "worker_sup").
 
 
 %%callbacks
 
 start_link(AccountId) ->
-	Pid = get_pid(AccountId),
-	supervisor:start_link(Pid, ?MODULE, []).
+	supervisor:start_link(?MODULE, AccountId).
 
 
-init([]) ->
+init(AccountId) ->
 	Name = player_worker,
+	util:reg_proc(?MODULE, AccountId),
 	{ok, {{simple_one_for_one, 0, 1},
 				[{Name,
 					{Name, start_link, []},
