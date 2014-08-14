@@ -1,7 +1,7 @@
 -module(update_mask).
 
 -export([set_bits/3, set_bit/2, get_bit/2]).
--export([empty/1, empty_player/0]).
+-export([empty/1]).
 
 -include("include/binary.hrl").
 
@@ -41,9 +41,9 @@ get_bit(Mask, Index) ->
 			NewValue > 0.
 
 
-empty_player() ->
-	TotalCount = update_fields:get_total_count(player),
-	update_mask:empty(TotalCount - 1).
+empty(Type) when is_atom(Type) ->
+	TotalCount = update_fields:get_total_count(Type),
+	update_mask:empty(TotalCount - 1);
 empty(Count) ->
 	Blocks = (Count + 31) div 32,
 	binary:copy(<<0?L>>, Blocks).

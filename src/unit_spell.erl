@@ -1,4 +1,4 @@
--module(player_spell).
+-module(unit_spell).
 -behaviour(gen_fsm).
 
 -export([start_link/1]).
@@ -26,7 +26,7 @@ start_link(Guid) ->
     gen_fsm:start_link(?MODULE, {Guid}, []).
 
 init({Guid}) ->
-	io:format("starting player spell~n"),
+	io:format("starting unit spell~n"),
 
 	util:reg_proc(?MODULE, Guid),
 

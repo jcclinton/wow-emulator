@@ -1,14 +1,15 @@
--module(player_updater).
+-module(unit_updater).
 -behavior(gen_server).
 
 -record(state, {
 	guid,
 	timer,
+	type,
 	marked_indices
 }).
 
 
--export([start_link/1]).
+-export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([mark_update/2]).
 -export([update/0]).
@@ -30,15 +31,15 @@ update() -> ok.
 
 %% behavior callbacks
 
-start_link(Guid) ->
-	gen_server:start_link(?MODULE, {Guid}, []).
+start_link(Guid, Type) ->
+	gen_server:start_link(?MODULE, {Guid, Type}, []).
 
-init({Guid}) ->
+init({Guid, Type}) ->
 	io:format("char updater started for ~p~n", [Guid]),
 
 	util:reg_proc(?MODULE, Guid),
 
-	{ok, #state{guid=Guid, timer=none, marked_indices=[]}}.
+	{ok, #state{guid=Guid, timer=none, marked_indices=[], type=Type}}.
 
 
 handle_cast({mark_update, Indices}, State = #state{marked_indices=StoredIndices, timer=Timer}) ->
@@ -60,13 +61,13 @@ handle_call(_Msg, _From, State) ->
 	{reply, ok, State}.
 
 
-handle_info(send_update, State = #state{guid=Guid, marked_indices=Indices}) ->
+handle_info(send_update, State = #state{guid=Guid, marked_indices=Indices, type=Type}) ->
 
 	% if any values have been changed, do update
 	if Indices /= [] ->
 			Mask = lists:foldl(fun(Index, MaskAcc) ->
 				update_mask:set_bit(Index, MaskAcc)
-			end, update_mask:empty_player(), Indices),
+			end, update_mask:empty(Type), Indices),
 
 			Values = char_data:get_values(Guid),
 			{OpAtom, Msg} = update_data:build_update_packet(Mask, Values),

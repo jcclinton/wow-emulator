@@ -1,4 +1,4 @@
--module(player_melee).
+-module(unit_melee).
 -behaviour(gen_fsm).
 
 -export([start_link/1]).
@@ -37,7 +37,7 @@ start_link(Guid) ->
 	gen_fsm:start_link(?MODULE, {Guid}, []).
 
 init({Guid}) ->
-	io:format("starting player melee~n"),
+	io:format("starting unit melee~n"),
 
 	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
 	Seed = {A,B,C},
