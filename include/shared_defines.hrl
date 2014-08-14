@@ -1,6 +1,6 @@
 -record(callback, {type, module, function, send_priority}).
 
--define(game_tick, 30).
+-define(game_tick, 15).
 
 -define(max_action_buttons, 120).
 
