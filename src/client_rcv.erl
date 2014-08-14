@@ -35,8 +35,7 @@ world_challenge(_, State = #state{socket=Socket, account_id=AccountId, rcv_key=K
 
 	try network:receive_packet(HdrLen, _KeyStateReceive=nil, Socket, _ShouldDecrypt=false) of
 		{_Opcode, _Payload, _} ->
-			Name = list_to_binary(AccountId),
-			PayloadOut = <<1?L, 1?L, Name/binary, 0?B, 0?B>>,
+			PayloadOut = <<1?L, 1?L, AccountId/binary, 0?B, 0?B>>,
 			Opcode = opcodes:get_num_by_atom(cmsg_auth_session),
 			network:send_packet(Opcode, PayloadOut, ?RCV_HDR_LEN, _KeyStateSend=nil, Socket, _ShouldEncrypt=false),
 

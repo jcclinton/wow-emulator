@@ -62,7 +62,6 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 	Generator = srp:getGenerator(),
 	Prime = srp:getPrime(),
 	Account = account:lookup(Username),
-	io:format("looking up ~p~n", [Username]),
 	NewState = if Account == false ->
 			Cmd = ?cmd_auth_logon_challenge,
 			Err = ?wow_fail_unknown_account,
@@ -92,9 +91,8 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	Key = srp:interleaveHash(Skey),
 	%KeySize = size(Key),
 	%io:format("LOGIN SERVER sess key: ~p~n", [Skey]),
-	StringName = binary_to_list(Name),
 	KeyL = srp:b_to_l_endian(Key, 320),
-	char_data:store_connected_client(StringName, KeyL),
+	char_data:store_connected_client(Name, KeyL),
 	Generator = srp:getGenerator(),
 	MsgOut = build_proof_response(Name, Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	gen_tcp:send(Socket, MsgOut),

@@ -23,7 +23,7 @@
 
 
 get_dummy_account() ->
-	"ALICE2".
+	<<"ALICE2">>.
 
 stand() ->
 	AccountId = get_dummy_account(),
@@ -72,11 +72,10 @@ get_pid(Name) ->
 	
 
 start_link(AccountId, SendPid) ->
-	Pid = get_pid(AccountId),
-	gen_server:start_link(Pid, ?MODULE, {AccountId, SendPid}, []).
+	gen_server:start_link(?MODULE, {AccountId, SendPid}, []).
 
 init({AccountId, SendPid}) ->
-	io:format("controller SERVER: started~n"),
+	io:format("controller SERVER: started for ~p~n", [AccountId]),
 	process_flag(trap_exit, true),
 
 	util:reg_proc(?MODULE, AccountId),

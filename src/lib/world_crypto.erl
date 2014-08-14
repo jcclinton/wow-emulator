@@ -29,6 +29,6 @@ decrypt(<<OldByte?B, Header/binary>>, {RI, RJ, K}, Result) ->
     decrypt(Header, {NewRI, OldByte, K}, <<Result/binary, NewByte:8>>).
 
 %% @spec encrypt(string()) -> list().
-encryption_key(A) ->
-	K = char_data:get_session_key(A),
-	binary_to_list(K).
+encryption_key(AccountId) ->
+	Key = char_data:get_session_key(AccountId),
+	binary_to_list(Key).

@@ -88,23 +88,22 @@ upgrade() -> ok.
 %% private
 
 auth_session(Rest) ->
-    {_, A, _}      = cmsg_auth_session(Rest),
-    Data   = smsg_auth_response(),
-		%io:format("authorizing session for ~p~n", [A]),
-    K      = world_crypto:encryption_key(A),
-    KTup     = {0, 0, K},
-    {Data, A, KTup}.
+	AccountId = cmsg_auth_session(Rest),
+	Data = smsg_auth_response(),
+	Key = world_crypto:encryption_key(AccountId),
+	KeyState = {0, 0, Key},
+	{Data, AccountId, KeyState}.
 
 cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
-    {Account, Key} = cmsg_auth_session_extract(Rest, <<>>),
-    {Build, Account, Key};
+    {Account, _Key} = cmsg_auth_session_extract(Rest, <<>>),
+    Account;
 cmsg_auth_session(_) ->
     {error, bad_cmsg_auth_session}.
 
-cmsg_auth_session_extract(<<0?B, Rest/binary>>, Account) ->
-    {binary_to_list(Account), Rest};
-cmsg_auth_session_extract(<<Letter?B, Rest/binary>>, Account) ->
-    cmsg_auth_session_extract(Rest, <<Account/binary, Letter?B>>).
+cmsg_auth_session_extract(<<0?B, Rest/binary>>, AccountId) ->
+    {AccountId, Rest};
+cmsg_auth_session_extract(<<Letter?B, Rest/binary>>, AccountId) ->
+    cmsg_auth_session_extract(Rest, <<AccountId/binary, Letter?B>>).
 
 smsg_auth_response() ->
     <<16#0c?B, 0?L, 0?B, 0?L>>.
