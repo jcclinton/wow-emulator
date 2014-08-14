@@ -88,7 +88,7 @@ handle_cast({send_to_client, OpAtom, Payload, Type}, State=#state{send_pid = Sen
 	%io:format("sending ~p to client~n", [OpAtom]),
 	player_send:send_msg(SendPid, Opcode, Payload, Type),
 	{noreply, State};
-handle_cast({login_char, Guid}, State=#state{account_id = AccountId, parent_pid = ParentPid, guid=OldGuid}) ->
+handle_cast({login_char, Guid}, State=#state{parent_pid = ParentPid, guid=OldGuid}) ->
 	if OldGuid > 0 -> throw(badarg);
 		OldGuid == 0 -> ok
 	end,
@@ -97,7 +97,7 @@ handle_cast({login_char, Guid}, State=#state{account_id = AccountId, parent_pid 
 
 	Name = player_ephemeral_sup,
 	Spec = {Name,
-		{Name, start_link, [AccountId, Guid]},
+		{Name, start_link, [Guid]},
 		permanent, 2000, supervisor, [Name]},
 	{ok, _Pid} = supervisor:start_child(ParentPid, Spec),
 

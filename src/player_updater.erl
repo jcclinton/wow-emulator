@@ -2,14 +2,13 @@
 -behavior(gen_server).
 
 -record(state, {
-	account_id,
 	guid,
 	timer,
 	marked_indices
 }).
 
 
--export([start_link/2]).
+-export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([mark_update/2]).
 -export([update/0]).
@@ -31,15 +30,15 @@ update() -> ok.
 
 %% behavior callbacks
 
-start_link(AccountId, Guid) ->
-	gen_server:start_link(?MODULE, {AccountId, Guid}, []).
+start_link(Guid) ->
+	gen_server:start_link(?MODULE, {Guid}, []).
 
-init({AccountId, Guid}) ->
+init({Guid}) ->
 	io:format("char updater started for ~p~n", [Guid]),
 
 	util:reg_proc(?MODULE, Guid),
 
-	{ok, #state{account_id=AccountId, guid=Guid, timer=none, marked_indices=[]}}.
+	{ok, #state{guid=Guid, timer=none, marked_indices=[]}}.
 
 
 handle_cast({mark_update, Indices}, State = #state{marked_indices=StoredIndices, timer=Timer}) ->

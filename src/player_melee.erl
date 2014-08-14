@@ -1,7 +1,7 @@
 -module(player_melee).
 -behaviour(gen_fsm).
 
--export([start_link/2]).
+-export([start_link/1]).
 -export([init/1, handle_sync_event/4, handle_event/3,
 				 handle_info/3, terminate/3, code_change/4]).
 
@@ -13,7 +13,6 @@
 
 
 -record(state, {
-	account_id,
 	guid,
 	timer_swing,
 	timer,
@@ -34,10 +33,10 @@ update() -> ok.
 
 %% behavior callbacks
 
-start_link(AccountId, Guid) ->
-	gen_fsm:start_link(?MODULE, {AccountId, Guid}, []).
+start_link(Guid) ->
+	gen_fsm:start_link(?MODULE, {Guid}, []).
 
-init({AccountId, Guid}) ->
+init({Guid}) ->
 	io:format("starting player melee~n"),
 
 	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
@@ -46,7 +45,7 @@ init({AccountId, Guid}) ->
 
 	util:reg_proc(?MODULE, Guid),
 
-	{ok, idle, #state{account_id=AccountId, guid=Guid, timer=none, seed=Seed}}.
+	{ok, idle, #state{guid=Guid, timer=none, seed=Seed}}.
 
 
 idle(start, State = #state{guid=Guid}) ->
