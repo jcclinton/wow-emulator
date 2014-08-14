@@ -11,7 +11,7 @@
 add(Guid, Spell) ->
 	SpellId = Spell#spell_store.id,
 	Values = char_data:get_values(Guid),
-	Slot = 11,
+	Slot = 12,
 	V1 = char_values:set_aura(Slot, SpellId, Values),
 	V2 = char_values:set_aura_flag(Slot, V1),
 	V3 = char_values:set_aura_level(Slot, 1, V2),

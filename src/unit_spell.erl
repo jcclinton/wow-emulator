@@ -11,13 +11,15 @@
 
 
 -record(state, {
-	guid
+	guid,
+	spell,
+	target_info
 }).
 
 %% public api
 cast(CasterGuid, SpellId, TargetInfo) ->
 	Pid = util:get_pid(?MODULE, CasterGuid),
-	gen_fsm:send_event(Pid, {prepare, CasterGuid, SpellId, TargetInfo}).
+	gen_fsm:send_event(Pid, {prepare, SpellId, TargetInfo}).
 
 
 %% behavior callbacks
@@ -33,8 +35,11 @@ init({Guid}) ->
 	{ok, idle, #state{guid=Guid}}.
 
 
-idle(_, State) ->
-	{next_state, idle, State}.
+idle({prepare, SpellId, TargetInfo}, State = #state{guid=Guid}) ->
+	Spell = static_store:lookup_spell(SpellId),
+	%io:format("spell: ~p~n", [Spell]),
+	spell:prepare(Guid, TargetInfo, Spell),
+	{next_state, idle, State#state{spell=Spell, target_info=TargetInfo}}.
 
 
 handle_info(_Info, State, Data) ->
