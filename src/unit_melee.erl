@@ -5,7 +5,7 @@
 -export([init/1, handle_sync_event/4, handle_event/3,
 				 handle_info/3, terminate/3, code_change/4]).
 
--export([idle/2, attacking/2]).
+-export([idle/2, attacking/2, attacking_out_of_range/2]).
 -export([start_melee_attack/1, stop_melee_attack/1]).
 -export([update/0]).
 
@@ -66,6 +66,9 @@ attacking(swing, State = #state{guid=Guid, seed=Seed}) ->
 	{next_state, attacking, State#state{timer=Timer, seed=NewSeed}};
 attacking(_, State) ->
 	{next_state, idle, State}.
+
+attacking_out_of_range(_, State) ->
+	{next_state, attacking_out_of_range, State}.
 
 
 handle_info(_Info, State, Data) ->
