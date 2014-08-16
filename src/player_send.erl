@@ -4,7 +4,7 @@
 -export([start_link/2]).
 -export([init/1, handle_sync_event/4, handle_event/3,
 				 handle_info/3, terminate/3, code_change/4]).
--export([send/2]).
+-export([accumulate/2, idle/2]).
 -export([upgrade/0]).
 -export([send_msg/4]).
 
@@ -29,6 +29,8 @@ send_msg(SendPid, Opcode, Payload, Type) ->
 	end,
 	gen_fsm:send_event(SendPid, Msg).
 
+upgrade() -> ok.
+
 
 
 %% behavior callbacks
@@ -39,44 +41,42 @@ start_link(Socket, KeyState) ->
 init({Socket, KeyState}) ->
 	io:format("WORLD: starting send~n"),
 	process_flag(trap_exit, true),
-    {ok, send, #state{socket=Socket, key_state=KeyState, hdr_len=?SEND_HDR_LEN, queue=queue:new(), timer=none}}.
+    {ok, idle, #state{socket=Socket, key_state=KeyState, hdr_len=?SEND_HDR_LEN, queue=none, timer=none}}.
 
 
-send({enqueue, Opcode, Payload}, State = #state{queue=Queue, timer=Timer}) ->
-	% enqueue this data
-	% start timer if it has not already been started
-	%io:format("enqueue ~p~n", [Opcode]),
-	NewQueue = queue:in({Opcode, Payload}, Queue),
-	NewTimer = if Timer /= none ->
-			Timer;
-		Timer == none ->
-			{ok, Tref} = timer:apply_after(?game_tick, gen_fsm, send_event, [self(), flush]),
-			Tref
-	end,
-	{next_state, send, State#state{queue=NewQueue, timer=NewTimer}};
-send(flush, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen, queue=Queue}) ->
-	%io:format("send~n"),
-	% send all data from queue to client
-	try network:send_queue(Queue, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
-		NewKeyState -> {next_state, send, State#state{key_state=NewKeyState, queue=queue:new(), timer=none}}
-	catch
-		Error -> {stop, Error, State}
-	end;
-send({fast_send, Opcode, Payload}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen, queue=Queue, timer=Timer}) ->
-	%io:format("fast send ~p~n", [Opcode]),
-	if Timer /= none -> timer:cancel(Timer);
-		Timer == none -> ok
-	end,
-	% add packet to front of queue
-	% then flush entire queue
-	NewQueue = queue:in_r({Opcode, Payload}, Queue),
-	try network:send_queue(NewQueue, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
-		NewKeyState -> {next_state, send, State#state{key_state=NewKeyState, queue=queue:new(), timer=none}}
+idle({enqueue, Opcode, Payload}, State = #state{}) ->
+	% create new queue with this data
+	Queue = queue:in({Opcode, Payload}, queue:new()),
+	% start timer
+	{ok, Timer} = timer:apply_after(?game_tick, gen_fsm, send_event, [self(), flush]),
+	{next_state, accumulate, State#state{queue=Queue, timer=Timer}};
+idle({fast_send, Opcode, Payload}, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen}) ->
+	try network:send_packet(Opcode, Payload, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
+		NewKeyState -> {next_state, idle, State#state{key_state=NewKeyState}}
 	catch
 		Error -> {stop, Error, State}
 	end.
 
-upgrade() -> ok.
+
+accumulate({enqueue, Opcode, Payload}, State = #state{queue=Queue}) ->
+	% enqueue this data
+	NewQueue = queue:in({Opcode, Payload}, Queue),
+	{next_state, accumulate, State#state{queue=NewQueue}};
+accumulate(flush, State = #state{socket=Socket, key_state=KeyState, hdr_len=HdrLen, queue=Queue}) ->
+	% send all data from queue to client
+	try network:send_queue(Queue, HdrLen, KeyState, Socket, _ShouldEncrypt=true) of
+		NewKeyState -> {next_state, idle, State#state{key_state=NewKeyState, queue=none, timer=none}}
+	catch
+		Error -> {stop, Error, State}
+	end;
+accumulate({fast_send, Opcode, Payload}, State = #state{queue=Queue, timer=Timer}) ->
+	timer:cancel(Timer),
+	% insert in front of queue
+	% not a big deal, can be done either way
+	NewQueue = queue:in_r({Opcode, Payload}, Queue),
+	accumulate(flush, State#state{queue=NewQueue}).
+
+
 
 %% callbacks
 handle_info(_Info, State, Data) ->
