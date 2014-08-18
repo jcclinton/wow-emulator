@@ -4,10 +4,16 @@
 -export([set_item/3, set_visible_item/3]).
 -export([set_aura/3, set_aura_level/3, set_aura_application/2, set_aura_flag/2]).
 -export([get/2, set/3]).
+-export([get_empty_values/0]).
 -compile([export_all]). % needed to call functions through get/1
 
 
 -include("include/items.hrl").
+
+get_empty_values() ->
+	TotalCount = update_fields:get_total_count(player),
+	% create initially empty binary values object
+	binary:copy(<<0?L>>, TotalCount).
 
 
 % sets

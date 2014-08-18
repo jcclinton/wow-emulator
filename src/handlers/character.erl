@@ -478,9 +478,7 @@ create_char_values(Data, Guid) ->
 
 	% create actual data objects
 
-	TotalCount = update_fields:get_total_count(player),
-	% create initially empty binary values object
-	EmptyValues = binary:copy(<<0?L>>, TotalCount),
+	EmptyValues = char_values:get_empty_values(),
 	Values = lists:foldl(fun object_values:set_key_values/2, EmptyValues, KeyValues),
 	CharMisc = #char_misc{
 		at_login_flags = 0
