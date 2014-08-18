@@ -94,7 +94,7 @@ auth_session(Rest) ->
 	KeyState = {0, 0, Key},
 	{Data, AccountId, KeyState}.
 
-cmsg_auth_session(<<Build?L, _Unk?L, Rest/binary>>) ->
+cmsg_auth_session(<<_Build?L, _Unk?L, Rest/binary>>) ->
     {Account, _Key} = cmsg_auth_session_extract(Rest, <<>>),
     Account;
 cmsg_auth_session(_) ->
