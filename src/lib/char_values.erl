@@ -9,6 +9,7 @@
 
 
 -include("include/items.hrl").
+-include("include/binary.hrl").
 
 get_empty_values() ->
 	TotalCount = update_fields:get_total_count(player),
