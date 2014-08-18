@@ -213,13 +213,6 @@ init_world_state(Data) ->
 
 
 
-extract_name(Payload) ->
-	extract_name(Payload, <<>>).
-extract_name(<<0?B, Rest/binary>>, Name) -> {Name, Rest};
-extract_name(<<Char?B, Rest/binary>>, Name) ->
-	extract_name(Rest, <<Name/binary, Char?B>>).
-	
-
 mapCharGuids(Guid) ->
 	CharMove = char_data:get_char_move(Guid),
 	CharMisc = char_data:get_char_misc(Guid),
@@ -313,7 +306,7 @@ mapCharGuids(Guid) ->
 
 create_char_values(Data, Guid) ->
 	Payload = recv_data:get(payload, Data),
-	{Name, NewPayload} = extract_name(Payload),
+	{Name, NewPayload} = util:extract_string(Payload),
     <<Race?B, Class?B, Gender?B, Skin?B,
       Face?B, HairStyle?B, HairColor?B, FacialHair?B, _?B>> = NewPayload,
     RaceName    = char_helper:to_race(Race),
