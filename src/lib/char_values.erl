@@ -19,17 +19,17 @@ get_empty_values() ->
 
 % sets
 
-set(Type, Value, Input) ->
-	Values = if is_binary(Input) -> Input;
-		is_number(Input) ->
-			% input is the guid, lookup the values object
-			char_data:get_values(Input)
+set(FuncName, Value, InputData) ->
+	Values = if is_binary(InputData) -> InputData;
+		is_number(InputData) ->
+			% input data is the guid, lookup the values object
+			char_data:get_values(InputData)
 	end,
-	try ?MODULE:Type(Value, Values) of
+	try ?MODULE:FuncName(Value, Values) of
 		Val -> Val
 	catch
 		Error ->
-			io:format("ERROR trying to set ~p on type ~p for char_value: ~p~n", [Type, Value, Error]),
+			io:format("ERROR trying to set ~p on function name ~p for char_value: ~p~n", [FuncName, Value, Error]),
 			Values
 	end.
 
@@ -205,13 +205,13 @@ set_byte_mark_if_needed(Field, NewValue, Values, Offset) ->
 
 
 %% gets
-get(Type, Input) ->
-	Values = if is_binary(Input) -> Input;
-		is_number(Input) ->
-			% input is the guid, lookup the values object
-			char_data:get_values(Input)
+get(FuncName, InputData) ->
+	Values = if is_binary(InputData) -> InputData;
+		is_number(InputData) ->
+			% input data is the guid, lookup the values object
+			char_data:get_values(InputData)
 	end,
-	try ?MODULE:Type(Values) of
+	try ?MODULE:FuncName(Values) of
 		Val -> Val
 	catch
 		Error ->

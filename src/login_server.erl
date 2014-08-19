@@ -65,6 +65,7 @@ handle_info({tcp, _Socket, <<0?B, Msg/binary>>}, State=#state{socket=Socket}) ->
 	NewState = if Account == false ->
 			Cmd = ?cmd_auth_logon_challenge,
 			Err = ?wow_fail_unknown_account,
+			io:format("unkown account: ~p~n", [Username]),
 
 			MsgOut = [<<Cmd?B>>,
 				_Unk2 = <<0?B>>,
