@@ -22,4 +22,8 @@ init({Guid, Type}) ->
 					{unit_melee,
 						{unit_melee, start_link, [Guid]},
 						transient, 1000, worker, [unit_melee]}
+
+					%{player_state,
+						%{player_state, start_link, [Guid]},
+						%transient, 1000, worker, [player_state]}
 				]}}.
