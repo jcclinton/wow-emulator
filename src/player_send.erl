@@ -24,8 +24,10 @@
 %% public api
 send_msg(SendPid, Opcode, Payload, Type) ->
 	Msg = case Type of
-		fast -> {fast_send, Opcode, Payload};
-		enqueue -> {enqueue, Opcode, Payload}
+		%fast -> {fast_send, Opcode, Payload};
+		%enqueue -> {enqueue, Opcode, Payload}
+		% dont put anything on the fast path, enqueue everything
+		_ -> {enqueue, Opcode, Payload}
 	end,
 	gen_fsm:send_event(SendPid, Msg).
 
