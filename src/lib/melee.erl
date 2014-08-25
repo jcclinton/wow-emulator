@@ -2,6 +2,8 @@
 
 -export([swing/2]).
 -export([is_facing/3, within_distance/2]).
+-export([generate_attack_table/0, roll/2]).
+-compile([export_all]).
 
 -include("include/database_records.hrl").
 -include("include/binary.hrl").
@@ -112,3 +114,71 @@ within_distance({X, Y, Z}, {Tx, Ty, Tz}) ->
 	ReqDistSq = Dist * Dist,
 	%io:format("distsq: ~p req distsq: ~p~n", [DistSq, ReqDistSq]),
 	DistSq < ReqDistSq.
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% test attack table code below
+
+
+-define(miss, 0).
+-define(dodge, 1).
+-define(parry, 2).
+-define(glancing_blow, 3).
+-define(block, 4).
+-define(critical_hit, 5).
+-define(crushing_blow, 6).
+-define(ordinary_hit, 7).
+
+
+generate_attack_table() ->
+	Attacks = [
+		{?miss, 5.02},
+		{?dodge, 4.50},
+		{?parry, 6.23},
+		{?glancing_blow, 0.00},
+		{?block, 5.10},
+		{?critical_hit, 5.08},
+		{?crushing_blow, 0.07},
+		{?ordinary_hit, -1}
+	],
+	
+	TotalSize = get_size(),
+	{Table, _} = lists:foldl(fun({Type, Amount}, {Tab, LastAmount}) ->
+		NewAmount = if Amount >= 0 ->
+				round(Amount * (get_size() / 100));
+			Amount == -1 ->
+				TotalSize - LastAmount
+		end,
+		io:format("~p: ~p~n", [Type, LastAmount]),
+
+		Rest = binary:copy(<<Type?B>>, NewAmount),
+		{<<Tab/binary, Rest/binary>>, LastAmount + NewAmount}
+		
+	end, {<<>>, 0}, Attacks),
+		io:format("~p: ~p~n", [t, TotalSize]),
+	Table.
+
+get_size() ->
+	10000.
+
+test() ->
+	Table = generate_attack_table(),
+	{Type, _} = roll(Table, 1),
+	Type.
+		
+
+roll(Table, _) ->
+	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
+	Seed = {A,B,C},
+
+	{Rand, NewSeed} = random:uniform_s(Seed),
+	Value = round(Rand * get_size()),
+	io:format("roll: ~p~n", [Value]),
+	Offset = Value * 8,
+	<<_:Offset, Type?B, _/binary>> = Table,
+	{Type, NewSeed}.
