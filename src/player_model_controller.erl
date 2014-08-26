@@ -76,6 +76,23 @@ logged_out({create, Data}, _From, State = #state{account_id=AccountId}) ->
 
 	Result = 16#2E, % success
 	{reply, Result, logged_out, State};
+logged_out(enum, _From, State = #state{account_id=AccountId}) ->
+	CharGuids = char_data:enum_char_guids(AccountId),
+	Num = length(CharGuids),
+	CharDataOut = if Num > 0 ->
+								CharList = lists:map(fun mapCharGuids/1, CharGuids),
+								iolist_to_binary(CharList);
+							Num == 0 -> <<>>
+						end,
+	Msg = {Num, CharDataOut},
+
+	{reply, Msg, logged_out, State};
+logged_out({delete, Guid}, _From, State = #state{}) ->
+	ItemGuids = item:get_item_guids(Guid),
+	item_data:delete_items(ItemGuids),
+	char_data:delete_char(Guid),
+	Result = 16#39,
+	{reply, Result, logged_out, State};
 logged_out(_, _From, State) ->
 	{next_state, logged_out, State}.
 
@@ -301,3 +318,101 @@ create_char_values(Payload, Guid) ->
 
 
 	{Name, CharMisc, CharMv, Values, Spells, ActionButtonsBin}.
+
+
+
+
+
+
+
+mapCharGuids(Guid) ->
+	CharMove = char_data:get_char_move(Guid),
+	CharMisc = char_data:get_char_misc(Guid),
+	Values = char_data:get_values(Guid),
+	Name = char_data:get_char_name(Guid),
+
+	Guid = char_values:get(guid, Values),
+	Race = char_values:get(race, Values),
+	Class = char_values:get(class, Values),
+	Gender = char_values:get(gender, Values),
+
+	Skin = char_values:get(skin, Values),
+	Face = char_values:get(face, Values),
+	HairStyle = char_values:get(hair_style, Values),
+	HairColor = char_values:get(hair_color, Values),
+	FacialHair = char_values:get(facial_hair, Values),
+	Level = char_values:get(level, Values),
+
+	GuildId = char_values:get(guild_id, Values),
+
+	Zone = CharMove#char_move.zone,
+	Map = CharMove#char_move.map,
+	X = CharMove#char_move.x,
+	Y = CharMove#char_move.y,
+	Z = CharMove#char_move.z,
+
+	AtLoginFlags = CharMisc#char_misc.at_login_flags,
+
+	GeneralFlags = 16#10A00040,
+
+	PetDisplayId = 0,
+	PetLevel = 0,
+	PetFamily = 0,
+
+	EmptySlot = <<0?L, 0?B>>,
+	ItemGuids = item:get_equipped_item_guids(Guid),
+	ItemSlotData = lists:foldl(fun(ItemGuid, Acc) ->
+		SlotData = try item_data:get_values(ItemGuid) of
+			ItemValues ->
+				ItemId = item_values:get_item_id(ItemValues),
+				ItemProto = content:lookup_item(ItemId),
+				if ItemProto /= false ->
+						DisplayInfoId = ItemProto#item_proto.display_info_id,
+						InvType = ItemProto#item_proto.inventory_type,
+						<<DisplayInfoId?L, InvType?B>>;
+					ItemProto == false ->
+						EmptySlot
+				end
+			catch
+				badarg -> EmptySlot
+			end,
+			<<Acc/binary, SlotData/binary>>
+	end, <<>>, ItemGuids),
+	%ItemSlotData = binary:copy(EmptySlot, ?equipment_slot_end),
+
+	BagDisplayId = 0,
+	BagInventoryType = 0,
+
+	<<Guid?Q,
+	Name/binary,
+	0?B,
+	Race?B,
+	Class?B,
+	Gender?B,
+
+	Skin?B,
+	Face?B,
+	HairStyle?B,
+	HairColor?B,
+	FacialHair?B,
+
+	Level?B,
+
+	Zone?L,
+	Map?L,
+	X?f,
+	Y?f,
+	Z?f,
+
+	GuildId?L,
+	GeneralFlags?L,
+	AtLoginFlags?B,
+
+	PetDisplayId?L,
+	PetLevel?L,
+	PetFamily?L,
+	ItemSlotData/binary,
+	BagDisplayId?L,
+	BagInventoryType?B>>.
+	
+

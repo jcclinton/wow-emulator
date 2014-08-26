@@ -17,26 +17,17 @@ update_account_data(_Data) ->
 
 enum(Data) ->
 	AccountId = recv_data:get(account_id, Data),
-	CharGuids = char_data:enum_char_guids(AccountId),
-	Num = length(CharGuids),
-	CharDataOut = if Num > 0 ->
-								CharList = lists:map(fun mapCharGuids/1, CharGuids),
-								iolist_to_binary(CharList);
-							Num == 0 -> <<>>
-						end,
+	{Num, CharDataOut} = player_model_controller:enum(AccountId),
 	Msg = <<Num?B, CharDataOut/binary>>,
 	{smsg_char_enum, Msg}.
 
 
 delete(Data) ->
-	Packet = recv_data:get(payload, Data),
-	<<Guid?Q>> = Packet,
-	ItemGuids = item:get_item_guids(Guid),
-	item_data:delete_items(ItemGuids),
-	char_data:delete_char(Guid),
+	AccountId = recv_data:get(account_id, Data),
+	<<Guid?Q>> = recv_data:get(payload, Data),
 
-	Success = 16#39,
-	Msg = <<Success?B>>,
+	Result = player_model_controller:delete(AccountId, Guid),
+	Msg = <<Result?B>>,
 	{smsg_char_delete, Msg}.
 
 
@@ -202,105 +193,3 @@ init_world_state(Data) ->
 	Rest = <<16#d808000000000000d708000000000000d608000000000000d508000000000000d408000000000000d308000000000000:384/unsigned-big-integer>>,
 	Payload = <<MapId?L, ZoneId?L, Count?W, Rest/binary>>,
 	{smsg_init_world_states, Payload}.
-
-			
-%%%%%%%%%%%%
-%% private
-
-
-
-
-
-
-
-mapCharGuids(Guid) ->
-	CharMove = char_data:get_char_move(Guid),
-	CharMisc = char_data:get_char_misc(Guid),
-	Values = char_data:get_values(Guid),
-	Name = char_data:get_char_name(Guid),
-
-	Guid = char_values:get(guid, Values),
-	Race = char_values:get(race, Values),
-	Class = char_values:get(class, Values),
-	Gender = char_values:get(gender, Values),
-
-	Skin = char_values:get(skin, Values),
-	Face = char_values:get(face, Values),
-	HairStyle = char_values:get(hair_style, Values),
-	HairColor = char_values:get(hair_color, Values),
-	FacialHair = char_values:get(facial_hair, Values),
-	Level = char_values:get(level, Values),
-
-	GuildId = char_values:get(guild_id, Values),
-
-	Zone = CharMove#char_move.zone,
-	Map = CharMove#char_move.map,
-	X = CharMove#char_move.x,
-	Y = CharMove#char_move.y,
-	Z = CharMove#char_move.z,
-
-	AtLoginFlags = CharMisc#char_misc.at_login_flags,
-
-	GeneralFlags = 16#10A00040,
-
-	PetDisplayId = 0,
-	PetLevel = 0,
-	PetFamily = 0,
-
-	EmptySlot = <<0?L, 0?B>>,
-	ItemGuids = item:get_equipped_item_guids(Guid),
-	ItemSlotData = lists:foldl(fun(ItemGuid, Acc) ->
-		SlotData = try item_data:get_values(ItemGuid) of
-			ItemValues ->
-				ItemId = item_values:get_item_id(ItemValues),
-				ItemProto = content:lookup_item(ItemId),
-				if ItemProto /= false ->
-						DisplayInfoId = ItemProto#item_proto.display_info_id,
-						InvType = ItemProto#item_proto.inventory_type,
-						<<DisplayInfoId?L, InvType?B>>;
-					ItemProto == false ->
-						EmptySlot
-				end
-			catch
-				badarg -> EmptySlot
-			end,
-			<<Acc/binary, SlotData/binary>>
-	end, <<>>, ItemGuids),
-	%ItemSlotData = binary:copy(EmptySlot, ?equipment_slot_end),
-
-	BagDisplayId = 0,
-	BagInventoryType = 0,
-
-	<<Guid?Q,
-	Name/binary,
-	0?B,
-	Race?B,
-	Class?B,
-	Gender?B,
-
-	Skin?B,
-	Face?B,
-	HairStyle?B,
-	HairColor?B,
-	FacialHair?B,
-
-	Level?B,
-
-	Zone?L,
-	Map?L,
-	X?f,
-	Y?f,
-	Z?f,
-
-	GuildId?L,
-	GeneralFlags?L,
-	AtLoginFlags?B,
-
-	PetDisplayId?L,
-	PetLevel?L,
-	PetFamily?L,
-	ItemSlotData/binary,
-	BagDisplayId?L,
-	BagInventoryType?B>>.
-	
-
