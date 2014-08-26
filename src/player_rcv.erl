@@ -113,6 +113,7 @@ start_siblings(Socket, KeyState, AccountId, ParentPid) ->
 	SendPid = start_child(player_send, [Socket, KeyState], ParentPid, worker),
 	_ = start_child(player_controller_sup, [AccountId, SendPid], ParentPid, supervisor),
 	_ = start_child(player_workers_sup, [AccountId], ParentPid, supervisor),
+	_ = start_child(unit_model_sup, [AccountId], ParentPid, supervisor),
 	ok.
 
 start_child(Name, Args, ParentPid, Type) ->
