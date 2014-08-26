@@ -7,6 +7,8 @@
 -export([logged_out/2, logged_out/3, logged_in/2, logged_in/3]).
 -export([login/2, logout/1]).
 -export([create/2, enum/1, delete/2]).
+-export([login_complete/1]).
+-export([update/0]).
 
 -include("include/binary.hrl").
 -include("include/types.hrl").
@@ -42,9 +44,16 @@ login(AccountId, Guid) ->
 	Pid = util:get_pid(?MODULE, AccountId),
 	gen_fsm:send_event(Pid, {login, Guid}).
 
+login_complete(Guid) ->
+	Pid = util:get_pid(?MODULE, Guid),
+	gen_fsm:send_event(Pid, {login_complete, Guid}).
+
 logout(AccountId) ->
 	Pid = util:get_pid(?MODULE, AccountId),
 	gen_fsm:send_event(Pid, logout).
+
+
+update() -> ok.
 
 
 
@@ -62,6 +71,7 @@ init({AccountId, ParentPid}) ->
 
 % async
 logged_out({login, Guid}, State = #state{parent_pid=ParentPid}) ->
+	util:reg_proc(?MODULE, Guid),
 	char_sess:create(Guid),
 
 	Name = unit_model_sup,
@@ -107,6 +117,11 @@ logged_out(_, _From, State) ->
 
 
 % async
+logged_in({login_complete, Guid}, State = #state{account_id=AccountId}) ->
+	% TODO find a better place to put this, it cant get called until values have been loaded though
+	char_data:stand(Guid),
+	ok = world:add_to_map({AccountId, Guid}),
+	{next_state, logged_in, State};
 logged_in(logout, State = #state{guid=Guid, parent_pid=ParentPid}) ->
 	char_sess:delete(Guid),
 
@@ -114,6 +129,7 @@ logged_in(logout, State = #state{guid=Guid, parent_pid=ParentPid}) ->
 	supervisor:terminate_child(ParentPid, Name),
 	supervisor:delete_child(ParentPid, Name),
 
+	util:unreg_proc(?MODULE, Guid),
 	{next_state, logged_out, State#state{guid=0}};
 logged_in(_, State) ->
 	{next_state, logged_in, State}.
@@ -340,7 +356,7 @@ create_char_values(Payload, Guid) ->
 mapCharGuids(Guid) ->
 	CharMove = char_data:get_char_move(Guid),
 	CharMisc = char_data:get_char_misc(Guid),
-	Values = char_data:get_values(Guid),
+	Values = char_data:get_stored_values(Guid),
 	Name = char_data:get_char_name(Guid),
 
 	Guid = char_values:get(guid, Values),

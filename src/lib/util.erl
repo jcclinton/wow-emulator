@@ -4,12 +4,16 @@
 -export([extract_string/1]).
 -export([game_time/0, game_speed/0]).
 -export([file_pread/3, file_open/2, file_close/1]).
--export([reg_proc/2, get_pid/2, build_pid_key/2]).
+-export([unreg_proc/2, reg_proc/2, get_pid/2, build_pid_key/2]).
 
 
 -include("include/binary.hrl").
 
 
+
+unreg_proc(Name, Id) ->
+	Key = build_pid_key(Name, Id),
+	gproc:unreg({n, l, Key}).
 
 reg_proc(Name, Id) ->
 	Key = build_pid_key(Name, Id),

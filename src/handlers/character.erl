@@ -104,13 +104,6 @@ login(Data) ->
 		player_controller:send(AccountId, OpAtomIn, PayloadIn)
 	end, Funs),
 
-
-	char_data:stand(Guid),
-
-
-
-	ok = world:add_to_map({AccountId, Guid}),
-
 	ok.
 
 
