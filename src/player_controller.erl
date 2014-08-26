@@ -93,8 +93,6 @@ handle_cast({login_char, Guid}, State=#state{parent_pid = ParentPid, guid=OldGui
 		OldGuid == 0 -> ok
 	end,
 
-	char_sess:create(Guid),
-
 	Name = unit_ephemeral_sup,
 	Spec = {Name,
 		{Name, start_link, [Guid, player]},
@@ -102,9 +100,7 @@ handle_cast({login_char, Guid}, State=#state{parent_pid = ParentPid, guid=OldGui
 	{ok, _Pid} = supervisor:start_child(ParentPid, Spec),
 
 	{noreply, State#state{guid=Guid}};
-handle_cast(logout_char, State=#state{parent_pid = ParentPid, guid=Guid}) ->
-	char_sess:delete(Guid),
-
+handle_cast(logout_char, State=#state{parent_pid = ParentPid}) ->
 	Name = unit_ephemeral_sup,
 	supervisor:terminate_child(ParentPid, Name),
 	supervisor:delete_child(ParentPid, Name),
