@@ -120,13 +120,19 @@ delete_char(Guid) ->
 
 
 create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons) when is_integer(Guid), is_binary(Values), is_binary(CharName), is_record(CharMisc, char_misc), is_record(CharMv, char_move), is_binary(AccountId), is_record(Spells, char_spells), is_binary(ActionButtons) ->
-	dets_store:store_new(?char_val, {Guid, Values}, true),
-	dets_store:store_new(?char_name, {Guid, CharName}, true),
-	dets_store:store_new(?char_misc, {Guid, CharMisc}, true),
-	dets_store:store_new(?char_mv, {Guid, CharMv}, true),
-	dets_store:store_new(?char_acc, {Guid, AccountId}, true),
-	dets_store:store_new(?char_btns, {Guid, ActionButtons}, true),
-	dets_store:store_new(?char_spells, {Guid, Spells}, true),
+	DetsValues = [
+		{?char_val, Values},
+		{?char_name, CharName},
+		{?char_misc, CharMisc},
+		{?char_mv, CharMv},
+		{?char_acc, AccountId},
+		{?char_btns, ActionButtons},
+		{?char_spells, Spells}
+	],
+	lists:foreach(fun({Tab, Val}) ->
+		dets_store:store_new(Tab, {Guid, Val}, true),
+		ok
+	end, DetsValues),
 
 	InitialCharSlotValues = item:init_char_slot_values(),
 	dets_store:store_new(?char_items, {Guid, InitialCharSlotValues}, true),
