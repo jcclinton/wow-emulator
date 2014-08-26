@@ -1,7 +1,7 @@
 -module(player_model_controller).
 -behaviour(gen_fsm).
 
--export([start_link/1]).
+-export([start_link/2]).
 -export([init/1, handle_sync_event/4, handle_event/3,
 				 handle_info/3, terminate/3, code_change/4]).
 -export([logged_out/2, logged_out/3, logged_in/2, logged_in/3]).
@@ -19,7 +19,8 @@
 
 -record(state, {
 	account_id,
-	guid
+	guid,
+	parent_pid
 }).
 
 %% public api
@@ -46,21 +47,28 @@ logout(AccountId) ->
 	gen_fsm:send_event(Pid, logout).
 
 
+
 %% behavior callbacks
 
-start_link(AccountId) ->
-    gen_fsm:start_link(?MODULE, {AccountId}, []).
+start_link(AccountId, ParentPid) ->
+    gen_fsm:start_link(?MODULE, {AccountId, ParentPid}, []).
 
-init({AccountId}) ->
+init({AccountId, ParentPid}) ->
 	io:format("starting player_model_controller~n"),
 
 	util:reg_proc(?MODULE, AccountId),
-	{ok, logged_out, #state{account_id=AccountId}}.
+	{ok, logged_out, #state{account_id=AccountId, parent_pid=ParentPid}}.
 
 
 % async
-logged_out({login, Guid}, State = #state{}) ->
+logged_out({login, Guid}, State = #state{parent_pid=ParentPid}) ->
 	char_sess:create(Guid),
+
+	Name = unit_model_sup,
+	Spec = {Name,
+		{Name, start_link, [Guid]},
+		permanent, 2000, supervisor, [Name]},
+	{ok, _Pid} = supervisor:start_child(ParentPid, Spec),
 
 	{next_state, logged_in, State#state{guid=Guid}};
 logged_out(_, State) ->
@@ -99,8 +107,12 @@ logged_out(_, _From, State) ->
 
 
 % async
-logged_in(logout, State = #state{guid=Guid}) ->
+logged_in(logout, State = #state{guid=Guid, parent_pid=ParentPid}) ->
 	char_sess:delete(Guid),
+
+	Name = unit_model_sup,
+	supervisor:terminate_child(ParentPid, Name),
+	supervisor:delete_child(ParentPid, Name),
 
 	{next_state, logged_out, State#state{guid=0}};
 logged_in(_, State) ->

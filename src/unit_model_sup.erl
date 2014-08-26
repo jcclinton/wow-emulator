@@ -5,13 +5,13 @@
 -export([init/1]).
 
 
-start_link(AccountId) ->
-	supervisor:start_link(?MODULE, {AccountId}).
+start_link(Guid) ->
+	supervisor:start_link(?MODULE, {Guid}).
 
-init({AccountId}) ->
+init({Guid}) ->
 	{ok, {{one_for_one, 3, 5},
 				[
-					{player_model_controller,
-						{player_model_controller, start_link, [AccountId]},
-						transient, 1000, worker, [player_model_controller]}
+					{player_state,
+						{player_state, start_link, [Guid]},
+						transient, 1000, worker, [player_state]}
 				]}}.
