@@ -9,7 +9,7 @@
 -record(char_spells, {ids=[]}).
 
 %char session is not persistent
--record(char_sess, {target=0}).
+-record(char_sess, {}).
 
 % char create info is used in initializing a new character
 -record(char_create_info, {faction_template, map_id, zone_id, position_x, 

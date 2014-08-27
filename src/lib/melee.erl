@@ -11,7 +11,7 @@
 
 
 swing(Guid, Seed) ->
-	TargetGuid = char_sess:get_target(Guid),
+	TargetGuid = player_state:get_value(Guid, target),
 
 	TargetCharMove = char_data:get_char_move(TargetGuid),
 	Tx = TargetCharMove#char_move.x,

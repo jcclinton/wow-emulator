@@ -81,6 +81,10 @@ sheathed(Value, Values) ->
 	Offset = 0,
 	set_byte_mark_if_needed(Field, Value, Values, Offset).
 
+target(Value, Values) ->
+	Field = 'UNIT_FIELD_TARGET',
+	set_uint64_mark_if_needed(Field, Value, Values).
+
 
 
 
@@ -237,6 +241,9 @@ health(Values) ->
 
 max_health(Values) ->
 	object_values:get_uint32_value('UNIT_FIELD_MAXHEALTH', Values).
+
+target(Values) ->
+	object_values:get_uint64_value('UNIT_FIELD_TARGET', Values).
 
 
 %returns guid of item in a given slot

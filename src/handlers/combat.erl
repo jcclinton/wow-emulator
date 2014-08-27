@@ -28,7 +28,7 @@ attack_stop(Data) ->
 	% or on an error
 	% but for now just end it when the client stops auto-attacking
 	PackGuid = guid:pack(Guid),
-	TargetGuid = char_sess:get_target(Guid),
+	TargetGuid = player_state:get_value(Guid, target),
 	TargetPackGuid = guid:pack(TargetGuid),
 	StopPayload = <<PackGuid/binary, TargetPackGuid/binary, 0?L>>,
 	{smsg_attackstop, StopPayload}.

@@ -29,7 +29,7 @@ set_selection(Data) ->
 	% TargetGuid is 0 when a target is deselected
 	<<TargetGuid?Q>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
-	char_sess:store_target(Guid, TargetGuid),
+	player_state:set_value(Guid, TargetGuid, target),
 	ok.
 
 tutorial_flag(_Data) ->

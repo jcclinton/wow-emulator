@@ -3,8 +3,7 @@
 -export([init/0, cleanup/0]).
 -export([create/1, delete/1]).
 -export([is_logged_in/1]).
--export([store_target/2]).
--export([get_target/1]).
+-export([get_sess/1]).
 -export([store_connected_client/2, get_session_key/1]).
 
 
@@ -41,18 +40,6 @@ is_logged_in(Guid) ->
 		[] -> false;
 		_ -> true
 	end.
-
-
-get_target(Guid) ->
-	Sess = get_sess(Guid),
-	Sess#char_sess.target.
-
-
-
-store_target(Guid, Target) ->
-	Sess = get_sess(Guid),
-	NewSess = Sess#char_sess{target=Target},
-	ets:insert(?sess, {Guid, NewSess}).
 
 
 % authorized connection data
