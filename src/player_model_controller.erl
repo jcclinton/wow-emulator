@@ -76,7 +76,7 @@ logged_out({login, Guid}, State = #state{parent_pid=ParentPid}) ->
 
 	Name = unit_model_sup,
 	Spec = {Name,
-		{Name, start_link, [Guid]},
+		{Name, start_link, [Guid, player]},
 		permanent, 2000, supervisor, [Name]},
 	{ok, _Pid} = supervisor:start_child(ParentPid, Spec),
 

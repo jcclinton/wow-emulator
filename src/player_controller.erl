@@ -95,7 +95,7 @@ handle_cast({login_char, Guid}, State=#state{parent_pid = ParentPid, guid=OldGui
 
 	Name = unit_ephemeral_sup,
 	Spec = {Name,
-		{Name, start_link, [Guid, player]},
+		{Name, start_link, [Guid]},
 		permanent, 2000, supervisor, [Name]},
 	{ok, _Pid} = supervisor:start_child(ParentPid, Spec),
 
