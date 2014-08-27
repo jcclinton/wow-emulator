@@ -19,11 +19,11 @@ get_empty_values() ->
 
 set(FuncName, Value, Values) ->
 	try ?MODULE:FuncName(Value, Values) of
-		Val -> Val
+		Result -> Result
 	catch
 		Error ->
 			io:format("ERROR trying to set ~p on function name ~p for char_value: ~p~n", [FuncName, Value, Error]),
-			Values
+			{Values, []}
 	end.
 
 
@@ -156,45 +156,6 @@ visible_item({Slot, ItemId}, Values) ->
 
 
 
-% private helpers
-
-set_float_mark_if_needed(Field, NewValue, Values) ->
-	Value = object_values:get_float_value(Field, Values),
-	if Value /= NewValue ->
-			mark_update(Field, Values, 32),
-			object_values:set_float_value(Field, NewValue, Values);
-		true -> Values
-	end.
-
-set_uint32_mark_if_needed(Field, NewValue, Values) ->
-	Value = object_values:get_uint32_value(Field, Values),
-	if Value /= NewValue ->
-			mark_update(Field, Values, 32),
-			object_values:set_uint32_value(Field, NewValue, Values);
-		true -> Values
-	end.
-
-
-set_uint64_mark_if_needed(Field, NewValue, Values) ->
-	Value = object_values:get_uint64_value(Field, Values),
-	if Value /= NewValue ->
-			mark_update(Field, Values, 64),
-			object_values:set_uint64_value(Field, NewValue, Values);
-		true -> Values
-	end.
-
-
-set_byte_mark_if_needed(Field, NewValue, Values, Offset) ->
-	Value = object_values:get_byte_value(Field, Values, Offset),
-	if Value /= NewValue ->
-			mark_update(Field, Values, 32),
-			object_values:set_byte_value(Field, NewValue, Values, Offset);
-		true -> Values
-	end.
-
-
-
-
 %% gets
 get(FuncName, Values) ->
 	try ?MODULE:FuncName(Values) of
@@ -289,17 +250,56 @@ item({Slot, Values}) ->
 
 %% private
 
-mark_update(Field, Values, 32) when is_atom(Field) ->
+mark_update(Field, 32) when is_atom(Field) ->
 	Index = update_fields:fields(Field),
-	mark_update(Index, Values, 32);
-mark_update(Index, Values, 32) ->
-	mark_update([Index], Values);
-mark_update(Field, Values, 64) when is_atom(Field) ->
+	mark_update(Index, 32);
+mark_update(Index, 32) ->
+	[Index];
+mark_update(Field, 64) when is_atom(Field) ->
 	Index = update_fields:fields(Field),
-	mark_update(Index, Values, 64);
-mark_update(Index, Values, 64) ->
-	mark_update([Index, Index + 1], Values).
+	mark_update(Index, 64);
+mark_update(Index, 64) ->
+	[Index, Index + 1].
 
-mark_update(Indices, Values) when is_list(Indices) ->
-	Guid = get(guid, Values),
-	char_sess:mark_update(Guid, Indices).
+
+
+
+set_float_mark_if_needed(Field, NewValue, Values) ->
+	Value = object_values:get_float_value(Field, Values),
+	if Value /= NewValue ->
+			Indices = mark_update(Field, 32),
+			NewValues = object_values:set_float_value(Field, NewValue, Values),
+			{NewValues, Indices};
+		true -> Values
+	end.
+
+set_uint32_mark_if_needed(Field, NewValue, Values) ->
+	Value = object_values:get_uint32_value(Field, Values),
+	if Value /= NewValue ->
+			Indices = mark_update(Field, 32),
+			NewValues = object_values:set_uint32_value(Field, NewValue, Values),
+			{NewValues, Indices};
+		true -> Values
+	end.
+
+
+set_uint64_mark_if_needed(Field, NewValue, Values) ->
+	Value = object_values:get_uint64_value(Field, Values),
+	if Value /= NewValue ->
+			Indices = mark_update(Field, 64),
+			NewValues = object_values:set_uint64_value(Field, NewValue, Values),
+			{NewValues, Indices};
+		true -> Values
+	end.
+
+
+set_byte_mark_if_needed(Field, NewValue, Values, Offset) ->
+	Value = object_values:get_byte_value(Field, Values, Offset),
+	if Value /= NewValue ->
+			Indices = mark_update(Field, 32),
+			NewValues = object_values:set_byte_value(Field, NewValue, Values, Offset),
+			{NewValues, Indices};
+		true -> Values
+	end.
+
+

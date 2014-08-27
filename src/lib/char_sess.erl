@@ -2,7 +2,8 @@
 
 -export([init/0, cleanup/0]).
 -export([create/1, delete/1]).
--export([store_target/2, mark_update/2]).
+-export([is_logged_in/1]).
+-export([store_target/2]).
 -export([get_target/1]).
 -export([store_connected_client/2, get_session_key/1]).
 
@@ -52,14 +53,6 @@ store_target(Guid, Target) ->
 	Sess = get_sess(Guid),
 	NewSess = Sess#char_sess{target=Target},
 	ets:insert(?sess, {Guid, NewSess}).
-
-
-mark_update(Guid, Indices) ->
-	IsLoggedIn = is_logged_in(Guid),
-	if IsLoggedIn ->
-			unit_updater:mark_update(Guid, Indices);
-		not IsLoggedIn -> ok
-	end.
 
 
 % authorized connection data

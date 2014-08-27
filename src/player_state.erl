@@ -102,13 +102,22 @@ handle_call(_E, _From, State) ->
 	{noreply, State}.
 
 
-handle_cast({set_multiple, PropList}, State = #state{values=Values}) ->
-	NewValues = lists:foldl(fun({Field, Value}, AccValues) ->
-		char_values:set(Field, Value, AccValues)
-	end, Values, PropList),
+handle_cast({set_multiple, PropList}, State = #state{values=Values, guid=Guid}) ->
+	{NewValues, Indices} = lists:foldl(fun({Field, Value}, {AccValues, AccIndices}) ->
+		{OutValues, OutIndices} = char_values:set(Field, Value, AccValues),
+		{OutValues, OutIndices ++ AccIndices}
+	end, {Values, []}, PropList),
+	unit_updater:mark_update(Guid, Indices),
 	{noreply, State#state{values=NewValues}};
-handle_cast({set, Value, Field}, State = #state{values=Values}) ->
-	NewValues = char_values:set(Field, Value, Values),
+handle_cast({set, Value, Field}, State = #state{values=Values, guid=Guid}) ->
+	NewValues = case char_values:set(Field, Value, Values) of
+		{ValuesOut, []} ->
+			ValuesOut;
+		{ValuesOut, Indices} ->
+			unit_updater:mark_update(Guid, Indices),
+			ValuesOut;
+		ValuesOut -> ValuesOut
+	end,
 	{noreply, State#state{values=NewValues}};
 handle_cast({run_func, FuncName, Args}, State = #state{values=Values}) ->
 	% this will run custom functions within the player_state process
