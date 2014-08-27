@@ -12,6 +12,8 @@
 -export([get_value/2, get_values/2, set_value/3]).
 -export([get_values/1, set_values/2]).
 -export([set_multiple_values/2]).
+-export([run_sync_function/2, run_sync_function/3]).
+-export([run_async_function/2, run_async_function/3]).
 
 
 -include("include/binary.hrl").
@@ -33,6 +35,18 @@ set_value(Guid, Value, Field) ->
 set_multiple_values(Guid, PropList) ->
 	Pid = util:get_pid(?MODULE, Guid),
 	gen_server:cast(Pid, {set_multiple, PropList}).
+
+run_sync_function(Guid, FuncName) ->
+	run_sync_function(Guid, FuncName, []).
+run_sync_function(Guid, FuncName, Args) when is_list(Args) ->
+	Pid = util:get_pid(?MODULE, Guid),
+	gen_server:call(Pid, {run_func, FuncName, Args}).
+
+run_async_function(Guid, FuncName) ->
+	run_async_function(Guid, FuncName, []).
+run_async_function(Guid, FuncName, Args) when is_list(Args) ->
+	Pid = util:get_pid(?MODULE, Guid),
+	gen_server:cast(Pid, {run_func, FuncName, Args}).
 
 % temp
 get_values(Guid) ->
@@ -66,6 +80,13 @@ handle_call(get_all, _From, State = #state{values=Values}) ->
 handle_call({get, Field}, _From, State = #state{values=Values}) ->
 	Value = char_values:get(Field, Values),
 	{reply, Value, State};
+handle_call({run_func, FuncName, Args}, _From, State = #state{values=Values}) ->
+	% this will run custom functions within the player_state process
+	% call is run as a get
+	NewArgs = [Values|Args],
+	M = player_state_functions,
+	Response = apply(M, FuncName, NewArgs),
+	{reply, Response, State};
 handle_call(_E, _From, State) ->
 	{noreply, State}.
 
@@ -79,6 +100,13 @@ handle_cast({set_multiple, PropList}, State = #state{values=Values}) ->
 	{noreply, State#state{values=NewValues}};
 handle_cast({set, Value, Field}, State = #state{values=Values}) ->
 	NewValues = char_values:set(Field, Value, Values),
+	{noreply, State#state{values=NewValues}};
+handle_cast({run_func, FuncName, Args}, State = #state{values=Values}) ->
+	% this will run custom functions within the player_state process
+	% cast is run as a set
+	NewArgs = [Values|Args],
+	M = player_state_functions,
+	NewValues = apply(M, FuncName, NewArgs),
 	{noreply, State#state{values=NewValues}};
 handle_cast(_, State) ->
 	{noreply, State}.

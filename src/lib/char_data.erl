@@ -5,7 +5,6 @@
 -export([equip_starting_items/1]).
 -export([get_values/1, get_stored_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
 -export([update_char_misc/2, update_char_move/2, update_coords/6, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2]).
--export([take_damage/2]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -83,6 +82,8 @@ get_account_id(Guid) ->
 get_slot_values(Guid) ->
 	get_char_data(Guid, ?char_items).
 
+% should only be used when a character is not logged in
+% expensive call
 get_stored_values(Guid) ->
 	get_char_data(Guid, ?char_val, false).
 
@@ -193,12 +194,3 @@ add_spell(Guid, SpellId) ->
 			dets_store:store(?char_spells, {Guid, NewRecord}, true);
 		InList -> ok
 	end.
-
-
-take_damage(Damage, Guid) ->
-	OldAmount = player_state:get_value(Guid, health),
-	NewAmount = if OldAmount >= Damage ->
-			OldAmount - Damage;
-		OldAmount < Damage -> 0
-	end,
-	player_state:set_value(Guid, NewAmount, health).

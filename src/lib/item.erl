@@ -441,18 +441,7 @@ equip_out_of_game(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
 	end.
 
 get_first_empty_inv_slot(OwnerGuid) ->
-	FirstSlot = ?inventory_slot_item_start,
-	Values = char_data:get_values(OwnerGuid),
-	get_first_empty_inv_slot(Values, FirstSlot).
-
-get_first_empty_inv_slot(_, ?inventory_slot_item_end) -> -1;
-get_first_empty_inv_slot(Values, Slot) ->
-	SlotValue = char_values:get(item, {Slot, Values}),
-
-	if SlotValue == 0 -> Slot;
-		SlotValue > 0 ->
-			get_first_empty_inv_slot(Values, Slot + 1)
-	end.
+	player_state:run_sync_function(OwnerGuid, get_first_empty_inv_slot).
 
 
 visualize_item(OwnerGuid, ItemGuid, Slot) ->

@@ -51,7 +51,7 @@ swing(Guid, Seed) ->
 			TargetState = ?victimstate_normal,
 			Blocked = 0,
 
-			char_data:take_damage(Damage, TargetGuid),
+			player_state:run_async_function(TargetGuid, take_damage, [Damage]),
 
 			Payload = <<HitInfo?L, PackGuid/binary, TargetPackGuid/binary, Damage?L, 1?B, DamageSchoolMask?L, Damage?f, Damage?L, Absorb?L, Resist?L, TargetState?L, 0?L, 0?L, Blocked?L>>,
 			world:send_to_all(AttackOpAtom, Payload),
