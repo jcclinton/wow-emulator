@@ -40,6 +40,9 @@ store_connected_client(AccountId, Key) ->
 
 get_session_key(AccountId) ->
 	% for now, just crash if this client is authed
-	[{_, Key}] = ets:lookup(?conn, AccountId),
+	[{AccountId, Key}] = ets:lookup(?conn, AccountId),
+	% remove from ets
+	% no point in keeping it around
+	ets:delete(?conn, AccountId),
 	Key.
 
