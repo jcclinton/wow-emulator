@@ -2,8 +2,6 @@
 
 -export([init/0, cleanup/0]).
 -export([create/1, delete/1]).
--export([is_logged_in/1]).
--export([get_sess/1]).
 -export([store_connected_client/2, get_session_key/1]).
 
 
@@ -25,21 +23,14 @@ cleanup() ->
 	ets:delete(?sess).
 
 
+% char session data
+
 create(Guid) ->
 	ets:insert(?sess, {Guid, #char_sess{}}).
 
 delete(Guid) ->
 	ets:delete(?sess, Guid).
 
-get_sess(Guid) ->
-	[{Guid, Sess}] = ets:lookup(?sess, Guid),
-	Sess.
-
-is_logged_in(Guid) ->
-	case ets:lookup(?sess, Guid) of
-		[] -> false;
-		_ -> true
-	end.
 
 
 % authorized connection data

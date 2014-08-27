@@ -51,17 +51,12 @@ read(TargetMask, TargetData, CasterGuid) ->
 			end},
 		{?target_flag_item bor ?target_flag_trade_item,
 			fun(Data) ->
-				IsPlayer = char_sess:is_logged_in(CasterGuid),
-				if IsPlayer ->
-						{GuidBin, Rest} = guid:extract_packed(Data),
-						Guid = guid:bin_to_int(GuidBin),
-						ListOut = [
-							{item_target_guid, Guid}
-						],
-						{Rest, ListOut};
-					not IsPlayer ->
-						{Data, []}
-				end
+				{GuidBin, Rest} = guid:extract_packed(Data),
+				Guid = guid:bin_to_int(GuidBin),
+				ListOut = [
+					{item_target_guid, Guid}
+				],
+				{Rest, ListOut}
 			end},
 		{?target_flag_source_location,
 			fun(Data) ->
