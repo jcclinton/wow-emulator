@@ -10,13 +10,26 @@
 
 add(Guid, Spell) ->
 	SpellId = Spell#spell_store.id,
-	Values = char_data:get_values(Guid),
 	Slot = 12,
-	V1 = char_values:set_aura(Slot, SpellId, Values),
-	V2 = char_values:set_aura_flag(Slot, V1),
-	V3 = char_values:set_aura_level(Slot, 1, V2),
-	NewValues = char_values:set_aura_application(Slot, V3),
-	char_data:update_values(Guid, NewValues),
+	Level = 1,
+
+	%Values = char_data:get_values(Guid),
+
+	%V1 = char_values:set_aura(Slot, SpellId, Values),
+	%V2 = char_values:set_aura_flag(Slot, V1),
+	%V3 = char_values:set_aura_level(Slot, 1, V2),
+	%V4 = char_values:set_aura_application(Slot, V3),
+
+	%char_data:update_values(Guid, V4),
+
+	PropList = [
+		{aura, {Slot, SpellId}},
+		{aura_flag, Slot},
+		{aura_level, {Slot, Level}},
+		{aura_application, Slot}
+	],
+	player_state:set_multiple_values(Guid, PropList),
+
 
 	timer:apply_after(100, spell_aura, set_aura_duration, [Guid, Slot]).
 

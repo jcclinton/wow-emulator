@@ -171,7 +171,7 @@ update_coords(Guid, X, Y, Z, O, MovementInfo) ->
 
 
 equip_starting_items(Guid) ->
-	Values = get_values(Guid),
+	Values = get_stored_values(Guid),
 	Race = char_values:get(race, Values),
 	Class = char_values:get(class, Values),
 	Gender = char_values:get(gender, Values),

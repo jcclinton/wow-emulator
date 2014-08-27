@@ -2,7 +2,7 @@
 
 
 -export([set_item/3, set_visible_item/3]).
--export([set_aura/3, set_aura_level/3, set_aura_application/2, set_aura_flag/2]).
+-export([aura/2, aura_level/2, aura_application/2, aura_flag/2]).
 -export([get/2, set/3]).
 -export([get_empty_values/0]).
 -compile([export_all]). % needed to call functions through get/1
@@ -19,12 +19,7 @@ get_empty_values() ->
 
 % sets
 
-set(FuncName, Value, InputData) ->
-	Values = if is_binary(InputData) -> InputData;
-		is_number(InputData) ->
-			% input data is the guid, lookup the values object
-			char_data:get_values(InputData)
-	end,
+set(FuncName, Value, Values) ->
 	try ?MODULE:FuncName(Value, Values) of
 		Val -> Val
 	catch
@@ -76,6 +71,8 @@ max_damage(Value, Values) ->
 	Index = update_fields:fields(Field),
 	set_float_mark_if_needed(Index, Value, Values).
 
+% sitting 1
+% standing 0
 anim_state(AnimState, Values) ->
 	Field = 'UNIT_FIELD_BYTES_1',
 	Offset = 0,
@@ -91,11 +88,7 @@ sheathed(Value, Values) ->
 
 
 
-
-% sitting 1
-% standing 0
-
-set_aura(Slot, SpellId, Values) ->
+aura({Slot, SpellId}, Values) ->
 	Field = 'UNIT_FIELD_AURA',
 	Index = update_fields:fields(Field) + Slot,
 	NextIndex = update_fields:fields('UNIT_FIELD_AURA_LAST'),
@@ -104,7 +97,7 @@ set_aura(Slot, SpellId, Values) ->
 	end,
 	set_uint32_mark_if_needed(Index, SpellId, Values).
 
-set_aura_flag(Slot, Values) ->
+aura_flag(Slot, Values) ->
 	SlotIndex = Slot bsr 3,
 	Field = 'UNIT_FIELD_AURAFLAGS',
 	Index = update_fields:fields(Field) + SlotIndex,
@@ -114,7 +107,7 @@ set_aura_flag(Slot, Values) ->
 	NewFlags = Flags bor (FlagMask bsl Byte),
 	set_uint32_mark_if_needed(Index, NewFlags, Values).
 
-set_aura_level(Slot, Level, Values) ->
+aura_level({Slot, Level}, Values) ->
 	SlotIndex = Slot div 4,
 	Byte = (Slot rem 4) * 8,
 	Field = 'UNIT_FIELD_AURALEVELS',
@@ -126,7 +119,7 @@ set_aura_level(Slot, Level, Values) ->
 
 	set_uint32_mark_if_needed(Index, NewLevels, Values).
 
-set_aura_application(Slot, Values) ->
+aura_application(Slot, Values) ->
 	SlotIndex = Slot div 4,
 	Byte = (Slot rem 4) * 8,
 	Field = 'UNIT_FIELD_AURAAPPLICATIONS',

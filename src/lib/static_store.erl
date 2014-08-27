@@ -55,7 +55,7 @@ lookup_start_outfit(Race, Class, Gender) ->
 	lookup_start_outfit(Race, Class, Gender, false).
 lookup_start_outfit(Race, Class, Gender, Filter) ->
 	Ids = case lookup(char_start_outfit_store, {Race, Class, Gender}) of
-		nil -> [];
+		none -> [];
 		List -> List
 	end,
 	if Filter ->
@@ -71,5 +71,5 @@ lookup_start_outfit(Race, Class, Gender, Filter) ->
 lookup(Tab, Id) ->
 	case ets:lookup(Tab, Id) of
 		[{Id, Record}] -> Record;
-		[] -> nil
+		[] -> none
 	end.

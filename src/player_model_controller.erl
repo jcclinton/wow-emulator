@@ -90,7 +90,8 @@ logged_out({create, Data}, _From, State = #state{account_id=AccountId}) ->
 	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons),
-	char_data:equip_starting_items(Guid),
+	% TODO uncomment this once all values are switched over
+	%char_data:equip_starting_items(Guid),
 
 	Result = 16#2E, % success
 	{reply, Result, logged_out, State};

@@ -38,7 +38,11 @@ init({Guid}) ->
 idle({prepare, SpellId, TargetInfo}, State = #state{guid=Guid}) ->
 	Spell = static_store:lookup_spell(SpellId),
 	%io:format("spell: ~p~n", [Spell]),
-	spell:prepare(Guid, TargetInfo, Spell),
+	if Spell /= none ->
+			spell:prepare(Guid, TargetInfo, Spell);
+		Spell == none ->
+			ok
+	end,
 	{next_state, idle, State#state{spell=Spell, target_info=TargetInfo}}.
 
 

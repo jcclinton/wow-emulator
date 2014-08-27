@@ -11,6 +11,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
 -export([get_value/2, get_values/2, set_value/3]).
 -export([get_values/1, set_values/2]).
+-export([set_multiple_values/2]).
 
 
 -include("include/binary.hrl").
@@ -28,6 +29,10 @@ get_value(Guid, Field) ->
 set_value(Guid, Value, Field) ->
 	Pid = util:get_pid(?MODULE, Guid),
 	gen_server:cast(Pid, {set, Value, Field}).
+
+set_multiple_values(Guid, PropList) ->
+	Pid = util:get_pid(?MODULE, Guid),
+	gen_server:cast(Pid, {set_multiple, PropList}).
 
 % temp
 get_values(Guid) ->
@@ -66,6 +71,11 @@ handle_call(_E, _From, State) ->
 
 
 handle_cast({set_all, NewValues}, State = #state{}) ->
+	{noreply, State#state{values=NewValues}};
+handle_cast({set_multiple, PropList}, State = #state{values=Values}) ->
+	NewValues = lists:foldl(fun({Field, Value}, AccValues) ->
+		char_values:set(Field, Value, AccValues)
+	end, Values, PropList),
 	{noreply, State#state{values=NewValues}};
 handle_cast({set, Value, Field}, State = #state{values=Values}) ->
 	NewValues = char_values:set(Field, Value, Values),
