@@ -116,7 +116,15 @@ handle_cast({run_func, FuncName, Args}, State = #state{values=Values}) ->
 	NewArgs = [Values|Args],
 	M = player_state_functions,
 	UpdatedValues = apply(M, FuncName, NewArgs),
-	NewValues = if is_binary(UpdatedValues) -> UpdatedValues;
+	NewValues = if is_binary(UpdatedValues) ->
+			OldSize = byte_size(Values),
+			NewSize = byte_size(UpdatedValues),
+			% double check this is a valid values object we have
+			if OldSize == NewSize ->
+					UpdatedValues;
+				OldSize /= NewSize ->
+					Values
+			end;
 		true -> Values
 	end,
 	{noreply, State#state{values=NewValues}};
