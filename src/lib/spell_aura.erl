@@ -13,15 +13,6 @@ add(Guid, Spell) ->
 	Slot = 12,
 	Level = 1,
 
-	%Values = char_data:get_values(Guid),
-
-	%V1 = char_values:set_aura(Slot, SpellId, Values),
-	%V2 = char_values:set_aura_flag(Slot, V1),
-	%V3 = char_values:set_aura_level(Slot, 1, V2),
-	%V4 = char_values:set_aura_application(Slot, V3),
-
-	%char_data:update_values(Guid, V4),
-
 	PropList = [
 		{aura, {Slot, SpellId}},
 		{aura_flag, Slot},

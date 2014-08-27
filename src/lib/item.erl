@@ -292,9 +292,7 @@ can_equip(ItemGuid, Slot) ->
 remove(Slot, OwnerGuid) ->
 	%ItemGuid = get_item_guid_at_slot(Slot, OwnerGuid),
 
-	Values = char_data:get_values(OwnerGuid),
-	NewValues = char_values:set_item(Slot, 0, Values),
-	char_data:update_values(OwnerGuid, NewValues),
+	player_state:set_value(OwnerGuid, {Slot, 0}, item),
 
 	SlotValues = char_data:get_slot_values(OwnerGuid),
 	Offset = 8 * Slot,
@@ -390,9 +388,7 @@ equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 	NewCharSlotValues = <<Head/binary, ItemGuid?Q, Rest/binary>>,
 	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
 
-	CharValues = char_data:get_values(OwnerGuid),
-	NewCharValues = char_values:set_item(DestSlot, ItemGuid, CharValues),
-	char_data:update_values(OwnerGuid, NewCharValues),
+	player_state:set_value(OwnerGuid, {DestSlot, ItemGuid}, item),
 
 	IsEquipSlot = is_equip_slot(DestSlot),
 	if IsEquipSlot ->
@@ -430,14 +426,12 @@ equip_out_of_game(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
 			end;
 		true ->
 				% put item in bag
-				Values = char_data:get_values(OwnerGuid),
 				Slot = get_first_empty_inv_slot(OwnerGuid),
 				Offset = Slot * 8,
-						<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
-						NewCharSlotValues = <<Head/binary, NewItemGuid?Q, Rest/binary>>,
-						char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
-				NewValues = char_values:set_item(Slot, NewItemGuid, Values),
-				char_data:update_values(OwnerGuid, NewValues),
+				<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
+				NewCharSlotValues = <<Head/binary, NewItemGuid?Q, Rest/binary>>,
+				char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
+				player_state:set_value(OwnerGuid, {Slot, NewItemGuid}, item),
 
 				ItemValues = item_data:get_values(NewItemGuid),
 				NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
@@ -461,9 +455,7 @@ get_first_empty_inv_slot(Values, Slot) ->
 
 
 visualize_item(OwnerGuid, ItemGuid, Slot) ->
-	Values = char_data:get_values(OwnerGuid),
-	NewValues = char_values:set_item(Slot, ItemGuid, Values),
-	char_data:update_values(OwnerGuid, NewValues),
+	player_state:set_value(OwnerGuid, {Slot, ItemGuid}, item),
 
 	ItemValues = item_data:get_values(ItemGuid),
 	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
@@ -476,15 +468,13 @@ visualize_item(OwnerGuid, ItemGuid, Slot) ->
 set_visual_item_slot(OwnerGuid, ItemGuid, Slot) ->
 	IsEquipSlot = is_equip_slot(Slot),
 	if IsEquipSlot ->
-			Values = char_data:get_values(OwnerGuid),
 			ItemId = if ItemGuid > 0 ->
 					ItemValues = item_data:get_values(ItemGuid),
 					item_values:get_item_id(ItemValues);
 				true -> 0
 			end,
-			NewValues = char_values:set_visible_item(Slot, ItemId, Values),
-			char_data:update_values(OwnerGuid, NewValues);
-		true -> ok
+			player_state:set_value(OwnerGuid, {Slot, ItemId}, visible_item);
+		not IsEquipSlot -> ok
 	end.
 
 

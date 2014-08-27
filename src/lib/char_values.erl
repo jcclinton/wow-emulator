@@ -1,8 +1,6 @@
 -module(char_values).
 
 
--export([set_item/3, set_visible_item/3]).
--export([aura/2, aura_level/2, aura_application/2, aura_flag/2]).
 -export([get/2, set/3]).
 -export([get_empty_values/0]).
 -compile([export_all]). % needed to call functions through get/1
@@ -134,7 +132,7 @@ aura_application(Slot, Values) ->
 
 
 
-set_item(Slot, ItemGuid, Values) ->
+item({Slot, ItemGuid}, Values) ->
 	Field = 'PLAYER_FIELD_INV_SLOT_HEAD',
 	Index = update_fields:fields(Field) + (2 * Slot),
 	% this can set an item from equipped, bags, bag inventory, bank and keyrings
@@ -145,7 +143,7 @@ set_item(Slot, ItemGuid, Values) ->
 	set_uint64_mark_if_needed(Index, ItemGuid, Values).
 
 
-set_visible_item(Slot, ItemId, Values) ->
+visible_item({Slot, ItemId}, Values) ->
 	Field = 'PLAYER_VISIBLE_ITEM_1_0',
 	Index = update_fields:fields(Field) + (Slot * ?max_visible_item_offset),
 	NextIndex = update_fields:fields('PLAYER_FIELD_INV_SLOT_HEAD'),
