@@ -81,11 +81,17 @@ request_raid_info(_Data) ->
 name_query(Data) ->
 	<<Guid?Q>> = recv_data:get(payload, Data),
 	Name = char_data:get_char_name(Guid),
-	Race = char_values:get(race, Guid),
-	Gender = char_values:get(gender, Guid),
-	Class = char_values:get(class, Guid),
+
+	Fields = [race, gender, class],
+	ValuesData = player_state:get_values(Guid, Fields),
+
+	Race = proplists:get_value(race, ValuesData),
+	Gender = proplists:get_value(gender, ValuesData),
+	Class = proplists:get_value(class, ValuesData),
+
 	Payload = <<Guid?Q, Name/binary, 0?B, Race?L, Gender?L, Class?L>>,
 	{smsg_name_query_response, Payload}.
+
 
 set_sheathed(Data) ->
 	<<Sheathed?L>> = recv_data:get(payload, Data),

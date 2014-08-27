@@ -19,6 +19,8 @@ destroy() ->
 	dets_store:close(?acc),
 	ok.
 
+
+
 lookup(I) ->
 	Result = dets_store:lookup(?acc, I),
 	Value = case Result of

@@ -30,5 +30,5 @@ decrypt(<<OldByte?B, Header/binary>>, {RI, RJ, K}, Result) ->
 
 %% @spec encrypt(string()) -> list().
 encryption_key(AccountId) ->
-	Key = char_data:get_session_key(AccountId),
+	Key = char_sess:get_session_key(AccountId),
 	binary_to_list(Key).

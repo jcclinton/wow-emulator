@@ -1,7 +1,6 @@
 -module(char_data).
 
 -export([init/0, cleanup/0]).
--export([store_connected_client/2, get_session_key/1]).
 -export([enum_char_guids/1, delete_char/1, create_char/8]).
 -export([equip_starting_items/1]).
 -export([get_values/1, get_stored_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
@@ -12,8 +11,6 @@
 -include("include/database_records.hrl").
 -include("include/shared_defines.hrl").
 -include("include/character.hrl").
-
--define(conn, connected_clients).
 
 -define(char_val, characters_values).
 -define(char_name, characters_names).
@@ -39,8 +36,6 @@ get_char_tabs() ->
 
 
 init() ->
-	ets:new(?conn, [named_table, set, public]),
-
 	lists:foreach(fun(Tab) ->
 		dets_store:open(Tab, true)
 	end, get_char_tabs()),
@@ -49,8 +44,6 @@ init() ->
 	ok.
 
 cleanup() ->
-	ets:delete(?conn),
-
 	lists:foreach(fun(Tab) ->
 		dets_store:close(Tab, true)
 	end, get_char_tabs()),
@@ -58,17 +51,6 @@ cleanup() ->
 	ok.
 
 
-
-
-% authorized connection data
-
-store_connected_client(AccountId, Key) ->
-	ets:insert(?conn, {AccountId, Key}).
-
-get_session_key(AccountId) ->
-	% for now, just crash if this client is authed
-	[{_, Key}] = ets:lookup(?conn, AccountId),
-	Key.
 
 
 

@@ -93,7 +93,7 @@ handle_info({tcp, _Socket, <<1?B, Msg/binary>>}, State=#state{socket=Socket, ser
 	%KeySize = size(Key),
 	%io:format("LOGIN SERVER sess key: ~p~n", [Skey]),
 	KeyL = srp:b_to_l_endian(Key, 320),
-	char_data:store_connected_client(Name, KeyL),
+	char_sess:store_connected_client(Name, KeyL),
 	Generator = srp:getGenerator(),
 	MsgOut = build_proof_response(Name, Prime, Generator, Salt, M1, ClientPublic, ServerPublic, Key),
 	gen_tcp:send(Socket, MsgOut),

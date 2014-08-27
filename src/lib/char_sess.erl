@@ -4,17 +4,24 @@
 -export([create/1, delete/1]).
 -export([store_target/2, mark_update/2]).
 -export([get_target/1]).
+-export([store_connected_client/2, get_session_key/1]).
 
 
 -include("include/database_records.hrl").
 
+% used to store ephemeral session data
 -define(sess, character_session).
+
+% used to store connected client session keys
+-define(conn, connected_clients).
 
 
 init() ->
+	ets:new(?conn, [named_table, set, public]),
 	ets:new(?sess, [named_table, set, public]).
 
 cleanup() ->
+	ets:delete(?conn),
 	ets:delete(?sess).
 
 
@@ -53,3 +60,15 @@ mark_update(Guid, Indices) ->
 			unit_updater:mark_update(Guid, Indices);
 		not IsLoggedIn -> ok
 	end.
+
+
+% authorized connection data
+
+store_connected_client(AccountId, Key) ->
+	ets:insert(?conn, {AccountId, Key}).
+
+get_session_key(AccountId) ->
+	% for now, just crash if this client is authed
+	[{_, Key}] = ets:lookup(?conn, AccountId),
+	Key.
+
