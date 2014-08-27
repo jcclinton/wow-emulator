@@ -60,7 +60,7 @@ accumulate(send, State = #state{marked_indices=Indices, type=Type, guid=Guid}) -
 		update_mask:set_bit(Index, MaskAcc)
 	end, update_mask:empty(Type), Indices),
 
-	Values = char_data:get_values(Guid),
+	Values = player_state:get_values(Guid),
 	{OpAtom, Msg} = update_data:build_update_packet(Mask, Values),
 	world:send_to_all(OpAtom, Msg),
 

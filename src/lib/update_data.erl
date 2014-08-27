@@ -30,7 +30,7 @@ build_create_update_packet_for_player(Guid, IsSelf) ->
 
 	PlayerTypeId = ?typeid_player,
 	PlayerUpdateFlags = ?updateflag_living bor ?updateflag_all bor ?updateflag_has_position,
-	Values = char_data:get_values(Guid),
+	Values = player_state:get_values(Guid),
 	PlayerBlock = create_block(CharMove, Values, IsSelf, PlayerTypeId, PlayerUpdateFlags, Guid),
 	TotalCount = ItemBlockCount + 1,
 	build_packet(<<ItemBlocks/binary, PlayerBlock/binary>>, TotalCount).
