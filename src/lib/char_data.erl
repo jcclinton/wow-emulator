@@ -218,15 +218,6 @@ add_spell(Guid, SpellId) ->
 	end.
 
 
-stand(Guid) ->
-	Values = get_values(Guid),
-	OldState = char_values:get(anim_state, Values),
-	if OldState == ?standing -> ok;
-		OldState /= ?standing ->
-			NewValues = char_values:set(anim_state, ?standing, Values),
-			update_values(Guid, NewValues)
-	end.
-
 take_damage(Damage, Guid) ->
 	Values = get_values(Guid),
 	OldAmount = char_values:get(health, Values),

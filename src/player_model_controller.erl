@@ -120,7 +120,8 @@ logged_out(_, _From, State) ->
 % async
 logged_in({login_complete, Guid}, State = #state{account_id=AccountId}) ->
 	% TODO find a better place to put this, it cant get called until values have been loaded though
-	char_data:stand(Guid),
+	player_state:set_value(Guid, ?standing, anim_state),
+
 	ok = world:add_to_map({AccountId, Guid}),
 	{next_state, logged_in, State};
 logged_in(logout, State = #state{guid=Guid, parent_pid=ParentPid}) ->
