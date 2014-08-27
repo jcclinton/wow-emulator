@@ -447,7 +447,8 @@ get_first_empty_inv_slot(OwnerGuid) ->
 
 get_first_empty_inv_slot(_, ?inventory_slot_item_end) -> -1;
 get_first_empty_inv_slot(Values, Slot) ->
-	SlotValue = char_values:item(Slot, Values),
+	SlotValue = char_values:get(item, {Slot, Values}),
+
 	if SlotValue == 0 -> Slot;
 		SlotValue > 0 ->
 			get_first_empty_inv_slot(Values, Slot + 1)

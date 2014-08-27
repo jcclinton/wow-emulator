@@ -10,53 +10,47 @@
 
 
 
-unset_values(Values) ->
-	Fields = get_empty_fields(),
-	lists:foldl(fun({Type, Value}, AccValues) ->
-		char_values:set(Type, Value, AccValues)
-	end, Values, Fields).
-
 
 
 % resets all item modification values and then resets them all
 update_all(Guid) ->
 	%io:format("UPDATING ALL~n"),
-	Values = char_data:get_values(Guid),
-	BaseValues = unset_values(Values),
-
 	ItemGuids = item:get_equipped_item_guids(Guid),
 
-	NewValues = lists:foldl(fun(ItemGuid, AccValues) ->
+	NewPropList = lists:foldl(fun(ItemGuid, Acc) ->
 		if ItemGuid > 0 ->
 				%io:format("~nitem guid: ~p~n", [ItemGuid]),
-				update_one(ItemGuid, AccValues);
-			ItemGuid == 0 -> AccValues
+				update_one(ItemGuid, Acc);
+			ItemGuid == 0 -> []
 		end
-	end, BaseValues, ItemGuids),
+	end, get_empty_fields(), ItemGuids),
 
-	char_data:update_values(Guid, NewValues).
+	player_state:set_multiple_values(Guid, NewPropList).
 
 
 
 
 % sets all values for one item
 % returns updated char values
-update_one(ItemGuid, CharValues) ->
+update_one(ItemGuid, PrevPropList) ->
 	ItemProto = item_data:get_item_proto(ItemGuid),
 	IsEquippable = item:is_equippable(ItemProto),
+
 	if IsEquippable ->
 			Fields = get_fields(),
-			lists:foldl(fun(Type, AccValues) ->
-				Value = get_item_value(Type, ItemProto),
-				CurrentValue = char_values:get(Type, AccValues),
+			lists:foldl(fun(Field, Acc) ->
+				Value = get_item_value(Field, ItemProto),
 				if Value > 0 ->
+						CurrentValue = proplists:get_value(Field, Acc),
+						NextAcc = proplists:delete(Field, Acc),
 						NewValue = Value + CurrentValue,
-						%io:format("setting ~p from ~p to ~p~n", [Type, CurrentValue, NewValue]),
-						char_values:set(Type, NewValue, AccValues);
-					Value == 0 -> AccValues
+						%io:format("setting ~p from ~p to ~p~n", [Field, CurrentValue, NewValue]),
+						[{Field, NewValue} | NextAcc];
+						%char_values:set(Field, NewValue, AccValues);
+					Value == 0 -> Acc
 				end
-			end, CharValues, Fields);
-		not IsEquippable -> CharValues
+			end, PrevPropList, Fields);
+		not IsEquippable -> []
 	end.
 
 

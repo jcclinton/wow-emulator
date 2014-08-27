@@ -5,8 +5,8 @@
 -export([enum_char_guids/1, delete_char/1, create_char/8]).
 -export([equip_starting_items/1]).
 -export([get_values/1, get_stored_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
--export([update_char_misc/2, update_char_move/2, update_coords/6, update_values/2, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2]).
--export([stand/1, take_damage/2]).
+-export([update_char_misc/2, update_char_move/2, update_coords/6, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2]).
+-export([take_damage/2]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -150,11 +150,6 @@ create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionB
 
 update_slot_values(Guid, Values) when is_binary(Values) ->
 	dets_store:store(?char_items, {Guid, Values}, true).
-
-
-update_values(Guid, Values) when is_binary(Values) ->
-	player_state:set_values(Guid, Values).
-	%dets_store:store(?char_val, {Guid, Values}, true).
 
 
 update_char_misc(Guid, CharMisc) when is_record(CharMisc, char_misc) ->

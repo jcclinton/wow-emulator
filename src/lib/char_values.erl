@@ -196,12 +196,7 @@ set_byte_mark_if_needed(Field, NewValue, Values, Offset) ->
 
 
 %% gets
-get(FuncName, InputData) ->
-	Values = if is_binary(InputData) -> InputData;
-		is_number(InputData) ->
-			% input data is the guid, lookup the values object
-			char_data:get_values(InputData)
-	end,
+get(FuncName, Values) ->
 	try ?MODULE:FuncName(Values) of
 		Val -> Val
 	catch
@@ -284,7 +279,7 @@ max_health(Values) ->
 
 
 %returns guid of item in a given slot
-item(Slot, Values) ->
+item({Slot, Values}) ->
 	Field = 'PLAYER_FIELD_INV_SLOT_HEAD',
 	Index = update_fields:fields(Field) + (2 * Slot),
 	object_values:get_uint64_value(Index, Values).
