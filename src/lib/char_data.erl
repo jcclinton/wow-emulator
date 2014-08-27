@@ -219,11 +219,9 @@ add_spell(Guid, SpellId) ->
 
 
 take_damage(Damage, Guid) ->
-	Values = get_values(Guid),
-	OldAmount = char_values:get(health, Values),
+	OldAmount = player_state:get_value(Guid, health),
 	NewAmount = if OldAmount >= Damage ->
 			OldAmount - Damage;
 		OldAmount < Damage -> 0
 	end,
-	NewValues = char_values:set(health, NewAmount, Values),
-	update_values(Guid, NewValues).
+	player_state:set_value(Guid, NewAmount, health).
