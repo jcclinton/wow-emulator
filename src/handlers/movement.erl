@@ -26,9 +26,7 @@ stand_state_change(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
 	<<AnimState?B, _/binary>> = Payload,
-	Values = char_data:get_values(Guid),
-	NewValues = char_values:set(anim_state, AnimState, Values),
-	char_data:update_values(Guid, NewValues),
+	player_state:set_value(Guid, AnimState, anim_state),
 	{smsg_standstate_update, <<AnimState?B>>}.
 
 
