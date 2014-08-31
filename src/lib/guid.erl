@@ -12,7 +12,7 @@
 		% eg for a 3 byte guid,
 		% 7 = (1 << 0) bor (1 << 1) bor (1 << 2)
 		% objects can be a maximum up to 8 bytes
-pack(Guid) when is_integer(Guid), Guid > 0 ->
+pack(Guid) when is_integer(Guid), Guid >= 0 ->
 	%<<7?B, Guid?G>>.
 	% set GuidBin to big endian to make it easier to recurse
 	GuidBin = <<Guid?QB>>,
