@@ -14,6 +14,7 @@
 -export([set_multiple_values/2]).
 -export([run_sync_function/2, run_sync_function/3]).
 -export([run_async_function/2, run_async_function/3]).
+-export([update/0]).
 
 
 -include("include/binary.hrl").
@@ -22,6 +23,7 @@
 
 
 %% public api
+update() -> ok.
 
 % get multiple values
 get_values(Guid, Fields) ->
@@ -108,6 +110,7 @@ handle_cast({set_multiple, PropList}, State = #state{values=Values, guid=Guid}) 
 		{OutValues, OutIndices ++ AccIndices}
 	end, {Values, []}, PropList),
 	unit_updater:mark_update(Guid, Indices),
+	char_data:update_char_values(Guid, NewValues),
 	{noreply, State#state{values=NewValues}};
 handle_cast({set, Value, Field}, State = #state{values=Values, guid=Guid}) ->
 	NewValues = case char_values:set(Field, Value, Values) of
@@ -118,18 +121,21 @@ handle_cast({set, Value, Field}, State = #state{values=Values, guid=Guid}) ->
 			ValuesOut;
 		ValuesOut -> ValuesOut
 	end,
+	char_data:update_char_values(Guid, NewValues),
 	{noreply, State#state{values=NewValues}};
-handle_cast({run_func, FuncName, Args}, State = #state{values=Values}) ->
+handle_cast({run_func, FuncName, Args}, State = #state{values=Values, guid=Guid}) ->
 	% this will run custom functions within the player_state process
 	% cast is run as a set
 	NewArgs = [Values|Args],
 	M = player_state_functions,
-	UpdatedValues = apply(M, FuncName, NewArgs),
+	{UpdatedValues, Indices} = apply(M, FuncName, NewArgs),
 	NewValues = if is_binary(UpdatedValues) ->
 			OldSize = byte_size(Values),
 			NewSize = byte_size(UpdatedValues),
 			% double check this is a valid values object we have
 			if OldSize == NewSize ->
+					unit_updater:mark_update(Guid, Indices),
+					char_data:update_char_values(Guid, UpdatedValues),
 					UpdatedValues;
 				OldSize /= NewSize ->
 					Values

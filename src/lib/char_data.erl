@@ -4,7 +4,7 @@
 -export([enum_char_guids/1, delete_char/1, create_char/8]).
 -export([equip_starting_items/1]).
 -export([get_stored_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
--export([update_char_misc/2, update_char_move/2, update_coords/6, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2]).
+-export([update_char_misc/2, update_char_move/2, update_coords/6, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2, update_char_values/2]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -29,7 +29,8 @@ get_char_tabs() ->
 		?char_acc,
 		?char_spells,
 		?char_btns,
-		?char_items
+		?char_items,
+		?char_val
 	].
 
 
@@ -39,14 +40,12 @@ init() ->
 		dets_store:open(Tab, true)
 	end, get_char_tabs()),
 
-	dets_store:open(?char_val, false),
 	ok.
 
 cleanup() ->
 	lists:foreach(fun(Tab) ->
 		dets_store:close(Tab, true)
 	end, get_char_tabs()),
-	dets_store:close(?char_val, false),
 	ok.
 
 
@@ -113,13 +112,13 @@ create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionB
 		{?char_mv, CharMv},
 		{?char_acc, AccountId},
 		{?char_btns, ActionButtons},
-		{?char_spells, Spells}
+		{?char_spells, Spells},
+		{?char_val, Values}
 	],
 	lists:foreach(fun({Tab, Val}) ->
 		dets_store:store_new(Tab, {Guid, Val}, true),
 		ok
 	end, DetsValues),
-	dets_store:store_new(?char_val, {Guid, Values}, false),
 
 	InitialCharSlotValues = item:init_char_slot_values(),
 	dets_store:store_new(?char_items, {Guid, InitialCharSlotValues}, true),
@@ -130,6 +129,9 @@ create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionB
 update_slot_values(Guid, Values) when is_binary(Values) ->
 	dets_store:store(?char_items, {Guid, Values}, true).
 
+
+update_char_values(Guid, Values) when is_binary(Values) ->
+	dets_store:store(?char_val, {Guid, Values}, true).
 
 update_char_misc(Guid, CharMisc) when is_record(CharMisc, char_misc) ->
 	dets_store:store(?char_misc, {Guid, CharMisc}, true).
