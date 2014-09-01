@@ -45,7 +45,7 @@ set_bit(Index, Bit, Mask) ->
 
 set_bits(Count, EmptyMask, Values) ->
 	lists:foldl(fun(Index, Mask) ->
-		Value = object_values:get_value(Index, Values),
+		Value = object_values:get_uint32_value(Index, Values),
 		Bit = if Value > 0 -> 1;
 			true -> 0
 		end,

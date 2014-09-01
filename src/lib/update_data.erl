@@ -202,7 +202,7 @@ is_float_field(Index) ->
 
 % adds uint32 number to acc
 build_uint32(Index, Values, Bin) ->
-	Value = object_values:get_value(Index, Values),
+	Value = object_values:get_uint32_value(Index, Values),
 	<<Bin/binary, Value?L>>.
 
 % converts float to uint32
