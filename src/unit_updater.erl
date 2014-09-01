@@ -44,6 +44,9 @@
 
 
 %% public api
+mark_update(_, []) ->
+	% ignore empty updates
+	ok;
 mark_update(Guid, Indices) when is_list(Indices) ->
 	Pid = util:get_pid(?MODULE, Guid),
 	gen_fsm:send_event(Pid, {mark_update, Indices}).

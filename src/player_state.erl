@@ -127,22 +127,16 @@ handle_call(_E, _From, State) ->
 
 
 handle_cast({set_multiple, PropList}, State = #state{values=Values, guid=Guid}) ->
-	{NewValues, Indices} = lists:foldl(fun({Field, Value}, {AccValues, AccIndices}) ->
-		{OutValues, OutIndices} = char_values:set(Field, Value, AccValues),
+	{NewValues, Indices} = lists:foldl(fun({FieldName, Value}, {AccValues, AccIndices}) ->
+		{OutValues, OutIndices} = char_values:set(FieldName, Value, AccValues),
 		{OutValues, OutIndices ++ AccIndices}
 	end, {Values, []}, PropList),
 	unit_updater:mark_update(Guid, Indices),
 	char_data:update_char_values(Guid, NewValues),
 	{noreply, State#state{values=NewValues}};
 handle_cast({set, Value, Field}, State = #state{values=Values, guid=Guid}) ->
-	NewValues = case char_values:set(Field, Value, Values) of
-		{ValuesOut, []} ->
-			ValuesOut;
-		{ValuesOut, Indices} ->
-			unit_updater:mark_update(Guid, Indices),
-			ValuesOut;
-		ValuesOut -> ValuesOut
-	end,
+	{NewValues, Indices} = char_values:set(Field, Value, Values),
+	unit_updater:mark_update(Guid, Indices),
 	char_data:update_char_values(Guid, NewValues),
 	{noreply, State#state{values=NewValues}};
 handle_cast({run_func, FuncName, Args}, State = #state{values=Values, guid=Guid}) ->

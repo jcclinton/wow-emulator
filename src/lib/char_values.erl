@@ -39,12 +39,12 @@ get_empty_values() ->
 
 % sets
 
-set(FuncName, Value, Values) ->
-	try ?MODULE:FuncName(Value, Values) of
+set(FieldName, Value, Values) ->
+	try ?MODULE:FieldName(Value, Values) of
 		Result -> Result
 	catch
 		Error ->
-			io:format("ERROR trying to set ~p on function name ~p for char_value: ~p~n", [FuncName, Value, Error]),
+			io:format("ERROR trying to set ~p on function name ~p for char_value: ~p~n", [FieldName, Value, Error]),
 			{Values, []}
 	end.
 
@@ -299,7 +299,7 @@ set_float_mark_if_needed(Field, NewValue, Values) ->
 			Indices = mark_update(Field, 32),
 			NewValues = object_values:set_float_value(Field, NewValue, Values),
 			{NewValues, Indices};
-		true -> Values
+		true -> {Values, []}
 	end.
 
 set_uint32_mark_if_needed(Field, NewValue, Values) ->
@@ -308,7 +308,7 @@ set_uint32_mark_if_needed(Field, NewValue, Values) ->
 			Indices = mark_update(Field, 32),
 			NewValues = object_values:set_uint32_value(Field, NewValue, Values),
 			{NewValues, Indices};
-		true -> Values
+		true -> {Values, []}
 	end.
 
 
@@ -318,7 +318,7 @@ set_uint64_mark_if_needed(Field, NewValue, Values) ->
 			Indices = mark_update(Field, 64),
 			NewValues = object_values:set_uint64_value(Field, NewValue, Values),
 			{NewValues, Indices};
-		true -> Values
+		true -> {Values, []}
 	end.
 
 
@@ -328,7 +328,7 @@ set_byte_mark_if_needed(Field, NewValue, Values, Offset) ->
 			Indices = mark_update(Field, 32),
 			NewValues = object_values:set_byte_value(Field, NewValue, Values, Offset),
 			{NewValues, Indices};
-		true -> Values
+		true -> {Values, []}
 	end.
 
 
