@@ -49,21 +49,12 @@ set_key_values({IndexName, Value, Type}, Values) ->
 			set_int32_value(IndexName, Value, Values);
 		uint32 ->
 			set_uint32_value(IndexName, Value, Values);
-		{uint32, Offset} ->
-			Index = update_fields:fields(IndexName) + Offset,
-			set_uint32_value(Index, Value, Values);
 		uint64 ->
 			set_uint64_value(IndexName, Value, Values);
-		uint16_0 ->
-			set_uint16_value(IndexName, Value, Values, 0);
-		byte_0 ->
-			set_byte_value(IndexName, Value, Values, 0);
-		byte_1 ->
-			set_byte_value(IndexName, Value, Values, 1);
-		byte_2 ->
-			set_byte_value(IndexName, Value, Values, 2);
-		byte_3 ->
-			set_byte_value(IndexName, Value, Values, 3);
+		{uint16, Offset} ->
+			set_uint16_value(IndexName, Value, Values, Offset);
+		{byte, Offset} ->
+			set_byte_value(IndexName, Value, Values, Offset);
 		float ->
 			set_float_value(IndexName, Value, Values);
 		{float, Offset} ->

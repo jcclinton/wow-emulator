@@ -237,11 +237,11 @@ create_char_values(Payload, Guid) ->
 		{'OBJECT_FIELD_GUID', Guid, uint64},
 		{'OBJECT_FIELD_TYPE', ObjectType, uint32},
     {'OBJECT_FIELD_SCALE_X', Scale, float},
-		{'UNIT_FIELD_BYTES_0', Race, byte_0},
-		{'UNIT_FIELD_BYTES_0', Class, byte_1},
-		{'UNIT_FIELD_BYTES_0', Gender, byte_2},
-		{'UNIT_FIELD_BYTES_0', PowerType, byte_3},
-    {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, byte_1},
+		{'UNIT_FIELD_BYTES_0', Race, {byte, 0}},
+		{'UNIT_FIELD_BYTES_0', Class, {byte, 1}},
+		{'UNIT_FIELD_BYTES_0', Gender, {byte, 2}},
+		{'UNIT_FIELD_BYTES_0', PowerType, {byte, 3}},
+    {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, {byte, 1}},
     {'UNIT_FIELD_LEVEL', 1, uint32}, % level
     {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
     {'UNIT_FIELD_NATIVEDISPLAYID', NativeModelId, uint32},
@@ -265,13 +265,13 @@ create_char_values(Payload, Guid) ->
     {'UNIT_FIELD_STAT4', Spirit, uint32},
     {'UNIT_FIELD_BASE_HEALTH', Health, uint32},
     {'UNIT_FIELD_BASE_MANA', Power, uint32},
-    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 0}}, % base armor
-    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 1}}, % unknown
-    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 2}}, % base fire res
-    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 3}}, % base nature res
-    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 4}}, % base frost res
-    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 5}}, % base shadow res
-    {'UNIT_FIELD_RESISTANCES', 0, {uint32, 6}}, % base arcane res
+    {'UNIT_FIELD_RESISTANCES', 0, uint32}, % base armor
+    {'UNIT_FIELD_RESISTANCES_01', 0, uint32}, % unknown
+    {'UNIT_FIELD_RESISTANCES_02', 0, uint32}, % base fire res
+    {'UNIT_FIELD_RESISTANCES_03', 0, uint32}, % base nature res
+    {'UNIT_FIELD_RESISTANCES_04', 0, uint32}, % base frost res
+    {'UNIT_FIELD_RESISTANCES_05', 0, uint32}, % base shadow res
+    {'UNIT_FIELD_RESISTANCES_06', 0, uint32}, % base arcane res
     {'UNIT_FIELD_BASEATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_OFFHANDATTACKTIME', DefaultAttackTime, float},
     {'UNIT_FIELD_RANGEDATTACKTIME', DefaultAttackTime, float},
@@ -289,20 +289,20 @@ create_char_values(Payload, Guid) ->
     {'UNIT_FIELD_MAXHEALTH', Health, uint32},
     {'UNIT_FIELD_FLAGS', 16#0008, uint32}, % flags like non-selectable, non-movable, taxi-flight, silecenced, non-attackable, many more
     {'UNIT_FIELD_HEALTH', Health, uint32},
-    {'UNIT_FIELD_BYTES_1', 16#EE, byte_1},
+    {'UNIT_FIELD_BYTES_1', 16#EE, {byte, 1}},
     {'PLAYER_EXPLORED_ZONES_1', 0, uint64},
     {'PLAYER_FIELD_COINAGE', 0, uint32},
-    {'PLAYER_BYTES', Skin, byte_0},
-    {'PLAYER_BYTES', Face, byte_1},
-    {'PLAYER_BYTES', HairStyle, byte_2},
-    {'PLAYER_BYTES', HairColor, byte_3},
-    {'PLAYER_BYTES_2', FacialHair, byte_0},
-    {'PLAYER_BYTES_2', 2, byte_3}, %rest state
-    {'PLAYER_BYTES_3', Gender, uint16_0}, % (drunk band 16#FFFE) bor Gender
-    {'PLAYER_BYTES_3', 0, byte_3}, % battlefield arena faction
+    {'PLAYER_BYTES', Skin, {byte, 0}},
+    {'PLAYER_BYTES', Face, {byte, 1}},
+    {'PLAYER_BYTES', HairStyle, {byte, 2}},
+    {'PLAYER_BYTES', HairColor, {byte, 3}},
+    {'PLAYER_BYTES_2', FacialHair, {byte, 0}},
+    {'PLAYER_BYTES_2', 2, {byte, 3}}, %rest state
+    {'PLAYER_BYTES_3', Gender, {uint16, 0}}, % (drunk band 16#FFFE) bor Gender
+    {'PLAYER_BYTES_3', 0, {byte, 3}}, % battlefield arena faction
     {'PLAYER_FLAGS', PlayerFlags, uint32},
     {'PLAYER_FIELD_WATCHED_FACTION_INDEX', -1, int32},
-    {'PLAYER_FIELD_BYTES', 0, byte_2},
+    {'PLAYER_FIELD_BYTES', 0, {byte, 2}},
     {'PLAYER_CHARACTER_POINTS2', 2, uint32}, %num primary trade professions
     {'PLAYER_FARSIGHT', 0, uint64},
     {'PLAYER_TRACK_CREATURES', 0, uint32},
