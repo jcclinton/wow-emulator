@@ -157,7 +157,7 @@ is_non_neg_float_field(Index) ->
 	lists:foldl(fun(Field, Bool) ->
 		if Bool -> Bool;
 			not Bool ->
-				FieldIndex = update_fields:fields(Field),
+				FieldIndex = object_fields:fields(Field),
 				if FieldIndex == Index -> true;
 					FieldIndex /= Index -> Bool
 				end
@@ -182,7 +182,7 @@ is_float_field(Index) ->
 	IsFloat = lists:foldl(fun(Field, Bool) ->
 		if Bool -> Bool;
 			not Bool ->
-				FieldIndex = update_fields:fields(Field),
+				FieldIndex = object_fields:fields(Field),
 				if FieldIndex == Index -> true;
 					FieldIndex /= Index -> Bool
 				end
@@ -191,8 +191,8 @@ is_float_field(Index) ->
 
 	if IsFloat -> IsFloat;
 		not IsFloat ->
-			PosIndex = update_fields:fields(player_field_resistancebuffmodspositive),
-			NegIndex = update_fields:fields(player_field_resistancebuffmodsnegative),
+			PosIndex = object_fields:fields(player_field_resistancebuffmodspositive),
+			NegIndex = object_fields:fields(player_field_resistancebuffmodsnegative),
 			if Index >= PosIndex andalso Index =< (PosIndex + 6) -> true;
 				Index >= NegIndex andalso Index =< (NegIndex + 6) -> true;
 				true -> false

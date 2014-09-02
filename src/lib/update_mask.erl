@@ -29,7 +29,7 @@
 
 
 set_bit(Field, Mask) when is_atom(Field) ->
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	set_bit(Index, Mask);
 set_bit(Index, Mask) ->
 	set_bit(Index, 1, Mask).
@@ -64,7 +64,7 @@ get_bit(Mask, Index) ->
 
 
 empty(Type) when is_atom(Type) ->
-	TotalCount = update_fields:get_total_count(Type),
+	TotalCount = object_fields:get_total_count(Type),
 	update_mask:empty(TotalCount - 1);
 empty(Count) ->
 	Blocks = (Count + 31) div 32,

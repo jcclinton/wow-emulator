@@ -58,7 +58,7 @@ set_key_values({Field, Value, Type}, Values) ->
 		float ->
 			set_float_value(Field, Value, Values);
 		{float, Offset} ->
-			Index = update_fields:fields(Field) + Offset,
+			Index = object_fields:fields(Field) + Offset,
 			set_float_value(Index, Value, Values)
 	end.
 
@@ -83,7 +83,7 @@ get_float_value(Field, Values) ->
 
 
 get_value(Field, Values, Size, Offset, Type) when is_atom(Field) ->
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	get_value(Index, Values, Size, Offset, Type);
 get_value(IndexIn, Values, Size, Offset, Type) ->
 	% each Index is a 4 byte long word
@@ -147,7 +147,7 @@ set_float_value(Field, Value, Values) ->
 
 
 set_value(Field, Value, Values, Size, Offset, Type) when is_atom(Field) ->
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	set_value(Index, Value, Values, Size, Offset, Type);
 set_value(IndexIn, Value, Values, Size, Offset, Type) ->
 	% each Index is a 4 byte long word

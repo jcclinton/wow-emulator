@@ -116,5 +116,5 @@ create(ItemGuid, ItemId, OwnerGuid) ->
 
 
 get_empty_values() ->
-	TotalCount = update_fields:get_total_count(item),
+	TotalCount = object_fields:get_total_count(item),
 	binary:copy(<<0?L>>, TotalCount).

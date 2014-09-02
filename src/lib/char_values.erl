@@ -32,7 +32,7 @@
 -include("include/binary.hrl").
 
 get_empty_values() ->
-	TotalCount = update_fields:get_total_count(player),
+	TotalCount = object_fields:get_total_count(player),
 	% create initially empty binary values object
 	binary:copy(<<0?L>>, TotalCount).
 
@@ -54,17 +54,17 @@ armor(Value, Values) when not is_integer(Value) ->
 	armor(NewValue, Values);
 armor(Value, Values) ->
 	Field = unit_field_resistances,
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	set_uint32_mark_if_needed(Index, Value, Values).
 
 health(Value, Values) ->
 	Field = unit_field_health,
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	set_uint32_mark_if_needed(Index, Value, Values).
 
 block(Value, Values) ->
 	Field = player_block_percentage,
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	set_uint32_mark_if_needed(Index, Value, Values).
 
 base_attack_time(Value, Values) when not is_float(Value) ->
@@ -72,7 +72,7 @@ base_attack_time(Value, Values) when not is_float(Value) ->
 	base_attack_time(NewValue, Values);
 base_attack_time(Value, Values) ->
 	Field = unit_field_baseattacktime,
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	set_float_mark_if_needed(Index, Value, Values).
 
 min_damage(Value, Values) when not is_float(Value) ->
@@ -80,7 +80,7 @@ min_damage(Value, Values) when not is_float(Value) ->
 	min_damage(NewValue, Values);
 min_damage(Value, Values) ->
 	Field = unit_field_mindamage,
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	set_float_mark_if_needed(Index, Value, Values).
 
 max_damage(Value, Values) when not is_float(Value) ->
@@ -88,7 +88,7 @@ max_damage(Value, Values) when not is_float(Value) ->
 	max_damage(NewValue, Values);
 max_damage(Value, Values) ->
 	Field = unit_field_maxdamage,
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	set_float_mark_if_needed(Index, Value, Values).
 
 % sitting 1
@@ -114,8 +114,8 @@ target(Value, Values) ->
 
 aura({Slot, SpellId}, Values) ->
 	Field = unit_field_aura,
-	Index = update_fields:fields(Field) + Slot,
-	NextIndex = update_fields:fields(unit_field_aura_last),
+	Index = object_fields:fields(Field) + Slot,
+	NextIndex = object_fields:fields(unit_field_aura_last),
 	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
 		true -> ok
 	end,
@@ -124,7 +124,7 @@ aura({Slot, SpellId}, Values) ->
 aura_flag(Slot, Values) ->
 	SlotIndex = Slot bsr 3,
 	Field = unit_field_auraflags,
-	Index = update_fields:fields(Field) + SlotIndex,
+	Index = object_fields:fields(Field) + SlotIndex,
 	Flags = object_values:get_uint32_value(Index, Values),
 	Byte = (Slot band 7) bsl 2,
 	FlagMask = 9,
@@ -135,7 +135,7 @@ aura_level({Slot, Level}, Values) ->
 	SlotIndex = Slot div 4,
 	Byte = (Slot rem 4) * 8,
 	Field = unit_field_auralevels,
-	Index = update_fields:fields(Field) + SlotIndex,
+	Index = object_fields:fields(Field) + SlotIndex,
 	OldLevels = object_values:get_uint32_value(Index, Values),
 
 	Tmp = OldLevels band (bnot (16#FF bsl Byte)),
@@ -147,7 +147,7 @@ aura_application(Slot, Values) ->
 	SlotIndex = Slot div 4,
 	Byte = (Slot rem 4) * 8,
 	Field = unit_field_auraapplications,
-	Index = update_fields:fields(Field) + SlotIndex,
+	Index = object_fields:fields(Field) + SlotIndex,
 	OldApp = object_values:get_uint32_value(Index, Values),
 
 	NewApp = OldApp bor (0 bsl Byte),
@@ -160,9 +160,9 @@ aura_application(Slot, Values) ->
 
 item({Slot, ItemGuid}, Values) ->
 	Field = player_field_inv_slot_head,
-	Index = update_fields:fields(Field) + (2 * Slot),
+	Index = object_fields:fields(Field) + (2 * Slot),
 	% this can set an item from equipped, bags, bag inventory, bank and keyrings
-	NextIndex = update_fields:fields(player_farsight),
+	NextIndex = object_fields:fields(player_farsight),
 	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
 		true -> ok
 	end,
@@ -171,8 +171,8 @@ item({Slot, ItemGuid}, Values) ->
 
 visible_item({Slot, ItemId}, Values) ->
 	Field = player_visible_item_1_0,
-	Index = update_fields:fields(Field) + (Slot * ?max_visible_item_offset),
-	NextIndex = update_fields:fields(player_field_inv_slot_head),
+	Index = object_fields:fields(Field) + (Slot * ?max_visible_item_offset),
+	NextIndex = object_fields:fields(player_field_inv_slot_head),
 	% this can only be used to set equipped items
 	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
 		true -> ok
@@ -271,7 +271,7 @@ target(Values) ->
 %returns guid of item in a given slot
 item({Slot, Values}) ->
 	Field = player_field_inv_slot_head,
-	Index = update_fields:fields(Field) + (2 * Slot),
+	Index = object_fields:fields(Field) + (2 * Slot),
 	object_values:get_uint64_value(Index, Values).
 
 
@@ -280,12 +280,12 @@ item({Slot, Values}) ->
 %% private
 
 mark_update(Field, 32) when is_atom(Field) ->
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	mark_update(Index, 32);
 mark_update(Index, 32) ->
 	[Index];
 mark_update(Field, 64) when is_atom(Field) ->
-	Index = update_fields:fields(Field),
+	Index = object_fields:fields(Field),
 	mark_update(Index, 64);
 mark_update(Index, 64) ->
 	[Index, Index + 1].

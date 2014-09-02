@@ -20,7 +20,7 @@
 %%   World of Warcraft, and all World of Warcraft or Warcraft art, images,
 %%   and lore ande copyrighted by Blizzard Entertainment, Inc.
 
--module(update_fields).
+-module(object_fields).
 
 -export([field_data/1, get_total_count/1]).
 -export([type/1, fields/1]).
@@ -37,21 +37,21 @@ type(Field) ->
 
 
 get_total_count(player) ->
-	update_fields:fields(player_end);
+	fields(player_end);
 get_total_count(object) ->
-	update_fields:fields(object_end);
+	fields(object_end);
 get_total_count(item) ->
-	update_fields:fields(item_end);
+	fields(item_end);
 get_total_count(container) ->
-	update_fields:fields(container_end);
+	fields(container_end);
 get_total_count(unit) ->
-	update_fields:fields(unit_end);
+	fields(unit_end);
 get_total_count(game_object) ->
-	update_fields:fields(gameobject_end);
+	fields(gameobject_end);
 get_total_count(dynamic_object) ->
-	update_fields:fields(dynamicobject_end);
+	fields(dynamicobject_end);
 get_total_count(corpse) ->
-	update_fields:fields(corpse_end).
+	fields(corpse_end).
 
 
 
