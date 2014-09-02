@@ -21,48 +21,35 @@
 %%   and lore ande copyrighted by Blizzard Entertainment, Inc.
 
 -module(player_rcv).
--behaviour(gen_fsm).
 
--export([start_link/2]).
--export([init/1, handle_sync_event/4, handle_event/3,
-				 handle_info/3, terminate/3, code_change/4]).
--export([accept/2, rcv/2, challenge/2, rcv_challenge/2]).
+-export([start_link/2, init/1, rcv/1]).
 -export([upgrade/0]).
 
 -include("include/binary.hrl").
 -include("include/network_defines.hrl").
 
--record(state, {socket,
-				hdr_len,
-				pair_pid,
-				parent_pid,
-				sess_key,
-				key_state,
-				account_id
-				}).
+-record(state, {
+	socket,
+	key_state,
+	account_id
+}).
 
 start_link(ListenSocket, ParentPid) ->
-    gen_fsm:start_link(?MODULE, {ListenSocket, ParentPid}, []).
+	Pid = spawn_link(?MODULE, init, [{ListenSocket, ParentPid}]),
+	{ok, Pid}.
 
 init({ListenSocket, ParentPid}) ->
-		io:format("WORLD starting rcv~n"),
-    gen_fsm:send_event(self(), {accept, ListenSocket}),
-    {ok, accept, #state{hdr_len=?RCV_HDR_LEN, parent_pid=ParentPid}}.
-
-accept({accept, ListenSocket}, State) ->
-	{ok, AcceptSocket} = gen_tcp:accept(ListenSocket),
-	process_flag(trap_exit, true),
+	io:format("player starting rcv~n"),
+	{ok, Socket} = gen_tcp:accept(ListenSocket),
 	%% start another acceptor
 	players_sup:start_socket(),
-	challenge(ok, State#state{socket=AcceptSocket}).
-challenge(_, State = #state{socket=Socket}) ->
+
 	Seed   = random:uniform(16#FFFFFFFF),
 	Payload = <<Seed?L>>,
-	Opcode = opcodes:get_num_by_atom(smsg_auth_challenge),
-	network:send_packet(Opcode, Payload, ?SEND_HDR_LEN, _KeyState=nil, Socket, _ShouldEncrypt=false),
-	rcv_challenge(ok, State).
-rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid, hdr_len=HdrLen}) ->
-	try network:receive_packet(HdrLen, _KeyState=nil, Socket, _ShouldDecrypt=false) of
+	ChallengeOpcode = opcodes:get_num_by_atom(smsg_auth_challenge),
+	network:send_packet(ChallengeOpcode, Payload, ?SEND_HDR_LEN, _KeyState=nil, Socket, _ShouldEncrypt=false),
+
+	try network:receive_packet(?RCV_HDR_LEN, _KeyState=nil, Socket, _ShouldDecrypt=false) of
 		{Opcode, PayloadIn, _} ->
 			{PayloadOut, AccountId, KeyState} = auth_session(PayloadIn),
 			%% now authorized
@@ -70,37 +57,21 @@ rcv_challenge(_, State = #state{socket=Socket, parent_pid=ParentPid, hdr_len=Hdr
 			start_siblings(Socket, KeyState, AccountId, ParentPid),
 
 			player_controller:packet_received(AccountId, Opcode, PayloadOut),
-			rcv(ok, State#state{key_state=KeyState, account_id=AccountId})
+			rcv(#state{key_state=KeyState, account_id=AccountId, socket=Socket})
 	catch
-		Error -> {stop, Error, State}
+		Error -> {error, Error}
 	end.
-rcv(_, State = #state{socket=Socket, hdr_len=HdrLen, key_state=KeyState, account_id=AccountId}) ->
-	try network:receive_packet(HdrLen, KeyState, Socket, _ShouldDecrypt=true) of
+
+
+rcv(State = #state{socket=Socket, key_state=KeyState, account_id=AccountId}) ->
+	try network:receive_packet(?RCV_HDR_LEN, KeyState, Socket, _ShouldDecrypt=true) of
 		{Opcode, Payload, NewKeyState} ->
 			%io:format("rcv: received payload ~p~n", [Rest]),
 			player_controller:packet_received(AccountId, Opcode, Payload),
-			rcv(ok, State#state{key_state=NewKeyState})
+			rcv(State#state{key_state=NewKeyState})
 	catch
-		Error -> {stop, Error, State}
+		Error -> {error, Error}
 	end.
-
-%% callbacks
-handle_info(_Info, StateName, State) ->
-	{next_state, StateName, State}.
-
-handle_event(_Event, StateName, State) ->
-	{next_state, StateName, State}.
-
-handle_sync_event(_Event, _From, StateName, State) ->
-	{next_state, StateName, State}.
-
-terminate(_Reason, StateName, _State) ->
-	io:format("WORLD RCV: closing connected realm_socket~n"),
-	catch gen_tcp:close(StateName#state.socket),
-	ok.
-
-code_change(_OldVsn, StateName, State, _Extra) ->
-	{ok, StateName, State}.
 
 
 upgrade() -> ok.
