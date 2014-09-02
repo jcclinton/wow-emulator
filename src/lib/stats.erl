@@ -66,9 +66,7 @@ update_one(ItemGuid, PrevPropList) ->
 						CurrentValue = proplists:get_value(Field, Acc),
 						NextAcc = proplists:delete(Field, Acc),
 						NewValue = Value + CurrentValue,
-						%io:format("setting ~p from ~p to ~p~n", [Field, CurrentValue, NewValue]),
 						[{Field, NewValue} | NextAcc];
-						%char_values:set(Field, NewValue, AccValues);
 					Value == 0 -> Acc
 				end
 			end, PrevPropList, Fields);

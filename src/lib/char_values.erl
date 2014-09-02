@@ -53,17 +53,17 @@ armor(Value, Values) when not is_integer(Value) ->
 	NewValue = round(Value),
 	armor(NewValue, Values);
 armor(Value, Values) ->
-	Field = 'UNIT_FIELD_RESISTANCES',
+	Field = unit_field_resistances,
 	Index = update_fields:fields(Field),
 	set_uint32_mark_if_needed(Index, Value, Values).
 
 health(Value, Values) ->
-	Field = 'UNIT_FIELD_HEALTH',
+	Field = unit_field_health,
 	Index = update_fields:fields(Field),
 	set_uint32_mark_if_needed(Index, Value, Values).
 
 block(Value, Values) ->
-	Field = 'PLAYER_BLOCK_PERCENTAGE',
+	Field = player_block_percentage,
 	Index = update_fields:fields(Field),
 	set_uint32_mark_if_needed(Index, Value, Values).
 
@@ -71,7 +71,7 @@ base_attack_time(Value, Values) when not is_float(Value) ->
 	NewValue = float(Value),
 	base_attack_time(NewValue, Values);
 base_attack_time(Value, Values) ->
-	Field = 'UNIT_FIELD_BASEATTACKTIME',
+	Field = unit_field_baseattacktime,
 	Index = update_fields:fields(Field),
 	set_float_mark_if_needed(Index, Value, Values).
 
@@ -79,7 +79,7 @@ min_damage(Value, Values) when not is_float(Value) ->
 	NewValue = float(Value),
 	min_damage(NewValue, Values);
 min_damage(Value, Values) ->
-	Field = 'UNIT_FIELD_MINDAMAGE',
+	Field = unit_field_mindamage,
 	Index = update_fields:fields(Field),
 	set_float_mark_if_needed(Index, Value, Values).
 
@@ -87,24 +87,24 @@ max_damage(Value, Values) when not is_float(Value) ->
 	NewValue = float(Value),
 	max_damage(NewValue, Values);
 max_damage(Value, Values) ->
-	Field = 'UNIT_FIELD_MAXDAMAGE',
+	Field = unit_field_maxdamage,
 	Index = update_fields:fields(Field),
 	set_float_mark_if_needed(Index, Value, Values).
 
 % sitting 1
 % standing 0
 anim_state(AnimState, Values) ->
-	Field = 'UNIT_FIELD_BYTES_1',
+	Field = unit_field_bytes_1,
 	Offset = 0,
 	set_byte_mark_if_needed(Field, AnimState, Values, Offset).
 
 sheathed(Value, Values) ->
-	Field = 'UNIT_FIELD_BYTES_2',
+	Field = unit_field_bytes_2,
 	Offset = 0,
 	set_byte_mark_if_needed(Field, Value, Values, Offset).
 
 target(Value, Values) ->
-	Field = 'UNIT_FIELD_TARGET',
+	Field = unit_field_target,
 	set_uint64_mark_if_needed(Field, Value, Values).
 
 
@@ -113,9 +113,9 @@ target(Value, Values) ->
 
 
 aura({Slot, SpellId}, Values) ->
-	Field = 'UNIT_FIELD_AURA',
+	Field = unit_field_aura,
 	Index = update_fields:fields(Field) + Slot,
-	NextIndex = update_fields:fields('UNIT_FIELD_AURA_LAST'),
+	NextIndex = update_fields:fields(unit_field_aura_last),
 	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
 		true -> ok
 	end,
@@ -123,7 +123,7 @@ aura({Slot, SpellId}, Values) ->
 
 aura_flag(Slot, Values) ->
 	SlotIndex = Slot bsr 3,
-	Field = 'UNIT_FIELD_AURAFLAGS',
+	Field = unit_field_auraflags,
 	Index = update_fields:fields(Field) + SlotIndex,
 	Flags = object_values:get_uint32_value(Index, Values),
 	Byte = (Slot band 7) bsl 2,
@@ -134,7 +134,7 @@ aura_flag(Slot, Values) ->
 aura_level({Slot, Level}, Values) ->
 	SlotIndex = Slot div 4,
 	Byte = (Slot rem 4) * 8,
-	Field = 'UNIT_FIELD_AURALEVELS',
+	Field = unit_field_auralevels,
 	Index = update_fields:fields(Field) + SlotIndex,
 	OldLevels = object_values:get_uint32_value(Index, Values),
 
@@ -146,7 +146,7 @@ aura_level({Slot, Level}, Values) ->
 aura_application(Slot, Values) ->
 	SlotIndex = Slot div 4,
 	Byte = (Slot rem 4) * 8,
-	Field = 'UNIT_FIELD_AURAAPPLICATIONS',
+	Field = unit_field_auraapplications,
 	Index = update_fields:fields(Field) + SlotIndex,
 	OldApp = object_values:get_uint32_value(Index, Values),
 
@@ -159,10 +159,10 @@ aura_application(Slot, Values) ->
 
 
 item({Slot, ItemGuid}, Values) ->
-	Field = 'PLAYER_FIELD_INV_SLOT_HEAD',
+	Field = player_field_inv_slot_head,
 	Index = update_fields:fields(Field) + (2 * Slot),
 	% this can set an item from equipped, bags, bag inventory, bank and keyrings
-	NextIndex = update_fields:fields('PLAYER_FARSIGHT'),
+	NextIndex = update_fields:fields(player_farsight),
 	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
 		true -> ok
 	end,
@@ -170,9 +170,9 @@ item({Slot, ItemGuid}, Values) ->
 
 
 visible_item({Slot, ItemId}, Values) ->
-	Field = 'PLAYER_VISIBLE_ITEM_1_0',
+	Field = player_visible_item_1_0,
 	Index = update_fields:fields(Field) + (Slot * ?max_visible_item_offset),
-	NextIndex = update_fields:fields('PLAYER_FIELD_INV_SLOT_HEAD'),
+	NextIndex = update_fields:fields(player_field_inv_slot_head),
 	% this can only be used to set equipped items
 	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
 		true -> ok
@@ -196,81 +196,81 @@ get(FuncName, Values) ->
 % private get functions
 
 guid(Values) ->
-	object_values:get_uint64_value( 'OBJECT_FIELD_GUID', Values).
+	object_values:get_uint64_value( object_field_guid, Values).
 
 guild_id(Values) ->
-	object_values:get_uint32_value('PLAYER_GUILDID', Values).
+	object_values:get_uint32_value(player_guildid, Values).
 
 level(Values) ->
-	object_values:get_uint32_value('UNIT_FIELD_LEVEL', Values).
+	object_values:get_uint32_value(unit_field_level, Values).
 
 skin(Values) ->
-	object_values:get_byte_value('PLAYER_BYTES', Values, 0).
+	object_values:get_byte_value(player_bytes, Values, 0).
 
 face(Values) ->
-	object_values:get_byte_value('PLAYER_BYTES', Values, 1).
+	object_values:get_byte_value(player_bytes, Values, 1).
 
 hair_style(Values) ->
-	object_values:get_byte_value('PLAYER_BYTES', Values, 2).
+	object_values:get_byte_value(player_bytes, Values, 2).
 
 hair_color(Values) ->
-	object_values:get_byte_value('PLAYER_BYTES', Values, 3).
+	object_values:get_byte_value(player_bytes, Values, 3).
 
 facial_hair(Values) ->
-	object_values:get_byte_value('PLAYER_BYTES_2', Values, 0).
+	object_values:get_byte_value(player_bytes_2, Values, 0).
 
 race(Values) ->
-	object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 0).
+	object_values:get_byte_value(unit_field_bytes_0, Values, 0).
 
 class(Values) ->
-	object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 1).
+	object_values:get_byte_value(unit_field_bytes_0, Values, 1).
 
 gender(Values) ->
-	object_values:get_byte_value('UNIT_FIELD_BYTES_0', Values, 2).
+	object_values:get_byte_value(unit_field_bytes_0, Values, 2).
 
 armor(Values) ->
-	object_values:get_uint32_value('UNIT_FIELD_RESISTANCES', Values).
+	object_values:get_uint32_value(unit_field_resistances, Values).
 
 base_attack_time(Values) ->
-	object_values:get_float_value('UNIT_FIELD_BASEATTACKTIME', Values).
+	object_values:get_float_value(unit_field_baseattacktime, Values).
 
 max_damage(Values) ->
-	object_values:get_float_value('UNIT_FIELD_MAXDAMAGE', Values).
+	object_values:get_float_value(unit_field_maxdamage, Values).
 
 min_damage(Values) ->
-	object_values:get_float_value('UNIT_FIELD_MINDAMAGE', Values).
+	object_values:get_float_value(unit_field_mindamage, Values).
 
 anim_state(Values) ->
-	object_values:get_byte_value('UNIT_FIELD_BYTES_1', Values, 0).
+	object_values:get_byte_value(unit_field_bytes_1, Values, 0).
 
 mod_strength(Values) ->
-	object_values:get_float_value('PLAYER_FIELD_POSSTAT0', Values).
+	object_values:get_float_value(player_field_posstat0, Values).
 
 mod_agility(Values) ->
-	object_values:get_float_value('PLAYER_FIELD_POSSTAT1', Values).
+	object_values:get_float_value(player_field_posstat1, Values).
 
 mod_stamina(Values) ->
-	object_values:get_float_value('PLAYER_FIELD_POSSTAT2', Values).
+	object_values:get_float_value(player_field_posstat2, Values).
 
 mod_intellect(Values) ->
-	object_values:get_float_value('PLAYER_FIELD_POSSTAT3', Values).
+	object_values:get_float_value(player_field_posstat3, Values).
 
 mod_spirit(Values) ->
-	object_values:get_float_value('PLAYER_FIELD_POSSTAT4', Values).
+	object_values:get_float_value(player_field_posstat4, Values).
 
 health(Values) ->
-	object_values:get_uint32_value('UNIT_FIELD_HEALTH', Values).
+	object_values:get_uint32_value(unit_field_health, Values).
 
 max_health(Values) ->
-	object_values:get_uint32_value('UNIT_FIELD_MAXHEALTH', Values).
+	object_values:get_uint32_value(unit_field_maxhealth, Values).
 
 target(Values) ->
-	object_values:get_uint64_value('UNIT_FIELD_TARGET', Values).
+	object_values:get_uint64_value(unit_field_target, Values).
 
 
 %returns guid of item in a given slot
 item({Slot, Values}) ->
-	Field = 'PLAYER_FIELD_INV_SLOT_HEAD',
+	Field = player_field_inv_slot_head,
 	Index = update_fields:fields(Field) + (2 * Slot),
 	object_values:get_uint64_value(Index, Values).
 

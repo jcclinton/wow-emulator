@@ -234,116 +234,116 @@ create_char_values(Payload, Guid) ->
 
 	%initial values for this chars values object
 	KeyValues = [
-		{'OBJECT_FIELD_GUID', Guid, uint64},
-		{'OBJECT_FIELD_TYPE', ObjectType, uint32},
-    {'OBJECT_FIELD_SCALE_X', Scale, float},
-		{'UNIT_FIELD_BYTES_0', Race, {byte, 0}},
-		{'UNIT_FIELD_BYTES_0', Class, {byte, 1}},
-		{'UNIT_FIELD_BYTES_0', Gender, {byte, 2}},
-		{'UNIT_FIELD_BYTES_0', PowerType, {byte, 3}},
-    {'UNIT_FIELD_BYTES_2', Unk3 bor Unk5, {byte, 1}},
-    {'UNIT_FIELD_LEVEL', 1, uint32}, % level
-    {'UNIT_FIELD_DISPLAYID', ModelId, uint32},
-    {'UNIT_FIELD_NATIVEDISPLAYID', NativeModelId, uint32},
-    {'UNIT_FIELD_FACTIONTEMPLATE', FactionTemplate, uint32},
-    {'UNIT_FIELD_CHARM', 0, uint64},
-    {'UNIT_FIELD_CHANNEL_OBJECT', 0, uint64},
-    {'UNIT_CHANNEL_SPELL', 0, uint32},
-    {'UNIT_FIELD_SUMMON', 0, uint64}, %pet
-    {'UNIT_FIELD_TARGET', 0, uint64},
-    {'UNIT_FIELD_CHARMEDBY', 0, uint64},
-    {'UNIT_FIELD_SUMMONEDBY', 0, uint64},
-    {'UNIT_FIELD_CREATEDBY', 0, uint64},
-    {'UNIT_FIELD_AURASTATE', 0, uint32},
-    {'UNIT_FIELD_MINDAMAGE', 1.0, float},
-    {'UNIT_FIELD_MAXDAMAGE', 1.0, float},
-    {'UNIT_FIELD_ATTACK_POWER', 0, int32},
-    {'UNIT_FIELD_STAT0', Strength, uint32},
-    {'UNIT_FIELD_STAT1', Agility, uint32},
-    {'UNIT_FIELD_STAT2', Stamina, uint32},
-    {'UNIT_FIELD_STAT3', Intellect, uint32},
-    {'UNIT_FIELD_STAT4', Spirit, uint32},
-    {'UNIT_FIELD_BASE_HEALTH', Health, uint32},
-    {'UNIT_FIELD_BASE_MANA', Power, uint32},
-    {'UNIT_FIELD_RESISTANCES', 0, uint32}, % base armor
-    {'UNIT_FIELD_RESISTANCES_01', 0, uint32}, % unknown
-    {'UNIT_FIELD_RESISTANCES_02', 0, uint32}, % base fire res
-    {'UNIT_FIELD_RESISTANCES_03', 0, uint32}, % base nature res
-    {'UNIT_FIELD_RESISTANCES_04', 0, uint32}, % base frost res
-    {'UNIT_FIELD_RESISTANCES_05', 0, uint32}, % base shadow res
-    {'UNIT_FIELD_RESISTANCES_06', 0, uint32}, % base arcane res
-    {'UNIT_FIELD_BASEATTACKTIME', DefaultAttackTime, float},
-    {'UNIT_FIELD_OFFHANDATTACKTIME', DefaultAttackTime, float},
-    {'UNIT_FIELD_RANGEDATTACKTIME', DefaultAttackTime, float},
-    {'UNIT_MOD_CAST_SPEED', 1.0, float},
-    {'UNIT_FIELD_MAXPOWER1', Mana, uint32}, %mana
-    {'UNIT_FIELD_MAXPOWER2', Rage, uint32}, %rage
-    {'UNIT_FIELD_MAXPOWER3', 0, uint32}, %focus
-    {'UNIT_FIELD_MAXPOWER4', Energy, uint32}, %energy
-    {'UNIT_FIELD_MAXPOWER5', 0, uint32}, %happiness
-    {'UNIT_FIELD_POWER1', Mana, uint32},
-    {'UNIT_FIELD_POWER2', Rage, uint32},
-    {'UNIT_FIELD_POWER3', 0, uint32},
-    {'UNIT_FIELD_POWER4', Energy, uint32},
-    {'UNIT_FIELD_POWER5', 0, uint32},
-    {'UNIT_FIELD_MAXHEALTH', Health, uint32},
-    {'UNIT_FIELD_FLAGS', 16#0008, uint32}, % flags like non-selectable, non-movable, taxi-flight, silecenced, non-attackable, many more
-    {'UNIT_FIELD_HEALTH', Health, uint32},
-    {'UNIT_FIELD_BYTES_1', 16#EE, {byte, 1}},
-    {'PLAYER_EXPLORED_ZONES_1', 0, uint64},
-    {'PLAYER_FIELD_COINAGE', 0, uint32},
-    {'PLAYER_BYTES', Skin, {byte, 0}},
-    {'PLAYER_BYTES', Face, {byte, 1}},
-    {'PLAYER_BYTES', HairStyle, {byte, 2}},
-    {'PLAYER_BYTES', HairColor, {byte, 3}},
-    {'PLAYER_BYTES_2', FacialHair, {byte, 0}},
-    {'PLAYER_BYTES_2', 2, {byte, 3}}, %rest state
-    {'PLAYER_BYTES_3', Gender, {uint16, 0}}, % (drunk band 16#FFFE) bor Gender
-    {'PLAYER_BYTES_3', 0, {byte, 3}}, % battlefield arena faction
-    {'PLAYER_FLAGS', PlayerFlags, uint32},
-    {'PLAYER_FIELD_WATCHED_FACTION_INDEX', -1, int32},
-    {'PLAYER_FIELD_BYTES', 0, {byte, 2}},
-    {'PLAYER_CHARACTER_POINTS2', 2, uint32}, %num primary trade professions
-    {'PLAYER_FARSIGHT', 0, uint64},
-    {'PLAYER_TRACK_CREATURES', 0, uint32},
-    {'PLAYER_TRACK_RESOURCES', 0, uint32},
-    {'PLAYER_DUEL_ARBITER', 0, uint64},
-    {'PLAYER_DUEL_TEAM', 0, uint32},
-    {'PLAYER_NEXT_LEVEL_XP', 10, uint32}, % xp to next level
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, float},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 1}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 2}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 3}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 4}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 5}},
-    {'PLAYER_FIELD_MOD_DAMAGE_DONE_PCT', 1.0, {float, 6}},
+		{object_field_guid, Guid, uint64},
+		{object_field_type, ObjectType, uint32},
+    {object_field_scale_x, Scale, float},
+		{unit_field_bytes_0, Race, {byte, 0}},
+		{unit_field_bytes_0, Class, {byte, 1}},
+		{unit_field_bytes_0, Gender, {byte, 2}},
+		{unit_field_bytes_0, PowerType, {byte, 3}},
+    {unit_field_bytes_2, Unk3 bor Unk5, {byte, 1}},
+    {unit_field_level, 1, uint32}, % level
+    {unit_field_displayid, ModelId, uint32},
+    {unit_field_nativedisplayid, NativeModelId, uint32},
+    {unit_field_factiontemplate, FactionTemplate, uint32},
+    {unit_field_charm, 0, uint64},
+    {unit_field_channel_object, 0, uint64},
+    {unit_channel_spell, 0, uint32},
+    {unit_field_summon, 0, uint64}, %pet
+    {unit_field_target, 0, uint64},
+    {unit_field_charmedby, 0, uint64},
+    {unit_field_summonedby, 0, uint64},
+    {unit_field_createdby, 0, uint64},
+    {unit_field_aurastate, 0, uint32},
+    {unit_field_mindamage, 1.0, float},
+    {unit_field_maxdamage, 1.0, float},
+    {unit_field_attack_power, 0, int32},
+    {unit_field_stat0, Strength, uint32},
+    {unit_field_stat1, Agility, uint32},
+    {unit_field_stat2, Stamina, uint32},
+    {unit_field_stat3, Intellect, uint32},
+    {unit_field_stat4, Spirit, uint32},
+    {unit_field_base_health, Health, uint32},
+    {unit_field_base_mana, Power, uint32},
+    {unit_field_resistances, 0, uint32}, % base armor
+    {unit_field_resistances_01, 0, uint32}, % unknown
+    {unit_field_resistances_02, 0, uint32}, % base fire res
+    {unit_field_resistances_03, 0, uint32}, % base nature res
+    {unit_field_resistances_04, 0, uint32}, % base frost res
+    {unit_field_resistances_05, 0, uint32}, % base shadow res
+    {unit_field_resistances_06, 0, uint32}, % base arcane res
+    {unit_field_baseattacktime, DefaultAttackTime, float},
+    {unit_field_offhandattacktime, DefaultAttackTime, float},
+    {unit_field_rangedattacktime, DefaultAttackTime, float},
+    {unit_mod_cast_speed, 1.0, float},
+    {unit_field_maxpower1, Mana, uint32}, %mana
+    {unit_field_maxpower2, Rage, uint32}, %rage
+    {unit_field_maxpower3, 0, uint32}, %focus
+    {unit_field_maxpower4, Energy, uint32}, %energy
+    {unit_field_maxpower5, 0, uint32}, %happiness
+    {unit_field_power1, Mana, uint32},
+    {unit_field_power2, Rage, uint32},
+    {unit_field_power3, 0, uint32},
+    {unit_field_power4, Energy, uint32},
+    {unit_field_power5, 0, uint32},
+    {unit_field_maxhealth, Health, uint32},
+    {unit_field_flags, 16#0008, uint32}, % flags like non-selectable, non-movable, taxi-flight, silecenced, non-attackable, many more
+    {unit_field_health, Health, uint32},
+    {unit_field_bytes_1, 16#EE, {byte, 1}},
+    {player_explored_zones_1, 0, uint64},
+    {player_field_coinage, 0, uint32},
+    {player_bytes, Skin, {byte, 0}},
+    {player_bytes, Face, {byte, 1}},
+    {player_bytes, HairStyle, {byte, 2}},
+    {player_bytes, HairColor, {byte, 3}},
+    {player_bytes_2, FacialHair, {byte, 0}},
+    {player_bytes_2, 2, {byte, 3}}, %rest state
+    {player_bytes_3, Gender, {uint16, 0}}, % (drunk band 16#FFFE) bor Gender
+    {player_bytes_3, 0, {byte, 3}}, % battlefield arena faction
+    {player_flags, PlayerFlags, uint32},
+    {player_field_watched_faction_index, -1, int32},
+    {player_field_bytes, 0, {byte, 2}},
+    {player_character_points2, 2, uint32}, %num primary trade professions
+    {player_farsight, 0, uint64},
+    {player_track_creatures, 0, uint32},
+    {player_track_resources, 0, uint32},
+    {player_duel_arbiter, 0, uint64},
+    {player_duel_team, 0, uint32},
+    {player_next_level_xp, 10, uint32}, % xp to next level
+    {player_field_mod_damage_done_pct, 1.0, float},
+    {player_field_mod_damage_done_pct, 1.0, {float, 1}},
+    {player_field_mod_damage_done_pct, 1.0, {float, 2}},
+    {player_field_mod_damage_done_pct, 1.0, {float, 3}},
+    {player_field_mod_damage_done_pct, 1.0, {float, 4}},
+    {player_field_mod_damage_done_pct, 1.0, {float, 5}},
+    {player_field_mod_damage_done_pct, 1.0, {float, 6}},
 
-    {'PLAYER_FIELD_POSSTAT0', 0.0, float}, % stat buff mods for strength
-    {'PLAYER_FIELD_POSSTAT1', 0.0, float}, % stat buff mods for agi
-    {'PLAYER_FIELD_POSSTAT2', 0.0, float}, % stat buff mods sta
-    {'PLAYER_FIELD_POSSTAT3', 0.0, float}, % stat buff mods int
-    {'PLAYER_FIELD_POSSTAT4', 0.0, float}, % stat buff mods spi
-    {'PLAYER_FIELD_NEGSTAT0', 0.0, float}, % stat buff mods for strength
-    {'PLAYER_FIELD_NEGSTAT1', 0.0, float}, % stat buff mods
-    {'PLAYER_FIELD_NEGSTAT2', 0.0, float}, % stat buff mods
-    {'PLAYER_FIELD_NEGSTAT3', 0.0, float}, % stat buff mods
-    {'PLAYER_FIELD_NEGSTAT4', 0.0, float}, % stat buff mods
+    {player_field_posstat0, 0.0, float}, % stat buff mods for strength
+    {player_field_posstat1, 0.0, float}, % stat buff mods for agi
+    {player_field_posstat2, 0.0, float}, % stat buff mods sta
+    {player_field_posstat3, 0.0, float}, % stat buff mods int
+    {player_field_posstat4, 0.0, float}, % stat buff mods spi
+    {player_field_negstat0, 0.0, float}, % stat buff mods for strength
+    {player_field_negstat1, 0.0, float}, % stat buff mods
+    {player_field_negstat2, 0.0, float}, % stat buff mods
+    {player_field_negstat3, 0.0, float}, % stat buff mods
+    {player_field_negstat4, 0.0, float}, % stat buff mods
 
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 0}}, % armor mod
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 1}}, % not sure
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 2}}, % fire mod
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 3}}, % nature mod
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 4}}, % frost mod
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 5}}, % shadow mod
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE', 0.0, {float, 6}}, % arcane mod
+    {player_field_resistancebuffmodspositive, 0.0, {float, 0}}, % armor mod
+    {player_field_resistancebuffmodspositive, 0.0, {float, 1}}, % not sure
+    {player_field_resistancebuffmodspositive, 0.0, {float, 2}}, % fire mod
+    {player_field_resistancebuffmodspositive, 0.0, {float, 3}}, % nature mod
+    {player_field_resistancebuffmodspositive, 0.0, {float, 4}}, % frost mod
+    {player_field_resistancebuffmodspositive, 0.0, {float, 5}}, % shadow mod
+    {player_field_resistancebuffmodspositive, 0.0, {float, 6}}, % arcane mod
 
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 0}},
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 1}},
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 2}},
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 3}},
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 4}},
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 5}},
-    {'PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE', 0.0, {float, 6}}
+    {player_field_resistancebuffmodsnegative, 0.0, {float, 0}},
+    {player_field_resistancebuffmodsnegative, 0.0, {float, 1}},
+    {player_field_resistancebuffmodsnegative, 0.0, {float, 2}},
+    {player_field_resistancebuffmodsnegative, 0.0, {float, 3}},
+    {player_field_resistancebuffmodsnegative, 0.0, {float, 4}},
+    {player_field_resistancebuffmodsnegative, 0.0, {float, 5}},
+    {player_field_resistancebuffmodsnegative, 0.0, {float, 6}}
 
 	],
 

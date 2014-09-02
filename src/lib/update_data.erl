@@ -123,7 +123,7 @@ create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag, Guid) ->
 
 
 build_values_update(MaskBits, Values, Count) ->
-	TypeFlags = object_values:get_int32_value('OBJECT_FIELD_TYPE', Values),
+	TypeFlags = object_values:get_int32_value(object_field_type, Values),
 	IsUnit = util:has_flag(TypeFlags, ?typemask_unit),
 	%IsUnit = false,
 	IsPlayer = util:has_flag(TypeFlags, ?typemask_player),
@@ -150,9 +150,9 @@ build_values_update(MaskBits, Values, Count) ->
 
 is_non_neg_float_field(Index) ->
 	Fields = [
-		'UNIT_FIELD_BASEATTACKTIME',
-		'UNIT_FIELD_OFFHANDATTACKTIME',
-		'UNIT_FIELD_RANGEDATTACKTIME'
+		unit_field_baseattacktime,
+		unit_field_offhandattacktime,
+		unit_field_rangedattacktime
 	],
 	lists:foldl(fun(Field, Bool) ->
 		if Bool -> Bool;
@@ -167,16 +167,16 @@ is_non_neg_float_field(Index) ->
 
 is_float_field(Index) ->
 	Fields = [
-		'PLAYER_FIELD_POSSTAT0',
-		'PLAYER_FIELD_POSSTAT1',
-		'PLAYER_FIELD_POSSTAT2',
-		'PLAYER_FIELD_POSSTAT3',
-		'PLAYER_FIELD_POSSTAT4',
-		'PLAYER_FIELD_NEGSTAT0',
-		'PLAYER_FIELD_NEGSTAT1',
-		'PLAYER_FIELD_NEGSTAT2',
-		'PLAYER_FIELD_NEGSTAT3',
-		'PLAYER_FIELD_NEGSTAT4'
+		player_field_posstat0,
+		player_field_posstat1,
+		player_field_posstat2,
+		player_field_posstat3,
+		player_field_posstat4,
+		player_field_negstat0,
+		player_field_negstat1,
+		player_field_negstat2,
+		player_field_negstat3,
+		player_field_negstat4
 	],
 
 	IsFloat = lists:foldl(fun(Field, Bool) ->
@@ -191,8 +191,8 @@ is_float_field(Index) ->
 
 	if IsFloat -> IsFloat;
 		not IsFloat ->
-			PosIndex = update_fields:fields('PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE'),
-			NegIndex = update_fields:fields('PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE'),
+			PosIndex = update_fields:fields(player_field_resistancebuffmodspositive),
+			NegIndex = update_fields:fields(player_field_resistancebuffmodsnegative),
 			if Index >= PosIndex andalso Index =< (PosIndex + 6) -> true;
 				Index >= NegIndex andalso Index =< (NegIndex + 6) -> true;
 				true -> false
