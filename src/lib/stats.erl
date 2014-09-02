@@ -79,9 +79,9 @@ update_one(ItemGuid, PrevPropList) ->
 
 
 get_empty_fields() ->
-	[{armor, 0}].
+	[{unit_field_resistances, 0}].
 
 get_fields() ->
-	[armor].
+	[unit_field_resistances].
 
-get_item_value(armor, ItemProto) -> ItemProto#item_proto.armor.
+get_item_value(unit_field_resistances, ItemProto) -> ItemProto#item_proto.armor.

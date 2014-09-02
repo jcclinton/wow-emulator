@@ -51,7 +51,7 @@ set_selection(Data) ->
 	% TargetGuid is 0 when a target is deselected
 	<<TargetGuid?Q>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
-	player_state:set_value(Guid, TargetGuid, target),
+	player_state:set_value(Guid, TargetGuid, unit_field_target),
 	ok.
 
 tutorial_flag(_Data) ->
@@ -119,6 +119,6 @@ set_sheathed(Data) ->
 	<<Sheathed?L>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
 
-	player_state:set_value(Guid, Sheathed, sheathed),
+	player_state:set_value(Guid, Sheathed, {unit_field_bytes_2, 0}),
 
 	ok.

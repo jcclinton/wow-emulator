@@ -50,4 +50,4 @@ take_damage(Values, Damage) ->
 			OldAmount - Damage;
 		OldAmount < Damage -> 0
 	end,
-	char_values:set(health, NewAmount, Values).
+	char_values:set_value(unit_field_health, NewAmount, Values).

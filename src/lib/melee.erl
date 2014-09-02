@@ -56,11 +56,11 @@ swing(Guid, Seed) ->
 	NewSeed = if IsFacing andalso IsInDistance ->
 			AttackOpAtom = smsg_attackerstateupdate,
 
-			Fields = [max_damage, min_damage],
+			Fields = [unit_field_maxdamage, unit_field_mindamage],
 			ValuesData = player_state:get_values(Guid, Fields),
 
-			MaxDamage = proplists:get_value(max_damage, ValuesData),
-			MinDamage = proplists:get_value(min_damage, ValuesData),
+			MaxDamage = proplists:get_value(unit_field_maxdamage, ValuesData),
+			MinDamage = proplists:get_value(unit_field_mindamage, ValuesData),
 
 			{Rand, NewSeed1} = random:uniform_s(Seed),
 			Damage = round(Rand * (MaxDamage - MinDamage) + MinDamage),

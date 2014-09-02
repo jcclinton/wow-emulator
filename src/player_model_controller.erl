@@ -142,7 +142,8 @@ logged_out(_, _From, State) ->
 % async
 logged_in({login_complete, Guid}, State = #state{account_id=AccountId}) ->
 	% TODO find a better place to put this, it cant get called until values have been loaded though
-	player_state:set_value(Guid, ?standing, anim_state),
+	% set player to standing on login
+	player_state:set_value(Guid, ?standing, {unit_field_bytes_1, 0}),
 
 	ok = world:add_to_map({AccountId, Guid}),
 	{next_state, logged_in, State};
@@ -237,11 +238,11 @@ create_char_values(Payload, Guid) ->
 		{object_field_guid, Guid, uint64},
 		{object_field_type, ObjectType, uint32},
     {object_field_scale_x, Scale, float},
-		{{unit_field_bytes_0, 0}, Race, byte},
-		{{unit_field_bytes_0, 1}, Class, byte},
-		{{unit_field_bytes_0, 2}, Gender, byte},
-		{{unit_field_bytes_0, 3}, PowerType, byte},
-    {{unit_field_bytes_2, 1}, Unk3 bor Unk5, byte},
+		{{unit_field_bytes_0, 0}, Race, uint8},
+		{{unit_field_bytes_0, 1}, Class, uint8},
+		{{unit_field_bytes_0, 2}, Gender, uint8},
+		{{unit_field_bytes_0, 3}, PowerType, uint8},
+    {{unit_field_bytes_2, 1}, Unk3 bor Unk5, uint8},
     {unit_field_level, 1, uint32}, % level
     {unit_field_displayid, ModelId, uint32},
     {unit_field_nativedisplayid, NativeModelId, uint32},
@@ -289,20 +290,20 @@ create_char_values(Payload, Guid) ->
     {unit_field_maxhealth, Health, uint32},
     {unit_field_flags, 16#0008, uint32}, % flags like non-selectable, non-movable, taxi-flight, silecenced, non-attackable, many more
     {unit_field_health, Health, uint32},
-    {{unit_field_bytes_1, 1}, 16#EE, byte},
+    {{unit_field_bytes_1, 1}, 16#EE, uint8},
     {player_explored_zones_1, 0, uint64},
     {player_field_coinage, 0, uint32},
-    {{player_bytes, 0}, Skin, byte},
-    {{player_bytes, 1}, Face, byte},
-    {{player_bytes, 2}, HairStyle, byte},
-    {{player_bytes, 3}, HairColor, byte},
-    {{player_bytes_2, 0}, FacialHair, byte},
-    {{player_bytes_2, 3}, 2, byte}, %rest state
+    {{player_bytes, 0}, Skin, uint8},
+    {{player_bytes, 1}, Face, uint8},
+    {{player_bytes, 2}, HairStyle, uint8},
+    {{player_bytes, 3}, HairColor, uint8},
+    {{player_bytes_2, 0}, FacialHair, uint8},
+    {{player_bytes_2, 3}, 2, uint8}, %rest state
     {{player_bytes_3, 0}, Gender, uint16}, % (drunk band 16#FFFE) bor Gender
-    {{player_bytes_3, 3}, 0, byte}, % battlefield arena faction
+    {{player_bytes_3, 3}, 0, uint8}, % battlefield arena faction
     {player_flags, PlayerFlags, uint32},
     {player_field_watched_faction_index, -1, int32},
-    {{player_field_bytes, 2}, 0, byte},
+    {{player_field_bytes, 2}, 0, uint8},
     {player_character_points2, 2, uint32}, %num primary trade professions
     {player_farsight, 0, uint64},
     {player_track_creatures, 0, uint32},

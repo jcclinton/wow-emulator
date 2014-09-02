@@ -44,6 +44,7 @@ set_value(FieldData, Value, Values) ->
 		{FieldName, _} -> FieldName;
 		_ -> FieldData
 	end,
+	% TODO check if the value really changed, if not do nothing here
 	{Index, Type} = object_fields:field_data(Field),
 	Indices = case Type of
 		uint64 -> [Index, Index+1];
@@ -62,64 +63,6 @@ set(FieldName, Value, Values) ->
 			{Values, []}
 	end.
 
-
-armor(Value, Values) when not is_integer(Value) ->
-	NewValue = round(Value),
-	armor(NewValue, Values);
-armor(Value, Values) ->
-	Field = unit_field_resistances,
-	Index = object_fields:fields(Field),
-	set_uint32_mark_if_needed(Index, Value, Values).
-
-health(Value, Values) ->
-	Field = unit_field_health,
-	Index = object_fields:fields(Field),
-	set_uint32_mark_if_needed(Index, Value, Values).
-
-block(Value, Values) ->
-	Field = player_block_percentage,
-	Index = object_fields:fields(Field),
-	set_uint32_mark_if_needed(Index, Value, Values).
-
-base_attack_time(Value, Values) when not is_float(Value) ->
-	NewValue = float(Value),
-	base_attack_time(NewValue, Values);
-base_attack_time(Value, Values) ->
-	Field = unit_field_baseattacktime,
-	Index = object_fields:fields(Field),
-	set_float_mark_if_needed(Index, Value, Values).
-
-min_damage(Value, Values) when not is_float(Value) ->
-	NewValue = float(Value),
-	min_damage(NewValue, Values);
-min_damage(Value, Values) ->
-	Field = unit_field_mindamage,
-	Index = object_fields:fields(Field),
-	set_float_mark_if_needed(Index, Value, Values).
-
-max_damage(Value, Values) when not is_float(Value) ->
-	NewValue = float(Value),
-	max_damage(NewValue, Values);
-max_damage(Value, Values) ->
-	Field = unit_field_maxdamage,
-	Index = object_fields:fields(Field),
-	set_float_mark_if_needed(Index, Value, Values).
-
-% sitting 1
-% standing 0
-anim_state(AnimState, Values) ->
-	Field = unit_field_bytes_1,
-	Offset = 0,
-	set_byte_mark_if_needed(Field, AnimState, Values, Offset).
-
-sheathed(Value, Values) ->
-	Field = unit_field_bytes_2,
-	Offset = 0,
-	set_byte_mark_if_needed(Field, Value, Values, Offset).
-
-target(Value, Values) ->
-	Field = unit_field_target,
-	set_uint64_mark_if_needed(Field, Value, Values).
 
 
 
@@ -197,6 +140,15 @@ visible_item({Slot, ItemId}, Values) ->
 
 
 %% gets
+get_value(FieldData, Values) ->
+	Field = case FieldData of
+		{FieldName, _} -> FieldName;
+		_ -> FieldData
+	end,
+	Type = object_fields:type(Field),
+	object_values:get_value({FieldData, Type}, Values).
+
+
 get(FuncName, Values) ->
 	try ?MODULE:FuncName(Values) of
 		Val -> Val
