@@ -40,15 +40,22 @@ get_empty_values() ->
 % sets
 
 set_value(FieldData, Value, Values) ->
-	Field = case FieldData of
-		{FieldName, _} -> FieldName;
-		_ -> FieldData
+	{Field, Offset} = if is_tuple(FieldData) -> FieldData;
+		is_atom(FieldData) -> {FieldData, 0}
 	end,
 	% TODO check if the value really changed, if not do nothing here
 	{Index, Type} = object_fields:field_data(Field),
+	% offsets can be passed in for any type
+	% but uint16 and uint8 offsets are byte offsets
+	% the rest are word offsets
+	OffsetIndex = Index + Offset,
 	Indices = case Type of
-		uint64 -> [Index, Index+1];
-		_ -> [Index]
+		uint64 -> [OffsetIndex, OffsetIndex+1];
+		uint32 -> [OffsetIndex];
+		int32 -> [OffsetIndex];
+		float -> [OffsetIndex];
+		uint16 -> [Index];
+		uint8 -> [Index]
 	end,
 	NewValues = object_values:set_value({FieldData, Value, Type}, Values),
 	{NewValues, Indices}.
@@ -160,79 +167,6 @@ get(FuncName, Values) ->
 
 
 % private get functions
-
-guid(Values) ->
-	object_values:get_uint64_value( object_field_guid, Values).
-
-guild_id(Values) ->
-	object_values:get_uint32_value(player_guildid, Values).
-
-level(Values) ->
-	object_values:get_uint32_value(unit_field_level, Values).
-
-skin(Values) ->
-	object_values:get_byte_value(player_bytes, Values, 0).
-
-face(Values) ->
-	object_values:get_byte_value(player_bytes, Values, 1).
-
-hair_style(Values) ->
-	object_values:get_byte_value(player_bytes, Values, 2).
-
-hair_color(Values) ->
-	object_values:get_byte_value(player_bytes, Values, 3).
-
-facial_hair(Values) ->
-	object_values:get_byte_value(player_bytes_2, Values, 0).
-
-race(Values) ->
-	object_values:get_byte_value(unit_field_bytes_0, Values, 0).
-
-class(Values) ->
-	object_values:get_byte_value(unit_field_bytes_0, Values, 1).
-
-gender(Values) ->
-	object_values:get_byte_value(unit_field_bytes_0, Values, 2).
-
-armor(Values) ->
-	object_values:get_uint32_value(unit_field_resistances, Values).
-
-base_attack_time(Values) ->
-	object_values:get_float_value(unit_field_baseattacktime, Values).
-
-max_damage(Values) ->
-	object_values:get_float_value(unit_field_maxdamage, Values).
-
-min_damage(Values) ->
-	object_values:get_float_value(unit_field_mindamage, Values).
-
-anim_state(Values) ->
-	object_values:get_byte_value(unit_field_bytes_1, Values, 0).
-
-mod_strength(Values) ->
-	object_values:get_float_value(player_field_posstat0, Values).
-
-mod_agility(Values) ->
-	object_values:get_float_value(player_field_posstat1, Values).
-
-mod_stamina(Values) ->
-	object_values:get_float_value(player_field_posstat2, Values).
-
-mod_intellect(Values) ->
-	object_values:get_float_value(player_field_posstat3, Values).
-
-mod_spirit(Values) ->
-	object_values:get_float_value(player_field_posstat4, Values).
-
-health(Values) ->
-	object_values:get_uint32_value(unit_field_health, Values).
-
-max_health(Values) ->
-	object_values:get_uint32_value(unit_field_maxhealth, Values).
-
-target(Values) ->
-	object_values:get_uint64_value(unit_field_target, Values).
-
 
 %returns guid of item in a given slot
 item({Slot, Values}) ->

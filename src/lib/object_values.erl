@@ -47,42 +47,40 @@ set_value({FieldData, Value, Type}, Values) ->
 	end,
 	% for 32 bit words, offset is the word offset
 	% for 8 and 16 bit words, offset is the byte offset
+	Index = object_fields:fields(Field) + Offset,
 	case Type of
 		uint32 ->
-			Index = object_fields:fields(Field) + Offset,
 			set_uint32_value(Index, Value, Values);
 		uint64 ->
-			set_uint64_value(Field, Value, Values);
+			set_uint64_value(Index, Value, Values);
 		float ->
-			Index = object_fields:fields(Field) + Offset,
 			set_float_value(Index, Value, Values);
 		uint16 ->
 			set_uint16_value(Field, Value, Values, Offset);
 		uint8 ->
 			set_byte_value(Field, Value, Values, Offset);
 		int32 ->
-			set_int32_value(Field, Value, Values)
+			set_int32_value(Index, Value, Values)
 	end.
 
 get_value({FieldData, Type}, Values) ->
 	{Field, Offset} = if is_tuple(FieldData) -> FieldData;
 		is_atom(FieldData) -> {FieldData, 0}
 	end,
+	Index = object_fields:fields(Field) + Offset,
 	case Type of
 		uint32 ->
-			Index = object_fields:fields(Field) + Offset,
 			get_uint32_value(Index, Values);
 		uint64 ->
-			get_uint64_value(Field, Values);
+			get_uint64_value(Index, Values);
 		float ->
-			Index = object_fields:fields(Field) + Offset,
 			get_float_value(Index, Values);
 		uint16 ->
 			get_uint16_value(Field, Values, Offset);
 		byte ->
 			get_byte_value(Field, Values, Offset);
 		int32 ->
-			get_int32_value(Field, Values)
+			get_int32_value(Index, Values)
 	end.
 
 
