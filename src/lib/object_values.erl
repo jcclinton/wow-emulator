@@ -36,14 +36,17 @@
 				set_uint64_value/3,
 				set_float_value/3
 ]).
--export([set_key_values/2]).
+-export([set_value/2]).
 
 -include("include/binary.hrl").
 
 
 % used when initializing char values
-set_key_values({Field, Value, Type}, Values) ->
+set_value({FieldData, Value, Type}, Values) ->
 	%io:format("indexname: ~p~nvalue: ~p~n", [Field, Value]),
+	{Field, Offset} = if is_tuple(FieldData) -> FieldData;
+		is_atom(FieldData) -> {FieldData, none}
+	end,
 	case Type of
 		int32 ->
 			set_int32_value(Field, Value, Values);
@@ -51,13 +54,13 @@ set_key_values({Field, Value, Type}, Values) ->
 			set_uint32_value(Field, Value, Values);
 		uint64 ->
 			set_uint64_value(Field, Value, Values);
-		{uint16, Offset} ->
+		uint16 ->
 			set_uint16_value(Field, Value, Values, Offset);
-		{byte, Offset} ->
+		byte ->
 			set_byte_value(Field, Value, Values, Offset);
 		float ->
 			set_float_value(Field, Value, Values);
-		{float, Offset} ->
+		float_offset ->
 			Index = object_fields:fields(Field) + Offset,
 			set_float_value(Index, Value, Values)
 	end.

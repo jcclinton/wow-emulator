@@ -112,7 +112,7 @@ create(ItemGuid, ItemId, OwnerGuid) ->
 	],
 
 	EmptyValues = get_empty_values(),
-	lists:foldl(fun object_values:set_key_values/2, EmptyValues, KeyValues).
+	lists:foldl(fun object_values:set_value/2, EmptyValues, KeyValues).
 
 
 get_empty_values() ->

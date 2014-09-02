@@ -23,7 +23,7 @@
 -module(char_values).
 
 
--export([get/2, set/3]).
+-export([get/2, set/3, set_value/3]).
 -export([get_empty_values/0]).
 -compile([export_all]). % needed to call functions through get/1
 
@@ -38,6 +38,20 @@ get_empty_values() ->
 
 
 % sets
+
+set_value(FieldData, Value, Values) ->
+	Field = case FieldData of
+		{FieldName, _} -> FieldName;
+		_ -> FieldData
+	end,
+	{Index, Type} = object_fields:field_data(Field),
+	Indices = case Type of
+		uint64 -> [Index, Index+1];
+		_ -> [Index]
+	end,
+	NewValues = object_values:set_value({FieldData, Value, Type}, Values),
+	{NewValues, Indices}.
+
 
 set(FieldName, Value, Values) ->
 	try ?MODULE:FieldName(Value, Values) of
