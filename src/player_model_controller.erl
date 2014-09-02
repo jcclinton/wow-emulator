@@ -311,13 +311,13 @@ create_char_values(Payload, Guid) ->
     {player_duel_arbiter, 0, uint64},
     {player_duel_team, 0, uint32},
     {player_next_level_xp, 10, uint32}, % xp to next level
-    {{player_field_mod_damage_done_pct, 0}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 1}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 2}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 3}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 4}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 5}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 6}, 1.0, float_offset},
+    {{player_field_mod_damage_done_pct, 0}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 1}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 2}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 3}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 4}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 5}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 6}, 1.0, float},
 
     {player_field_posstat0, 0.0, float}, % stat buff mods for strength
     {player_field_posstat1, 0.0, float}, % stat buff mods for agi
@@ -330,21 +330,21 @@ create_char_values(Payload, Guid) ->
     {player_field_negstat3, 0.0, float}, % stat buff mods
     {player_field_negstat4, 0.0, float}, % stat buff mods
 
-    {{player_field_resistancebuffmodspositive, 0}, 0.0, float_offset}, % armor mod
-    {{player_field_resistancebuffmodspositive, 1}, 0.0, float_offset}, % not sure
-    {{player_field_resistancebuffmodspositive, 2}, 0.0, float_offset}, % fire mod
-    {{player_field_resistancebuffmodspositive, 3}, 0.0, float_offset}, % nature mod
-    {{player_field_resistancebuffmodspositive, 4}, 0.0, float_offset}, % frost mod
-    {{player_field_resistancebuffmodspositive, 5}, 0.0, float_offset}, % shadow mod
-    {{player_field_resistancebuffmodspositive, 6}, 0.0, float_offset}, % arcane mod
+    {{player_field_resistancebuffmodspositive, 0}, 0.0, float}, % armor mod
+    {{player_field_resistancebuffmodspositive, 1}, 0.0, float}, % not sure
+    {{player_field_resistancebuffmodspositive, 2}, 0.0, float}, % fire mod
+    {{player_field_resistancebuffmodspositive, 3}, 0.0, float}, % nature mod
+    {{player_field_resistancebuffmodspositive, 4}, 0.0, float}, % frost mod
+    {{player_field_resistancebuffmodspositive, 5}, 0.0, float}, % shadow mod
+    {{player_field_resistancebuffmodspositive, 6}, 0.0, float}, % arcane mod
 
-    {{player_field_resistancebuffmodsnegative, 0}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 1}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 2}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 3}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 4}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 5}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 6}, 0.0, float_offset}
+    {{player_field_resistancebuffmodsnegative, 0}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 1}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 2}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 3}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 4}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 5}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 6}, 0.0, float}
 
 	],
 
