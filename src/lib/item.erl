@@ -23,8 +23,7 @@
 -module(item).
 
 -export([swap/3]).
--export([equip_new/3, equip_out_of_game/5]).
--export([init_char_slot_values/0]).
+-export([equip_new/3]).
 -export([get_item_guids/1, get_equipped_item_guids/1]).
 -export([slot_empty/2, get_item_guid_at_slot/2]).
 -export([get_slot/1]).
@@ -316,14 +315,8 @@ remove(Slot, OwnerGuid) ->
 
 	player_state:run_async_function(OwnerGuid, set_item, [{Slot, 0}]),
 
-	SlotValues = char_data:get_slot_values(OwnerGuid),
-	Offset = 8 * Slot,
-	<<Head:Offset/binary, _ItemGuid?Q, Rest/binary>> = SlotValues,
-	NewSlotValues = <<Head/binary, 0?Q, Rest/binary>>,
-	char_data:update_slot_values(OwnerGuid, NewSlotValues),
-
 	set_visual_item_slot(OwnerGuid, 0, Slot),
-	stats:update_all(OwnerGuid),
+	%stats:update_all(OwnerGuid),
 	ok.
 
 
@@ -344,10 +337,7 @@ slot_empty(Slot, Guid) ->
 
 
 get_item_guid_at_slot(Slot, Guid) ->
-	SlotGuids = char_data:get_slot_values(Guid),
-	Offset = 8 * Slot,
-	<<_:Offset/binary, SlotGuid?Q, _/binary>> = SlotGuids,
-	SlotGuid.
+	player_state:run_sync_function(Guid, get_item_guid, [Slot]).
 
 
 
@@ -356,15 +346,21 @@ get_item_guid_at_slot(Slot, Guid) ->
 
 
 % get just equipped item guids
-get_equipped_item_guids(Guid) ->
+get_equipped_item_guids(Guid) when is_number(Guid) ->
 	ItemGuids = get_item_guids(Guid),
+	{Guids, _} = lists:split(?equipment_slot_end, ItemGuids),
+	Guids;
+get_equipped_item_guids(SlotValues) when is_binary(SlotValues) ->
+	ItemGuids = get_item_guids(SlotValues),
 	{Guids, _} = lists:split(?equipment_slot_end, ItemGuids),
 	Guids.
 
 % returns guids for all items in inventory
 % this includes equipped and in bags
-get_item_guids(Guid) ->
-	SlotValues = char_data:get_slot_values(Guid),
+get_item_guids(Guid) when is_number(Guid) ->
+	SlotValues = player_state:run_sync_function(Guid, get_item_guids),
+	get_item_guids(SlotValues);
+get_item_guids(SlotValues) when is_binary(SlotValues) ->
 	Guids = extract_slot_values_guids(SlotValues),
 	lists:reverse(Guids).
 
@@ -377,44 +373,23 @@ extract_slot_values_guids(<<Guid?Q, Rest/binary>>, Acc) ->
 
 
 
-init_char_slot_values() ->
-	binary:copy(<<0?Q>>, ?player_slots_count).
-
-
-
-
-
-
-equip_item_at_slot(Slot, ItemGuid, OwnerGuid) ->
-	SlotValues = char_data:get_slot_values(OwnerGuid),
-	Offset = Slot * 8,
-	<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
-	NewCharSlotValues = <<Head/binary, ItemGuid?Q, Rest/binary>>,
-	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
-	visualize_item(OwnerGuid, ItemGuid, Slot).
-
-
-
-equip_new(ItemId, CharSlotValues, OwnerGuid) ->
+equip_new(ItemId, Values, OwnerGuid) ->
 	ItemGuid = world:get_guid(?highguid_item, 0),
 	ItemValues = item_values:create(ItemGuid, ItemId, OwnerGuid),
 	item_data:store_values(ItemValues),
-	equip_out_of_game(OwnerGuid, ItemId, CharSlotValues, ItemGuid, _Swap=false),
-	stats:update_all(OwnerGuid).
+	NewValues = equip_out_of_game(OwnerGuid, ItemId, Values, ItemGuid),
+	% TODO get this working for out of game stats update
+	%stats:update_all_out_of_game(OwnerGuid, NewValues).
+	NewValues.
 
 
 equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
-	SlotValues = char_data:get_slot_values(OwnerGuid),
-	Offset = DestSlot * 8,
-	<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
-	NewCharSlotValues = <<Head/binary, ItemGuid?Q, Rest/binary>>,
-	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
-
 	player_state:run_async_function(OwnerGuid, set_item, [{DestSlot, ItemGuid}]),
 
 	IsEquipSlot = is_equip_slot(DestSlot),
 	if IsEquipSlot ->
-			stats:update_all(OwnerGuid);
+			%stats:update_all(OwnerGuid),
+			ok;
 		true -> ok
 	end,
 
@@ -428,38 +403,32 @@ equip(ItemGuid, DestSlot, OwnerGuid) ->
 	update_data:build_create_update_packet_for_items([ItemGuid]).
 
 % need to do everything manually because this is done out of game when a char is created
-equip_out_of_game(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
+equip_out_of_game(OwnerGuid, ItemId, Values, NewItemGuid) ->
 	ItemProto = content:lookup_item(ItemId),
 	Class = ItemProto#item_proto.class,
 	if Class == ?item_class_weapon orelse Class == ?item_class_armor ->
-		InvType = ItemProto#item_proto.inventory_type,
-		Slot = get_slot(InvType),
-		if Slot >= 0 ->
-				% offset is in 64 bit chunks
-				Offset = Slot * 8,
-				<<_:Offset/binary, OldItemGuid?Q, _/binary>> = SlotValues,
-				if OldItemGuid == 0 orelse Swap ->
-						equip_item_at_slot(Slot, NewItemGuid, OwnerGuid),
-						ok;
-					true ->
-						ok
-				end;
-			true -> ok
-			end;
+			InvType = ItemProto#item_proto.inventory_type,
+			Slot = get_slot(InvType),
+
+			ItemValues = item_data:get_values(NewItemGuid),
+			NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
+			NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
+			item_data:store_values(NewItemValues),
+
+			ItemId = ItemProto#item_proto.id,
+			{NewValues, _} = player_state_functions:set_item(Values, {Slot, NewItemGuid}),
+			{OutValues, _} = player_state_functions:set_visible_item(NewValues, {Slot, ItemId}),
+			OutValues;
 		true ->
-				% put item in bag
-				Slot = get_first_empty_inv_slot(OwnerGuid),
-				Offset = Slot * 8,
-				<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
-				NewCharSlotValues = <<Head/binary, NewItemGuid?Q, Rest/binary>>,
-				char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
-				player_state:run_async_function(OwnerGuid, set_item, [{Slot, NewItemGuid}]),
+			% put item in bag
+			ItemValues = item_data:get_values(NewItemGuid),
+			NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
+			NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
+			item_data:store_values(NewItemValues),
 
-				ItemValues = item_data:get_values(NewItemGuid),
-				NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
-				NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
-				item_data:store_values(NewItemValues)
-
+			Slot = player_state_functions:get_first_empty_inv_slot(Values),
+			{NewValues, _} = player_state_functions:set_item(Values, {Slot, NewItemGuid}),
+			NewValues
 	end.
 
 get_first_empty_inv_slot(OwnerGuid) ->

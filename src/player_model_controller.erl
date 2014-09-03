@@ -112,8 +112,7 @@ logged_out({create, Data}, _From, State = #state{account_id=AccountId}) ->
 	{CharName, CharMisc, CharMv, Values, Spells, ActionButtons} = create_char_values(Data, Guid),
 	%io:format("storing char name: ~p under player name: ~p~n", [Name, PlayerName]),
 	char_data:create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionButtons),
-	% TODO uncomment this once all values are switched over
-	%char_data:equip_starting_items(Guid),
+	char_data:equip_starting_items(Guid),
 
 	Result = 16#2E, % success
 	{reply, Result, logged_out, State};
@@ -129,7 +128,9 @@ logged_out(enum, _From, State = #state{account_id=AccountId}) ->
 
 	{reply, Msg, logged_out, State};
 logged_out({delete, Guid}, _From, State = #state{}) ->
-	ItemGuids = item:get_item_guids(Guid),
+	Values = char_data:get_stored_values(Guid),
+	SlotValues = player_state_functions:get_item_guids(Values),
+	ItemGuids = item:get_item_guids(SlotValues),
 	item_data:delete_items(ItemGuids),
 	char_data:delete_char(Guid),
 	Result = 16#39,
@@ -413,7 +414,8 @@ mapCharGuids(Guid) ->
 	PetFamily = 0,
 
 	EmptySlot = <<0?L, 0?B>>,
-	ItemGuids = item:get_equipped_item_guids(Guid),
+	SlotValues = player_state_functions:get_item_guids(Values),
+	ItemGuids = item:get_equipped_item_guids(SlotValues),
 	ItemSlotData = lists:foldl(fun(ItemGuid, Acc) ->
 		SlotData = try item_data:get_values(ItemGuid) of
 			ItemValues ->

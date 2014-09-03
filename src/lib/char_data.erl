@@ -25,8 +25,8 @@
 -export([init/0, cleanup/0]).
 -export([enum_char_guids/1, delete_char/1, create_char/8]).
 -export([equip_starting_items/1]).
--export([get_stored_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1, get_slot_values/1]).
--export([update_char_misc/2, update_char_move/2, update_coords/6, add_spell/2, create_action_buttons/1, update_action_button/2, update_slot_values/2, update_char_values/2]).
+-export([get_stored_values/1, get_char_misc/1, get_char_name/1, get_char_move/1, get_account_id/1, get_char_spells/1, get_action_buttons/1]).
+-export([update_char_misc/2, update_char_move/2, update_coords/6, add_spell/2, create_action_buttons/1, update_action_button/2, update_char_values/2]).
 
 -include("include/binary.hrl").
 -include("include/database_records.hrl").
@@ -40,7 +40,6 @@
 -define(char_spells, characters_spells).
 -define(char_btns, characters_btns).
 -define(char_mv, characters_movement).
--define(char_items, characters_items).
 
 
 get_char_tabs() ->
@@ -51,7 +50,6 @@ get_char_tabs() ->
 		?char_acc,
 		?char_spells,
 		?char_btns,
-		?char_items,
 		?char_val
 	].
 
@@ -100,9 +98,6 @@ get_action_buttons(Guid) ->
 get_account_id(Guid) ->
 	get_char_data(Guid, ?char_acc).
 
-get_slot_values(Guid) ->
-	get_char_data(Guid, ?char_items).
-
 % should only be used when a character is not logged in
 % expensive call
 get_stored_values(Guid) ->
@@ -142,14 +137,7 @@ create_char(Guid, AccountId, CharName, CharMisc, CharMv, Values, Spells, ActionB
 		ok
 	end, DetsValues),
 
-	InitialCharSlotValues = item:init_char_slot_values(),
-	dets_store:store_new(?char_items, {Guid, InitialCharSlotValues}, true),
-
 	ok.
-
-
-update_slot_values(Guid, Values) when is_binary(Values) ->
-	dets_store:store(?char_items, {Guid, Values}, true).
 
 
 update_char_values(Guid, Values) when is_binary(Values) ->
@@ -176,10 +164,11 @@ equip_starting_items(Guid) ->
 	Gender = char_values:get_value({unit_field_bytes_0, 2}, Values),
 
 	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
-	lists:foreach(fun(ItemId) ->
-		SlotValues = get_slot_values(Guid),
-		ok = item:equip_new(ItemId, SlotValues, Guid)
-	end, StartingItemIds).
+	NewValues = lists:foldl(fun(ItemId, ValuesAcc) ->
+		item:equip_new(ItemId, ValuesAcc, Guid)
+	end, Values, StartingItemIds),
+	update_char_values(Guid, NewValues),
+	ok.
 
 
 create_action_buttons(ActionButtonData) ->

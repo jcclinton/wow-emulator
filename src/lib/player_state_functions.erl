@@ -26,10 +26,14 @@
 -export([take_damage/2]).
 -export([apply_aura/4]).
 -export([set_item/2, set_visible_item/2]).
+-export([get_item_guid/2, get_item_guids/1]).
 
 -include("include/character.hrl").
 -include("include/items.hrl").
+-include("include/binary.hrl").
 
+
+% gets
 
 get_first_empty_inv_slot(Values) ->
 	FirstSlot = ?inventory_slot_item_start,
@@ -46,6 +50,23 @@ get_first_empty_inv_slot(Values, Slot) ->
 	end.
 
 
+get_item_guid(Values, Slot) ->
+	SlotGuids = get_item_guids(Values),
+	Offset = 8 * Slot,
+	<<_:Offset/binary, SlotGuid?Q, _/binary>> = SlotGuids,
+	SlotGuid.
+
+get_item_guids(Values) ->
+	Index = object_fields:fields(player_field_inv_slot_head) * 4,
+	% inventory_slot_item_end starts at 0
+	Len = (?inventory_slot_item_end + 1) * 8,
+	binary:part(Values, Index, Len).
+
+
+
+
+
+% sets
 
 
 take_damage(Values, Damage) ->
@@ -71,7 +92,7 @@ apply_aura(Values, Slot, SpellId, Level) ->
 	end, {Values, []}, Funs).
 
 
-set_item({Slot, ItemGuid}, Values) ->
+set_item(Values, {Slot, ItemGuid}) ->
 	Field = player_field_inv_slot_head,
 	Offset = 2 * Slot,
 	Index = object_fields:fields(Field) + Offset,
@@ -83,7 +104,7 @@ set_item({Slot, ItemGuid}, Values) ->
 	char_values:set_value({Field, Offset}, ItemGuid, Values).
 
 
-set_visible_item({Slot, ItemId}, Values) ->
+set_visible_item(Values, {Slot, ItemId}) ->
 	Field = player_visible_item_1_0,
 	Offset = Slot * ?max_visible_item_offset,
 	Index = object_fields:fields(Field) + Offset,
@@ -92,4 +113,5 @@ set_visible_item({Slot, ItemId}, Values) ->
 	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
 		true -> ok
 	end,
+	%io:format("tryin gto set VISUAL ~p to ~p with offset ~p~n", [ItemId, Field, Offset]),
 	char_values:set_value({Field, Offset}, ItemId, Values).
