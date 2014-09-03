@@ -170,9 +170,11 @@ update_coords(Guid, X, Y, Z, O, MovementInfo) ->
 
 equip_starting_items(Guid) ->
 	Values = get_stored_values(Guid),
-	Race = char_values:get(race, Values),
-	Class = char_values:get(class, Values),
-	Gender = char_values:get(gender, Values),
+
+	Race = char_values:get_value({unit_field_bytes_0, 0}, Values),
+	Class = char_values:get_value({unit_field_bytes_0, 1}, Values),
+	Gender = char_values:get_value({unit_field_bytes_0, 2}, Values),
+
 	StartingItemIds = static_store:lookup_start_outfit(Race, Class, Gender, true),
 	lists:foreach(fun(ItemId) ->
 		SlotValues = get_slot_values(Guid),

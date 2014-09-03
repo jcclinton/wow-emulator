@@ -77,7 +77,7 @@ get_value({FieldData, Type}, Values) ->
 			get_float_value(Index, Values);
 		uint16 ->
 			get_uint16_value(Field, Values, Offset);
-		byte ->
+		uint8 ->
 			get_byte_value(Field, Values, Offset);
 		int32 ->
 			get_int32_value(Index, Values)

@@ -33,7 +33,7 @@
 
 
 swing(Guid, Seed) ->
-	TargetGuid = player_state:get_value(Guid, target),
+	TargetGuid = player_state:get_value(Guid, unit_field_target),
 
 	TargetCharMove = char_data:get_char_move(TargetGuid),
 	Tx = TargetCharMove#char_move.x,

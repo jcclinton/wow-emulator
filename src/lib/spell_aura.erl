@@ -23,7 +23,8 @@
 -module(spell_aura).
 
 -export([add/2]).
--compile([export_all]).
+-export([set_aura_duration/2]).
+-export([add_aura/2, add_aura_flag/2, add_aura_level/2, add_aura_application/2]).
 
 -include("include/binary.hrl").
 -include("include/spell.hrl").
@@ -35,13 +36,7 @@ add(Guid, Spell) ->
 	Slot = 12,
 	Level = 1,
 
-	PropList = [
-		{aura, {Slot, SpellId}},
-		{aura_flag, Slot},
-		{aura_level, {Slot, Level}},
-		{aura_application, Slot}
-	],
-	player_state:set_multiple_values(Guid, PropList),
+	player_state:run_async_function(Guid, apply_aura, [Slot, SpellId, Level]),
 
 
 	timer:apply_after(100, spell_aura, set_aura_duration, [Guid, Slot]).
@@ -54,3 +49,48 @@ set_aura_duration(Guid, Slot) ->
 	AccountId = char_data:get_account_id(Guid),
 	player_controller:send(AccountId, OpAtom, Payload),
 	ok.
+
+
+
+
+add_aura({Slot, SpellId}, Values) ->
+	Field = unit_field_aura,
+	Index = object_fields:fields(Field) + Slot,
+	NextIndex = object_fields:fields(unit_field_aura_last),
+	if Index >= NextIndex orelse Slot < 0 -> throw(badarg);
+		true -> ok
+	end,
+	char_values:set_value({Field, Slot}, SpellId, Values).
+
+add_aura_flag(Slot, Values) ->
+	SlotIndex = Slot bsr 3,
+	Field = unit_field_auraflags,
+	Index = object_fields:fields(Field) + SlotIndex,
+	Flags = object_values:get_uint32_value(Index, Values),
+	Byte = (Slot band 7) bsl 2,
+	FlagMask = 9,
+	NewFlags = Flags bor (FlagMask bsl Byte),
+	char_values:set_value({Field, SlotIndex}, NewFlags, Values).
+
+add_aura_level({Slot, Level}, Values) ->
+	SlotIndex = Slot div 4,
+	Byte = (Slot rem 4) * 8,
+	Field = unit_field_auralevels,
+	Index = object_fields:fields(Field) + SlotIndex,
+	OldLevels = object_values:get_uint32_value(Index, Values),
+
+	Tmp = OldLevels band (bnot (16#FF bsl Byte)),
+	NewLevels = Tmp bor (Level bsl Byte),
+
+	char_values:set_value({Field, SlotIndex}, NewLevels, Values).
+
+add_aura_application(Slot, Values) ->
+	SlotIndex = Slot div 4,
+	Byte = (Slot rem 4) * 8,
+	Field = unit_field_auraapplications,
+	Index = object_fields:fields(Field) + SlotIndex,
+	OldApp = object_values:get_uint32_value(Index, Values),
+
+	NewApp = OldApp bor (0 bsl Byte),
+
+	char_values:set_value({Field, SlotIndex}, NewApp, Values).

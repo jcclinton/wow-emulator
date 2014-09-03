@@ -90,7 +90,7 @@ build_packet(Blocks, BlockCount) ->
 
 
 update_block(Mask, Values) ->
-	Guid = char_values:get(guid, Values),
+	Guid = char_values:get_value(object_field_guid, Values),
 	UpdateType = ?updatetype_values,
 	PackedGuid = guid:pack(Guid),
 	ValuesCount = (byte_size(Values) div 4) - 1,
