@@ -100,7 +100,7 @@ handle_cast({packet_rcvd, Opcode, Payload}, State = #state{account_id=AccountId,
 			if Callback#callback.type /= character orelse Guid > 0 ->
 					player_workers_sup:start_worker({Callback, Args}, AccountId);
 				true ->
-					io:format("character callback type with guid = 0 called~n"),
+					io:format("character callback type with guid = 0 and opatom: ~p called~n", [OpAtom]),
 					ok
 			end
 	end,

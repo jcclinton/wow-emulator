@@ -54,7 +54,7 @@ create(AccountId, Data) ->
 
 enum(AccountId) ->
 	Pid = util:get_pid(?MODULE, AccountId),
-	gen_fsm:sync_send_event(Pid, enum).
+	gen_fsm:sync_send_all_state_event(Pid, enum).
 
 delete(AccountId, Guid) ->
 	Pid = util:get_pid(?MODULE, AccountId),
@@ -116,17 +116,6 @@ logged_out({create, Data}, _From, State = #state{account_id=AccountId}) ->
 
 	Result = 16#2E, % success
 	{reply, Result, logged_out, State};
-logged_out(enum, _From, State = #state{account_id=AccountId}) ->
-	CharGuids = char_data:enum_char_guids(AccountId),
-	Num = length(CharGuids),
-	CharDataOut = if Num > 0 ->
-								CharList = lists:map(fun mapCharGuids/1, CharGuids),
-								iolist_to_binary(CharList);
-							Num == 0 -> <<>>
-						end,
-	Msg = {Num, CharDataOut},
-
-	{reply, Msg, logged_out, State};
 logged_out({delete, Guid}, _From, State = #state{}) ->
 	Values = char_data:get_stored_values(Guid),
 	SlotValues = player_state_functions:get_item_guids(Values),
@@ -172,6 +161,19 @@ handle_info(_Info, State, Data) ->
 handle_event(_Event, State, Data) ->
 	{next_state, State, Data}.
 
+% enum can get into a race condition with logout
+% but it is safe to run from any state, so it is a global event
+handle_sync_event(enum, _From, State, Data = #state{account_id=AccountId}) ->
+	CharGuids = char_data:enum_char_guids(AccountId),
+	Num = length(CharGuids),
+	CharDataOut = if Num > 0 ->
+								CharList = lists:map(fun mapCharGuids/1, CharGuids),
+								iolist_to_binary(CharList);
+							Num == 0 -> <<>>
+						end,
+	Msg = {Num, CharDataOut},
+
+	{reply, Msg, State, Data};
 handle_sync_event(_Event, _From, State, Data) ->
 	{next_state, State, Data}.
 
