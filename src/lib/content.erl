@@ -29,7 +29,7 @@
 %% @type race() = human | orc | dwarf | night_elf |
 %%                undead | tauren | gnome | troll.
 %% @type class() = warrior | paladin | hunter | rogue |
-%%                 priest | death_knight | shaman |
+%%                 priest | shaman |
 %%                 mage | warlock | druid.
 
 %% @spec char_create_info(race(), class()) -> tuple().
@@ -74,16 +74,6 @@ race_class_create_info(dwarf,     priest, Rec) -> Rec#char_create_info{health = 
 race_class_create_info(night_elf, priest, Rec) -> Rec#char_create_info{health = 51, power = 160};
 race_class_create_info(undead,    priest, Rec) -> Rec#char_create_info{health = 62, power = 130};
 race_class_create_info(troll,     priest, Rec) -> Rec#char_create_info{health = 62, power = 128};
-
-% TODO: find death knight start values
-race_class_create_info(human,     death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(orc,       death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(dwarf,     death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(night_elf, death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(undead,    death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(tauren,    death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(gnome,     death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
-race_class_create_info(troll,     death_knight, Rec) -> Rec#char_create_info{health = 60, power = 1000};
 
 race_class_create_info(orc,       shaman, Rec) -> Rec#char_create_info{health = 77, power = 73};
 race_class_create_info(tauren,    shaman, Rec) -> Rec#char_create_info{health = 77, power = 71};

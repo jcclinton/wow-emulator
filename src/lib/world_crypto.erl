@@ -24,7 +24,7 @@
 
 -export([encrypt/2, decrypt/2, encryption_key/1]).
 
--include("binary.hrl").
+-include("include/binary.hrl").
 
 -define(K_SIZE, 40).
 

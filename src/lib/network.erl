@@ -25,7 +25,7 @@
 -export([send_packet/6, send_queue/5]).
 -export([receive_packet/4]).
 
--include("binary.hrl").
+-include("include/binary.hrl").
 -include("include/network_defines.hrl").
 
 
@@ -102,5 +102,5 @@ send_packet(Opcode, Payload, HdrLen, KeyState, Socket, ShouldEncrypt) ->
 	Packet = <<HeaderOut/binary, Payload/binary>>,
 	case gen_tcp:send(Socket, Packet) of
 		ok -> NewKeyState;
-		{eror, Error} -> throw(Error)
+		{error, Error} -> throw(Error)
 	end.

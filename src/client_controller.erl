@@ -180,26 +180,26 @@ handle_response(Opcode, Payload) ->
 	OpAtom = opcodes:get_atom_by_num(Opcode),
 	%io:format("client looking up opcode: ~p~n", [OpAtom]),
 	Fun = lookup_opcode(OpAtom),
-	if Fun /= false ->
+	if Fun /= none ->
 			case Fun(Payload) of
-				false -> ok;
+				ok -> ok;
 				Msg ->
 					gen_server:cast(self(), {send_to_server, Msg}),
 					ok
 			end;
-		true ->
+		Fun == none ->
 			ok
 	end.
 
 lookup_opcode(smsg_char_enum) -> fun player_login/1;
 lookup_opcode(smsg_auth_response) -> fun send_char_enum/1;
 lookup_opcode(smsg_logout_complete) -> fun player_logout/1;
-lookup_opcode(_) -> false.
+lookup_opcode(_) -> none.
 
 
 player_logout(_) ->
 	gen_server:cast(self(), stop),
-ok.
+	ok.
 
 
 player_login(Payload) ->
