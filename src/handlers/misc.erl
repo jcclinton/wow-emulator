@@ -51,7 +51,7 @@ set_selection(Data) ->
 	% TargetGuid is 0 when a target is deselected
 	<<TargetGuid?Q>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
-	player_state:set_value(Guid, TargetGuid, target),
+	player_state:set_value(Guid, TargetGuid, unit_field_target),
 	ok.
 
 tutorial_flag(_Data) ->
@@ -104,12 +104,17 @@ name_query(Data) ->
 	<<Guid?Q>> = recv_data:get(payload, Data),
 	Name = char_data:get_char_name(Guid),
 
-	Fields = [race, gender, class],
+	% race, class, gender
+	RaceKey = {unit_field_bytes_0, 0},
+	GenderKey = {unit_field_bytes_0, 1},
+	ClassKey = {unit_field_bytes_0, 2},
+
+	Fields = [RaceKey, GenderKey, ClassKey],
 	ValuesData = player_state:get_values(Guid, Fields),
 
-	Race = proplists:get_value(race, ValuesData),
-	Gender = proplists:get_value(gender, ValuesData),
-	Class = proplists:get_value(class, ValuesData),
+	Race = proplists:get_value(RaceKey, ValuesData),
+	Gender = proplists:get_value(GenderKey, ValuesData),
+	Class = proplists:get_value(ClassKey, ValuesData),
 
 	Payload = <<Guid?Q, Name/binary, 0?B, Race?L, Gender?L, Class?L>>,
 	{smsg_name_query_response, Payload}.
@@ -119,6 +124,6 @@ set_sheathed(Data) ->
 	<<Sheathed?L>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
 
-	player_state:set_value(Guid, Sheathed, sheathed),
+	player_state:set_value(Guid, Sheathed, {unit_field_bytes_2, 0}),
 
 	ok.

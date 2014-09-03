@@ -36,33 +36,51 @@
 				set_uint64_value/3,
 				set_float_value/3
 ]).
--export([set_value/2]).
+-export([set_value/2, get_value/2]).
 
 -include("include/binary.hrl").
 
 
-% used when initializing char values
 set_value({FieldData, Value, Type}, Values) ->
-	%io:format("indexname: ~p~nvalue: ~p~n", [Field, Value]),
 	{Field, Offset} = if is_tuple(FieldData) -> FieldData;
-		is_atom(FieldData) -> {FieldData, none}
+		is_atom(FieldData) -> {FieldData, 0}
 	end,
+	% for 32 bit words, offset is the word offset
+	% for 8 and 16 bit words, offset is the byte offset
+	Index = object_fields:fields(Field) + Offset,
 	case Type of
-		int32 ->
-			set_int32_value(Field, Value, Values);
 		uint32 ->
-			set_uint32_value(Field, Value, Values);
+			set_uint32_value(Index, Value, Values);
 		uint64 ->
-			set_uint64_value(Field, Value, Values);
+			set_uint64_value(Index, Value, Values);
+		float ->
+			set_float_value(Index, Value, Values);
 		uint16 ->
 			set_uint16_value(Field, Value, Values, Offset);
-		byte ->
+		uint8 ->
 			set_byte_value(Field, Value, Values, Offset);
+		int32 ->
+			set_int32_value(Index, Value, Values)
+	end.
+
+get_value({FieldData, Type}, Values) ->
+	{Field, Offset} = if is_tuple(FieldData) -> FieldData;
+		is_atom(FieldData) -> {FieldData, 0}
+	end,
+	Index = object_fields:fields(Field) + Offset,
+	case Type of
+		uint32 ->
+			get_uint32_value(Index, Values);
+		uint64 ->
+			get_uint64_value(Index, Values);
 		float ->
-			set_float_value(Field, Value, Values);
-		float_offset ->
-			Index = object_fields:fields(Field) + Offset,
-			set_float_value(Index, Value, Values)
+			get_float_value(Index, Values);
+		uint16 ->
+			get_uint16_value(Field, Values, Offset);
+		uint8 ->
+			get_byte_value(Field, Values, Offset);
+		int32 ->
+			get_int32_value(Index, Values)
 	end.
 
 

@@ -142,7 +142,8 @@ logged_out(_, _From, State) ->
 % async
 logged_in({login_complete, Guid}, State = #state{account_id=AccountId}) ->
 	% TODO find a better place to put this, it cant get called until values have been loaded though
-	player_state:set_value(Guid, ?standing, anim_state),
+	% set player to standing on login
+	player_state:set_value(Guid, ?standing, {unit_field_bytes_1, 0}),
 
 	ok = world:add_to_map({AccountId, Guid}),
 	{next_state, logged_in, State};
@@ -237,11 +238,11 @@ create_char_values(Payload, Guid) ->
 		{object_field_guid, Guid, uint64},
 		{object_field_type, ObjectType, uint32},
     {object_field_scale_x, Scale, float},
-		{{unit_field_bytes_0, 0}, Race, byte},
-		{{unit_field_bytes_0, 1}, Class, byte},
-		{{unit_field_bytes_0, 2}, Gender, byte},
-		{{unit_field_bytes_0, 3}, PowerType, byte},
-    {{unit_field_bytes_2, 1}, Unk3 bor Unk5, byte},
+		{{unit_field_bytes_0, 0}, Race, uint8},
+		{{unit_field_bytes_0, 1}, Class, uint8},
+		{{unit_field_bytes_0, 2}, Gender, uint8},
+		{{unit_field_bytes_0, 3}, PowerType, uint8},
+    {{unit_field_bytes_2, 1}, Unk3 bor Unk5, uint8},
     {unit_field_level, 1, uint32}, % level
     {unit_field_displayid, ModelId, uint32},
     {unit_field_nativedisplayid, NativeModelId, uint32},
@@ -289,20 +290,20 @@ create_char_values(Payload, Guid) ->
     {unit_field_maxhealth, Health, uint32},
     {unit_field_flags, 16#0008, uint32}, % flags like non-selectable, non-movable, taxi-flight, silecenced, non-attackable, many more
     {unit_field_health, Health, uint32},
-    {{unit_field_bytes_1, 1}, 16#EE, byte},
+    {{unit_field_bytes_1, 1}, 16#EE, uint8},
     {player_explored_zones_1, 0, uint64},
     {player_field_coinage, 0, uint32},
-    {{player_bytes, 0}, Skin, byte},
-    {{player_bytes, 1}, Face, byte},
-    {{player_bytes, 2}, HairStyle, byte},
-    {{player_bytes, 3}, HairColor, byte},
-    {{player_bytes_2, 0}, FacialHair, byte},
-    {{player_bytes_2, 3}, 2, byte}, %rest state
+    {{player_bytes, 0}, Skin, uint8},
+    {{player_bytes, 1}, Face, uint8},
+    {{player_bytes, 2}, HairStyle, uint8},
+    {{player_bytes, 3}, HairColor, uint8},
+    {{player_bytes_2, 0}, FacialHair, uint8},
+    {{player_bytes_2, 3}, 2, uint8}, %rest state
     {{player_bytes_3, 0}, Gender, uint16}, % (drunk band 16#FFFE) bor Gender
-    {{player_bytes_3, 3}, 0, byte}, % battlefield arena faction
+    {{player_bytes_3, 3}, 0, uint8}, % battlefield arena faction
     {player_flags, PlayerFlags, uint32},
     {player_field_watched_faction_index, -1, int32},
-    {{player_field_bytes, 2}, 0, byte},
+    {{player_field_bytes, 2}, 0, uint8},
     {player_character_points2, 2, uint32}, %num primary trade professions
     {player_farsight, 0, uint64},
     {player_track_creatures, 0, uint32},
@@ -310,13 +311,13 @@ create_char_values(Payload, Guid) ->
     {player_duel_arbiter, 0, uint64},
     {player_duel_team, 0, uint32},
     {player_next_level_xp, 10, uint32}, % xp to next level
-    {{player_field_mod_damage_done_pct, 0}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 1}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 2}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 3}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 4}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 5}, 1.0, float_offset},
-    {{player_field_mod_damage_done_pct, 6}, 1.0, float_offset},
+    {{player_field_mod_damage_done_pct, 0}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 1}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 2}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 3}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 4}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 5}, 1.0, float},
+    {{player_field_mod_damage_done_pct, 6}, 1.0, float},
 
     {player_field_posstat0, 0.0, float}, % stat buff mods for strength
     {player_field_posstat1, 0.0, float}, % stat buff mods for agi
@@ -329,21 +330,21 @@ create_char_values(Payload, Guid) ->
     {player_field_negstat3, 0.0, float}, % stat buff mods
     {player_field_negstat4, 0.0, float}, % stat buff mods
 
-    {{player_field_resistancebuffmodspositive, 0}, 0.0, float_offset}, % armor mod
-    {{player_field_resistancebuffmodspositive, 1}, 0.0, float_offset}, % not sure
-    {{player_field_resistancebuffmodspositive, 2}, 0.0, float_offset}, % fire mod
-    {{player_field_resistancebuffmodspositive, 3}, 0.0, float_offset}, % nature mod
-    {{player_field_resistancebuffmodspositive, 4}, 0.0, float_offset}, % frost mod
-    {{player_field_resistancebuffmodspositive, 5}, 0.0, float_offset}, % shadow mod
-    {{player_field_resistancebuffmodspositive, 6}, 0.0, float_offset}, % arcane mod
+    {{player_field_resistancebuffmodspositive, 0}, 0.0, float}, % armor mod
+    {{player_field_resistancebuffmodspositive, 1}, 0.0, float}, % not sure
+    {{player_field_resistancebuffmodspositive, 2}, 0.0, float}, % fire mod
+    {{player_field_resistancebuffmodspositive, 3}, 0.0, float}, % nature mod
+    {{player_field_resistancebuffmodspositive, 4}, 0.0, float}, % frost mod
+    {{player_field_resistancebuffmodspositive, 5}, 0.0, float}, % shadow mod
+    {{player_field_resistancebuffmodspositive, 6}, 0.0, float}, % arcane mod
 
-    {{player_field_resistancebuffmodsnegative, 0}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 1}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 2}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 3}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 4}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 5}, 0.0, float_offset},
-    {{player_field_resistancebuffmodsnegative, 6}, 0.0, float_offset}
+    {{player_field_resistancebuffmodsnegative, 0}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 1}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 2}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 3}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 4}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 5}, 0.0, float},
+    {{player_field_resistancebuffmodsnegative, 6}, 0.0, float}
 
 	],
 
@@ -383,19 +384,19 @@ mapCharGuids(Guid) ->
 	Values = char_data:get_stored_values(Guid),
 	Name = char_data:get_char_name(Guid),
 
-	Guid = char_values:get(guid, Values),
-	Race = char_values:get(race, Values),
-	Class = char_values:get(class, Values),
-	Gender = char_values:get(gender, Values),
+	Guid = char_values:get_value(object_field_guid, Values),
+	Race = char_values:get_value({unit_field_bytes_0, 0}, Values),
+	Class = char_values:get_value({unit_field_bytes_0, 1}, Values),
+	Gender = char_values:get_value({unit_field_bytes_0, 2}, Values),
 
-	Skin = char_values:get(skin, Values),
-	Face = char_values:get(face, Values),
-	HairStyle = char_values:get(hair_style, Values),
-	HairColor = char_values:get(hair_color, Values),
-	FacialHair = char_values:get(facial_hair, Values),
-	Level = char_values:get(level, Values),
+	Skin = char_values:get_value({player_bytes, 0}, Values),
+	Face = char_values:get_value({player_bytes, 1}, Values),
+	HairStyle = char_values:get_value({player_bytes, 2}, Values),
+	HairColor = char_values:get_value({player_bytes, 3}, Values),
+	FacialHair = char_values:get_value({player_bytes_2, 0}, Values),
+	Level = char_values:get_value(unit_field_level, Values),
 
-	GuildId = char_values:get(guild_id, Values),
+	GuildId = char_values:get_value(player_guildid, Values),
 
 	Zone = CharMove#char_move.zone,
 	Map = CharMove#char_move.map,

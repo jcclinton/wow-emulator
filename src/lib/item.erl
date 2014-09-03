@@ -314,7 +314,7 @@ can_equip(ItemGuid, Slot) ->
 remove(Slot, OwnerGuid) ->
 	%ItemGuid = get_item_guid_at_slot(Slot, OwnerGuid),
 
-	player_state:set_value(OwnerGuid, {Slot, 0}, item),
+	player_state:run_async_function(OwnerGuid, set_item, [{Slot, 0}]),
 
 	SlotValues = char_data:get_slot_values(OwnerGuid),
 	Offset = 8 * Slot,
@@ -410,7 +410,7 @@ equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 	NewCharSlotValues = <<Head/binary, ItemGuid?Q, Rest/binary>>,
 	char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
 
-	player_state:set_value(OwnerGuid, {DestSlot, ItemGuid}, item),
+	player_state:run_async_function(OwnerGuid, set_item, [{DestSlot, ItemGuid}]),
 
 	IsEquipSlot = is_equip_slot(DestSlot),
 	if IsEquipSlot ->
@@ -453,7 +453,7 @@ equip_out_of_game(OwnerGuid, ItemId, SlotValues, NewItemGuid, Swap) ->
 				<<Head:Offset/binary, _OldItemGuid?Q, Rest/binary>> = SlotValues,
 				NewCharSlotValues = <<Head/binary, NewItemGuid?Q, Rest/binary>>,
 				char_data:update_slot_values(OwnerGuid, NewCharSlotValues),
-				player_state:set_value(OwnerGuid, {Slot, NewItemGuid}, item),
+				player_state:run_async_function(OwnerGuid, set_item, [{Slot, NewItemGuid}]),
 
 				ItemValues = item_data:get_values(NewItemGuid),
 				NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
@@ -467,7 +467,7 @@ get_first_empty_inv_slot(OwnerGuid) ->
 
 
 visualize_item(OwnerGuid, ItemGuid, Slot) ->
-	player_state:set_value(OwnerGuid, {Slot, ItemGuid}, item),
+	player_state:run_async_function(OwnerGuid, set_item, [{Slot, ItemGuid}]),
 
 	ItemValues = item_data:get_values(ItemGuid),
 	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
@@ -485,7 +485,7 @@ set_visual_item_slot(OwnerGuid, ItemGuid, Slot) ->
 					item_values:get_item_id(ItemValues);
 				true -> 0
 			end,
-			player_state:set_value(OwnerGuid, {Slot, ItemId}, visible_item);
+			player_state:run_async_function(OwnerGuid, set_visible_item, [{Slot, ItemId}]);
 		not IsEquipSlot -> ok
 	end.
 

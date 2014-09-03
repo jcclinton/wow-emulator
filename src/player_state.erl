@@ -53,14 +53,14 @@ get_values(Guid, Fields) ->
 	gen_server:call(Pid, {get_multiple, Fields}).
 
 % get single value
-get_value(Guid, Field) ->
+get_value(Guid, FieldData) ->
 	Pid = util:get_pid(?MODULE, Guid),
-	gen_server:call(Pid, {get, Field}).
+	gen_server:call(Pid, {get, FieldData}).
 
 % set single value
-set_value(Guid, Value, Field) ->
+set_value(Guid, Value, FieldData) ->
 	Pid = util:get_pid(?MODULE, Guid),
-	gen_server:cast(Pid, {set, Value, Field}).
+	gen_server:cast(Pid, {set, Value, FieldData}).
 
 % set multiple values
 set_multiple_values(Guid, PropList) ->
@@ -105,15 +105,15 @@ init(Guid) ->
 
 
 handle_call({get_multiple, Fields}, _From, State = #state{values=Values}) ->
-	ValueList = lists:foldl(fun(Field, Acc) ->
-		Value = char_values:get(Field, Values),
-		[{Field, Value}|Acc]
+	ValueList = lists:foldl(fun(FieldData, Acc) ->
+		Value = char_values:get_value(FieldData, Values),
+		[{FieldData, Value}|Acc]
 	end, [], Fields),
 	{reply, ValueList, State};
 handle_call(get_all, _From, State = #state{values=Values}) ->
 	{reply, Values, State};
-handle_call({get, Field}, _From, State = #state{values=Values}) ->
-	Value = char_values:get(Field, Values),
+handle_call({get, FieldData}, _From, State = #state{values=Values}) ->
+	Value = char_values:get_value(FieldData, Values),
 	{reply, Value, State};
 handle_call({run_func, FuncName, Args}, _From, State = #state{values=Values}) ->
 	% this will run custom functions within the player_state process
@@ -128,14 +128,14 @@ handle_call(_E, _From, State) ->
 
 handle_cast({set_multiple, PropList}, State = #state{values=Values, guid=Guid}) ->
 	{NewValues, Indices} = lists:foldl(fun({FieldName, Value}, {AccValues, AccIndices}) ->
-		{OutValues, OutIndices} = char_values:set(FieldName, Value, AccValues),
+		{OutValues, OutIndices} = char_values:set_value(FieldName, Value, AccValues),
 		{OutValues, OutIndices ++ AccIndices}
 	end, {Values, []}, PropList),
 	unit_updater:mark_update(Guid, Indices),
 	char_data:update_char_values(Guid, NewValues),
 	{noreply, State#state{values=NewValues}};
-handle_cast({set, Value, Field}, State = #state{values=Values, guid=Guid}) ->
-	{NewValues, Indices} = char_values:set(Field, Value, Values),
+handle_cast({set, Value, FieldData}, State = #state{values=Values, guid=Guid}) ->
+	{NewValues, Indices} = char_values:set_value(FieldData, Value, Values),
 	unit_updater:mark_update(Guid, Indices),
 	char_data:update_char_values(Guid, NewValues),
 	{noreply, State#state{values=NewValues}};

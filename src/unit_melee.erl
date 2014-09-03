@@ -114,7 +114,7 @@ code_change(_OldVsn, State, Data, _Extra) ->
 %% private
 
 schedule_swing(Guid) ->
-	TimerSwing = player_state:get_value(Guid, base_attack_time),
+	TimerSwing = player_state:get_value(Guid, unit_field_baseattacktime),
 	TimerSwingInt = round(TimerSwing),
 	{ok, Timer} = timer:apply_after(TimerSwingInt, gen_fsm, send_event, [self(), swing]),
 	Timer.
