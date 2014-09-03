@@ -60,7 +60,7 @@ to_race(7)  -> gnome;
 to_race(8)  -> troll.
 
 %% @type class() = warrior | paladin | hunter | rogue |
-%%                 priest | death_knight | shaman |
+%%                 priest | shaman |
 %%                 mage | warlock | druid.
 %% @spec class(class()) -> int().
 class(warrior)      -> 1;
