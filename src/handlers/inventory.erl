@@ -88,7 +88,7 @@ use_item(Data) ->
 % return full item prototype for an unknown item
 item_query_single(Data) ->
 	<<ItemId?L, ItemGuid?Q>> = recv_data:get(payload, Data),
-	io:format("query item: ~p~nitem guid: ~p~n", [ItemId, ItemGuid]),
+	io:format("unknown item: ~p with item guid: ~p~n", [ItemId, ItemGuid]),
 	ok.
 
 % swap an item from one slot to another
