@@ -25,15 +25,10 @@
 -export([lookup_item/1]).
 
 -include("include/database_records.hrl").
+-include("include/data_types.hrl").
 
-%% @type race() = human | orc | dwarf | night_elf |
-%%                undead | tauren | gnome | troll.
-%% @type class() = warrior | paladin | hunter | rogue |
-%%                 priest | shaman |
-%%                 mage | warlock | druid.
-
-%% @spec char_create_info(race(), class()) -> tuple().
-char_create_info(Race, Class) -> 
+-spec char_create_info(race(), class()) -> tuple().
+char_create_info(Race, Class) ->
     CI1 = race_create_info(Race, #char_create_info{}),
     CI2 = class_create_info(Class, CI1),
     CI3 = race_class_create_info(Race, Class, CI2),
@@ -42,7 +37,7 @@ char_create_info(Race, Class) ->
 		CI3#char_create_info{initial_spells=Spells, initial_action_bars=ActionBars}.
 
 
-%% @spec race_class_create_info(race(), class(), tuple()) -> tuple().
+-spec race_class_create_info(race(), class(), tuple()) -> tuple().
 race_class_create_info(human,     warrior, Rec) -> Rec#char_create_info{health = 60, power = 1000};
 race_class_create_info(orc,       warrior, Rec) -> Rec#char_create_info{health = 80, power = 1000};
 race_class_create_info(dwarf,     warrior, Rec) -> Rec#char_create_info{health = 90, power = 1000};
@@ -94,7 +89,7 @@ race_class_create_info(tauren,    druid, Rec) -> Rec#char_create_info{health = 7
 race_class_create_info(_, _, _) ->
     wrong_race_class.
 
-%% @spec race_create_info(race(), tuple()) -> tuple().
+-spec race_create_info(race(), tuple()) -> tuple().
 race_create_info(human, Rec) ->
     Rec#char_create_info{faction_template = 1, 
                          display_id       = 49, 
@@ -226,7 +221,7 @@ race_create_info(troll, Rec) ->
                          stamina          = 21, 
                          strength         = 21}.
 
-%% @spec class_create_info(class(), tuple()) -> tuple().
+-spec class_create_info(class(), tuple()) -> tuple().
 class_create_info(warrior, Rec) ->
     Rec#char_create_info{agility    = 0.81 * Rec#char_create_info.agility, 
                          intellect  = 0.2  * Rec#char_create_info.intellect,
@@ -310,6 +305,7 @@ class_create_info(druid, Rec) ->
                          power_type = mana}.
 
 
+-spec initial_spells(race(), class()) -> [non_neg_integer()].
 initial_spells(human, warrior) ->
 	[78,81,107,196,198,201,203,204,522,668,2382,2457,2479,3050,3365,5301,6233,6246,6247,6477,6478,6603,7266,7267,7355,8386,8737,9077,9078,9116,9125,20597,20598,20599,20600,20864,21651,21652,22027,22810];
 initial_spells(human, paladin) ->
@@ -400,6 +396,7 @@ initial_spells(troll, mage) ->
 
 
 
+-spec initial_action_bars(race(), class()) -> [{integer(), integer(), integer()}].
 initial_action_bars(human, warrior) ->
 	[{0,6603,0}, {1,78,0}, {11,117,128}];
 initial_action_bars(human, paladin) ->
