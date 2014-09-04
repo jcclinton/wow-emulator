@@ -22,35 +22,43 @@
 
 -module(world_crypto).
 
--export([encrypt/2, decrypt/2, encryption_key/1]).
+-export([encrypt/2, decrypt/2]).
+-export([encryption_key/1]).
+-export([create_key_state/1]).
 
 -include("include/binary.hrl").
+-include("include/data_types.hrl").
 
 -define(K_SIZE, 40).
 
-%% @spec encrypt(binary(), binary()) -> binary().
+-spec encrypt(binary(), key_state()) -> {binary(), key_state()}.
 encrypt(Header, Key) ->
     encrypt(Header, Key, <<>>).
 
-%% @spec encrypt(binary(), binary(), binary()) -> binary().
+-spec encrypt(binary(), key_state(), binary()) -> {binary(), key_state()}.
 encrypt(<<>>, Key, Result) -> {Result, Key};
 encrypt(<<OldByte?B, Header/binary>>, {SI, SJ, K}, Result) ->
     NewByte = ((lists:nth(SI+1, K) bxor OldByte) + SJ) band 255,
     NewSI   = (SI+1) rem ?K_SIZE,
     encrypt(Header, {NewSI, NewByte, K}, <<Result/binary, NewByte:8>>).
 
-%% @spec decrypt(binary(), binary()) -> binary().
+-spec decrypt(binary(), key_state()) -> {binary(), key_state()}.
 decrypt(Header, Key) ->
     decrypt(Header, Key, <<>>).
 
-%% @spec decrypt(binary(), binary(), binary()) -> binary().
+-spec decrypt(binary(), key_state(), binary()) -> {binary(), key_state()}.
 decrypt(<<>>, Key, Result) -> {Result, Key};
 decrypt(<<OldByte?B, Header/binary>>, {RI, RJ, K}, Result) ->
     NewByte = (lists:nth(RI+1, K) bxor (OldByte - RJ)) band 255,
     NewRI   = (RI + 1) rem ?K_SIZE,
     decrypt(Header, {NewRI, OldByte, K}, <<Result/binary, NewByte:8>>).
 
-%% @spec encrypt(string()) -> list().
+-spec encryption_key(binary()) -> [integer()].
 encryption_key(AccountId) ->
 	Key = char_sess:get_session_key(AccountId),
 	binary_to_list(Key).
+
+
+-spec create_key_state([integer()]) -> key_state().
+create_key_state(Key) ->
+	{0, 0, Key}.

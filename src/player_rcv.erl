@@ -84,7 +84,7 @@ auth_session(Rest) ->
 	AccountId = cmsg_auth_session(Rest),
 	Data = smsg_auth_response(),
 	Key = world_crypto:encryption_key(AccountId),
-	KeyState = {0, 0, Key},
+	KeyState = world_crypto:create_key_state(Key),
 	{Data, AccountId, KeyState}.
 
 cmsg_auth_session(<<_Build?L, _Unk?L, Rest/binary>>) ->
