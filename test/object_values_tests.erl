@@ -59,7 +59,7 @@ object_values_test_() ->
 init() ->
 	TotalCount = 10,
 	EmptyValues = binary:copy(<<0?L>>, TotalCount),
-	Index = 'OBJECT_FIELD_GUID',
+	Index = object_field_guid,
 	Value = 5,
 	{TotalCount, EmptyValues, Index, Value}.
 
