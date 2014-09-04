@@ -45,22 +45,27 @@ set_value(FieldData, Value, Values) ->
 	{Field, Offset} = if is_tuple(FieldData) -> FieldData;
 		is_atom(FieldData) -> {FieldData, 0}
 	end,
-	% TODO check if the value really changed, if not do nothing here
-	{Index, Type} = object_fields:field_data(Field),
-	% offsets can be passed in for any type
-	% but uint16 and uint8 offsets are byte offsets
-	% the rest are word offsets
-	OffsetIndex = Index + Offset,
-	Indices = case Type of
-		uint64 -> [OffsetIndex, OffsetIndex+1];
-		uint32 -> [OffsetIndex];
-		int32 -> [OffsetIndex];
-		float -> [OffsetIndex];
-		uint16 -> [Index];
-		uint8 -> [Index]
-	end,
-	NewValues = object_values:set_value({FieldData, Value, Type}, Values),
-	{NewValues, Indices}.
+	OldValue = get_value(FieldData, Values),
+	% check if existing value is the same
+	% if it is, do nothing
+	if OldValue == Value -> {Values, []};
+		OldValue /= Value ->
+			{Index, Type} = object_fields:field_data(Field),
+			% offsets can be passed in for any type
+			% but uint16 and uint8 offsets are byte offsets
+			% the rest are word offsets
+			OffsetIndex = Index + Offset,
+			Indices = case Type of
+				uint64 -> [OffsetIndex, OffsetIndex+1];
+				uint32 -> [OffsetIndex];
+				int32 -> [OffsetIndex];
+				float -> [OffsetIndex];
+				uint16 -> [Index];
+				uint8 -> [Index]
+			end,
+			NewValues = object_values:set_value({FieldData, Value, Type}, Values),
+			{NewValues, Indices}
+	end.
 
 
 
