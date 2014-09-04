@@ -25,17 +25,22 @@
 -export([field_data/1, get_total_count/1]).
 -export([type/1, fields/1]).
 
+-include("include/data_types.hrl").
 
+
+-spec fields(atom()) -> non_neg_integer().
 fields(Field) ->
 	{Index, _} = field_data(Field),
 	Index.
 
+-spec type(atom()) -> value_type().
 type(Field) ->
 	{_, Type} = field_data(Field),
 	Type.
 	
 
 
+-spec get_total_count(atom()) -> non_neg_integer().
 get_total_count(player) ->
 	fields(player_end);
 get_total_count(object) ->
@@ -55,6 +60,7 @@ get_total_count(corpse) ->
 
 
 
+-spec field_data(atom()) -> {non_neg_integer(), value_type()}.
 field_data(object_field_guid) -> {16#00, uint64};
 field_data(object_field_type) -> {16#02, uint32};
 field_data(object_field_entry) -> {16#03, uint32};

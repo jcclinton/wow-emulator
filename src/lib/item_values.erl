@@ -38,6 +38,7 @@
 -include("include/shared_defines.hrl").
 -include("include/items.hrl").
 -include("include/database_records.hrl").
+-include("include/data_types.hrl").
 
 
 % gets
@@ -79,6 +80,7 @@ set_owner(Value, Values) ->
 
 % create values
 
+-spec create(guid(), non_neg_integer(), guid()) -> item_values().
 create(ItemGuid, ItemId, OwnerGuid) ->
 	ObjectType = ?typemask_item bor ?typemask_object,
 	Scale = ?default_scale,
@@ -115,6 +117,7 @@ create(ItemGuid, ItemId, OwnerGuid) ->
 	lists:foldl(fun object_values:set_value/2, EmptyValues, KeyValues).
 
 
+-spec get_empty_values() -> item_values().
 get_empty_values() ->
 	TotalCount = object_fields:get_total_count(item),
 	binary:copy(<<0?L>>, TotalCount).

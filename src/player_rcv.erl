@@ -27,6 +27,7 @@
 
 -include("include/binary.hrl").
 -include("include/network_defines.hrl").
+-include("include/data_types.hrl").
 
 -record(state, {
 	socket,
@@ -80,28 +81,33 @@ upgrade() -> ok.
 
 %% private
 
+-spec auth_session(binary()) -> {binary(), binary(), key_state()}.
 auth_session(Rest) ->
 	AccountId = cmsg_auth_session(Rest),
-	Data = smsg_auth_response(),
+	Response = smsg_auth_response(),
 	Key = world_crypto:encryption_key(AccountId),
 	KeyState = world_crypto:create_key_state(Key),
-	{Data, AccountId, KeyState}.
+	{Response, AccountId, KeyState}.
 
+-spec cmsg_auth_session(binary()) -> binary().
 cmsg_auth_session(<<_Build?L, _Unk?L, Rest/binary>>) ->
     {Account, _Key} = cmsg_auth_session_extract(Rest, <<>>),
     Account;
 cmsg_auth_session(_) ->
     {error, bad_cmsg_auth_session}.
 
+-spec cmsg_auth_session_extract(binary(), binary()) -> {binary(), binary()}.
 cmsg_auth_session_extract(<<0?B, Rest/binary>>, AccountId) ->
     {AccountId, Rest};
 cmsg_auth_session_extract(<<Letter?B, Rest/binary>>, AccountId) ->
     cmsg_auth_session_extract(Rest, <<AccountId/binary, Letter?B>>).
 
+-spec smsg_auth_response() -> binary().
 smsg_auth_response() ->
     <<16#0c?B, 0?L, 0?B, 0?L>>.
 
 
+-spec start_siblings(term(), key_state(), binary(), pid()) -> 'ok'.
 start_siblings(Socket, KeyState, AccountId, ParentPid) ->
 	SendPid = start_child(player_send, [Socket, KeyState], ParentPid, worker),
 	_ = start_child(player_controller_sup, [AccountId, SendPid], ParentPid, supervisor),
@@ -109,6 +115,8 @@ start_siblings(Socket, KeyState, AccountId, ParentPid) ->
 	_ = start_child(player_model_sup, [AccountId], ParentPid, supervisor),
 	ok.
 
+-type proc_type() :: worker | supervisor.
+-spec start_child(atom(), [any()], pid(), proc_type()) -> pid().
 start_child(Name, Args, ParentPid, Type) ->
 	Spec = {Name,
 		{Name, start_link, Args},
