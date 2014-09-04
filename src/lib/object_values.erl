@@ -42,7 +42,6 @@
 -include("include/data_types.hrl").
 
 -type field() :: atom() | non_neg_integer().
--type field_data() :: {atom(), non_neg_integer()} | atom().
 
 
 -spec set_value({field_data(), number(), value_type()}, binary()) -> binary().

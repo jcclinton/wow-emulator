@@ -12,3 +12,5 @@
 -type race() :: human | orc | dwarf | night_elf | undead | tauren | gnome | troll.
 -type class() :: warrior | paladin | hunter | rogue | priest | shaman | mage | warlock | druid.
 
+
+-type field_data() :: {atom(), non_neg_integer()} | atom().

@@ -29,7 +29,9 @@
 
 -include("include/items.hrl").
 -include("include/binary.hrl").
+-include("include/data_types.hrl").
 
+-spec get_empty_values() -> player_values().
 get_empty_values() ->
 	TotalCount = object_fields:get_total_count(player),
 	% create initially empty binary values object
@@ -38,6 +40,7 @@ get_empty_values() ->
 
 % sets
 
+-spec set_value(field_data(), number(), player_values()) -> {player_values(), [non_neg_integer()]}.
 set_value(FieldData, Value, Values) ->
 	{Field, Offset} = if is_tuple(FieldData) -> FieldData;
 		is_atom(FieldData) -> {FieldData, 0}
@@ -62,6 +65,7 @@ set_value(FieldData, Value, Values) ->
 
 
 %% gets
+-spec get_value(field_data(), player_values()) -> number().
 get_value(FieldData, Values) ->
 	Field = case FieldData of
 		{FieldName, _} -> FieldName;
