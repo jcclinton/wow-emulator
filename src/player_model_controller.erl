@@ -421,7 +421,7 @@ mapCharGuids(Guid) ->
 	ItemSlotData = lists:foldl(fun(ItemGuid, Acc) ->
 		SlotData = try item_data:get_values(ItemGuid) of
 			ItemValues ->
-				ItemId = item_values:get_item_id(ItemValues),
+				ItemId = item_values:get_value(object_field_entry, ItemValues),
 				ItemProto = content:lookup_item(ItemId),
 				if ItemProto /= false ->
 						DisplayInfoId = ItemProto#item_proto.display_info_id,

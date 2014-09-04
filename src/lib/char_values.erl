@@ -38,7 +38,6 @@ get_empty_values() ->
 	binary:copy(<<0?L>>, TotalCount).
 
 
-% sets
 
 -spec set_value(field_data(), number(), player_values()) -> {player_values(), [non_neg_integer()]}.
 set_value(FieldData, Value, Values) ->
@@ -69,7 +68,6 @@ set_value(FieldData, Value, Values) ->
 
 
 
-%% gets
 -spec get_value(field_data(), player_values()) -> number().
 get_value(FieldData, Values) ->
 	Field = case FieldData of

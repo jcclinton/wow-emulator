@@ -65,12 +65,12 @@ destroy(SrcSlot, Count, Guid) ->
 		Count > 0 ->
 			ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 			ItemValues = item_data:get_values(ItemGuid),
-			ItemProto = item_data:get_item_proto(ItemGuid),
+			ItemProto = item_data:get_item_proto(ItemValues),
 			if ItemProto#item_proto.stackable > 1 ->
-					StackCount = item_values:get_stack_count(ItemValues),
+					StackCount = item_values:get_value(item_field_stack_count, ItemValues),
 					NewStackCount = StackCount - Count,
 					if NewStackCount > 0 ->
-							NewItemValues = item_values:set_stack_count(NewStackCount, ItemValues),
+							NewItemValues = item_values:set_value(item_field_stack_count, NewStackCount, ItemValues),
 							item_data:store_values(NewItemValues),
 							update_data:build_create_update_packet_for_items([ItemGuid]);
 						NewStackCount =< 0 ->
@@ -155,8 +155,8 @@ can_split(SrcSlot, DestSlot, Count, Guid) ->
 
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	SrcItemValues = item_data:get_values(SrcItemGuid),
-	SrcItemProto = item_data:get_item_proto(SrcItemGuid),
-	SrcStackCount = item_values:get_stack_count(SrcItemValues),
+	SrcItemProto = item_data:get_item_proto(SrcItemValues),
+	SrcStackCount = item_values:get_value(item_field_stack_count, SrcItemValues),
 	NewStackCount = SrcStackCount - Count,
 
 	ValidStack = (SrcItemProto#item_proto.stackable > 1) and (NewStackCount > 0) and (Count > 0),
@@ -167,20 +167,20 @@ can_split(SrcSlot, DestSlot, Count, Guid) ->
 split(SrcSlot, DestSlot, Count, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	SrcItemValues = item_data:get_values(SrcItemGuid),
-	SrcItemProto = item_data:get_item_proto(SrcItemGuid),
-	SrcStackCount = item_values:get_stack_count(SrcItemValues),
+	SrcItemProto = item_data:get_item_proto(SrcItemValues),
+	SrcStackCount = item_values:get_value(item_field_stack_count, SrcItemValues),
 	SrcAmount = SrcStackCount - Count,
 
 	%create new dest item
 	DestItemGuid = world:get_guid(?highguid_item, 0),
 	ItemId = SrcItemProto#item_proto.id,
 	DestItemValues = item_values:create(DestItemGuid, ItemId, Guid),
-	NewDestItemValues = item_values:set_stack_count(Count, DestItemValues),
+	NewDestItemValues = item_values:set_value(item_field_stack_count, Count, DestItemValues),
 	item_data:store_values(NewDestItemValues),
 	% add to users items
 	equip_slot(DestItemGuid, DestSlot, Guid),
 
-	NewSrcItemValues = item_values:set_stack_count(SrcAmount, SrcItemValues),
+	NewSrcItemValues = item_values:set_value(item_field_stack_count, SrcAmount, SrcItemValues),
 	item_data:store_values(NewSrcItemValues),
 
 	update_data:build_create_update_packet_for_items([SrcItemGuid, DestItemGuid]).
@@ -205,11 +205,11 @@ merge(SrcSlot, DestSlot, Guid) ->
 	SrcItemValues = item_data:get_values(SrcItemGuid),
 	DestItemValues = item_data:get_values(DestItemGuid),
 
-	SrcItemProto = item_data:get_item_proto(SrcItemGuid),
+	SrcItemProto = item_data:get_item_proto(SrcItemValues),
 	StackSize = SrcItemProto#item_proto.stackable,
 
-	SrcStackCount = item_values:get_stack_count(SrcItemValues),
-	DestStackCount = item_values:get_stack_count(DestItemValues),
+	SrcStackCount = item_values:get_value(item_field_stack_count, SrcItemValues),
+	DestStackCount = item_values:get_value(item_field_stack_count, DestItemValues),
 	TotalAmount = SrcStackCount + DestStackCount,
 
 	{DestAmount, SrcAmount} = if TotalAmount > StackSize ->
@@ -218,10 +218,10 @@ merge(SrcSlot, DestSlot, Guid) ->
 			{TotalAmount, 0}
 	end,
 
-	NewDestItemValues = item_values:set_stack_count(DestAmount, DestItemValues),
+	NewDestItemValues = item_values:set_value(item_field_stack_count, DestAmount, DestItemValues),
 	item_data:store_values(NewDestItemValues),
 
-	NewSrcItemValues = item_values:set_stack_count(SrcAmount, SrcItemValues),
+	NewSrcItemValues = item_values:set_value(item_field_stack_count, SrcAmount, SrcItemValues),
 	item_data:store_values(NewSrcItemValues),
 	if SrcAmount == 0 ->
 			%todo how to delete an item from ets and update client?
@@ -393,10 +393,7 @@ equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 		true -> ok
 	end,
 
-	ItemValues = item_data:get_values(ItemGuid),
-	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
-	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
-	item_data:store_values(NewItemValues).
+	item_data:set_guids(ItemGuid, OwnerGuid).
 
 equip(ItemGuid, DestSlot, OwnerGuid) ->
 	equip_slot(ItemGuid, DestSlot, OwnerGuid),
@@ -410,10 +407,7 @@ equip_out_of_game(OwnerGuid, ItemId, Values, NewItemGuid) ->
 			InvType = ItemProto#item_proto.inventory_type,
 			Slot = get_slot(InvType),
 
-			ItemValues = item_data:get_values(NewItemGuid),
-			NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
-			NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
-			item_data:store_values(NewItemValues),
+			item_data:set_guids(NewItemGuid, OwnerGuid),
 
 			ItemId = ItemProto#item_proto.id,
 			{NewValues, _} = player_state_functions:set_item(Values, {Slot, NewItemGuid}),
@@ -421,10 +415,7 @@ equip_out_of_game(OwnerGuid, ItemId, Values, NewItemGuid) ->
 			OutValues;
 		true ->
 			% put item in bag
-			ItemValues = item_data:get_values(NewItemGuid),
-			NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
-			NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
-			item_data:store_values(NewItemValues),
+			item_data:set_guids(NewItemGuid, OwnerGuid),
 
 			Slot = player_state_functions:get_first_empty_inv_slot(Values),
 			{NewValues, _} = player_state_functions:set_item(Values, {Slot, NewItemGuid}),
@@ -438,10 +429,7 @@ get_first_empty_inv_slot(OwnerGuid) ->
 visualize_item(OwnerGuid, ItemGuid, Slot) ->
 	player_state:run_async_function(OwnerGuid, set_item, [{Slot, ItemGuid}]),
 
-	ItemValues = item_data:get_values(ItemGuid),
-	NewItemValues1 = item_values:set_owner(OwnerGuid, ItemValues),
-	NewItemValues = item_values:set_contained(OwnerGuid, NewItemValues1),
-	item_data:store_values(NewItemValues),
+	item_data:set_guids(ItemGuid, OwnerGuid),
 
 	set_visual_item_slot(OwnerGuid, ItemGuid, Slot).
 
@@ -451,7 +439,7 @@ set_visual_item_slot(OwnerGuid, ItemGuid, Slot) ->
 	if IsEquipSlot ->
 			ItemId = if ItemGuid > 0 ->
 					ItemValues = item_data:get_values(ItemGuid),
-					item_values:get_item_id(ItemValues);
+					item_values:get_value(object_field_entry, ItemValues);
 				true -> 0
 			end,
 			player_state:run_async_function(OwnerGuid, set_visible_item, [{Slot, ItemId}]);

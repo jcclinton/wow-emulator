@@ -22,14 +22,8 @@
 
 -module(item_values).
 
--export([get_guid/1, get_item_id/1]).
--export([get_stack_count/1]).
--export([get_owner/1, get_contained/1]).
-
--export([set_guid/2, set_item_id/2]).
--export([set_contained/2, set_owner/2]).
--export([set_stack_count/2]).
-
+-export([get_value/2]).
+-export([set_value/3]).
 -export([create/3]).
 
 
@@ -41,40 +35,30 @@
 -include("include/data_types.hrl").
 
 
-% gets
 
-get_guid(Values) ->
-	object_values:get_uint64_value(object_field_guid, Values).
-
-get_item_id(Values) ->
-	object_values:get_uint32_value(object_field_entry, Values).
-
-get_stack_count(Values) ->
-	object_values:get_uint32_value(item_field_stack_count, Values).
-
-get_owner(Values) ->
-	object_values:get_uint64_value(item_field_owner, Values).
-
-get_contained(Values) ->
-	object_values:get_uint64_value(item_field_contained, Values).
+-spec get_value(field_data(), item_values()) -> number().
+get_value(FieldData, Values) ->
+	Field = case FieldData of
+		{FieldName, _} -> FieldName;
+		_ -> FieldData
+	end,
+	Type = object_fields:type(Field),
+	object_values:get_value({FieldData, Type}, Values).
 
 
 % sets
-
-set_stack_count(Value, Values) ->
-	object_values:set_uint32_value(item_field_stack_count, Value, Values).
-
-set_contained(Value, Values) ->
-	object_values:set_uint64_value(item_field_contained, Value, Values).
-
-set_guid(Value, Values) ->
-	object_values:set_uint64_value(object_field_guid, Value, Values).
-
-set_item_id(Value, Values) ->
-	object_values:set_uint32_value(object_field_entry, Value, Values).
-
-set_owner(Value, Values) ->
-	object_values:set_uint64_value(item_field_owner, Value, Values).
+-spec set_value(field_data(), number(), item_values()) -> item_values().
+set_value(FieldData, Value, Values) ->
+	OldValue = get_value(FieldData, Values),
+	if OldValue == Value -> Values;
+		OldValue /= Value ->
+			Field = case FieldData of
+				{FieldName, _} -> FieldName;
+				_ -> FieldData
+			end,
+			{_, Type} = object_fields:field_data(Field),
+			object_values:set_value({FieldData, Value, Type}, Values)
+	end.
 
 
 
