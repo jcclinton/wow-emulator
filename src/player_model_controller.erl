@@ -303,7 +303,7 @@ create_char_values(Payload, Guid) ->
     {{player_bytes_2, 0}, FacialHair, uint8},
     {{player_bytes_2, 3}, 2, uint8}, %rest state
     {{player_bytes_3, 0}, Gender, uint16}, % (drunk band 16#FFFE) bor Gender
-    {{player_bytes_3, 3}, 0, uint8}, % battlefield arena faction
+    {{player_bytes_3, 1}, 0, uint16}, % battlefield arena faction
     {player_flags, PlayerFlags, uint32},
     {player_field_watched_faction_index, -1, int32},
     {{player_field_bytes, 2}, 0, uint8},
