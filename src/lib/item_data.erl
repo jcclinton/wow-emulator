@@ -75,7 +75,7 @@ get_item_proto(ItemGuid) when is_integer(ItemGuid) ->
 	ItemValues = get_values(ItemGuid),
 	get_item_proto(ItemValues);
 get_item_proto(ItemValues) when is_binary(ItemValues) ->
-	ItemId = item_value:get_value(object_field_entry, ItemValues),
+	ItemId = item_values:get_value(object_field_entry, ItemValues),
 	content:lookup_item(ItemId).
 
 %% misc sets
