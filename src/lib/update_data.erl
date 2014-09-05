@@ -31,9 +31,13 @@
 -include("include/movement.hrl").
 -include("include/updates.hrl").
 -include("include/types.hrl").
+-include("include/data_types.hrl").
 
 
+-type maybe_tuple() :: tuple() | 'none'.
 
+
+-spec build_create_update_packet_for_player(guid(), boolean()) -> term().
 build_create_update_packet_for_player(Guid, IsSelf) ->
 	CharMove = char_data:get_char_move(Guid),
 	ItemGuidList = item:get_item_guids(Guid),
@@ -59,6 +63,7 @@ build_create_update_packet_for_player(Guid, IsSelf) ->
 
 
 
+-spec build_create_update_packet_for_items([guid()]) -> term().
 build_create_update_packet_for_items(ItemGuids) ->
 	ItemTypeId = ?typeid_item,
 	ItemUpdateFlag = ?updateflag_all,
@@ -71,11 +76,13 @@ build_create_update_packet_for_items(ItemGuids) ->
 
 
 
+-spec build_update_packet(binary(), player_values()) -> term().
 build_update_packet(Mask, Values) ->
 	Blocks = update_block(Mask, Values),
 	BlockCount = 1,
 	build_packet(Blocks, BlockCount).
 
+-spec build_packet(binary(), non_neg_integer()) -> handler_response().
 build_packet(Blocks, BlockCount) ->
 	HasTransport = 0,
 	Payload = <<BlockCount?L, HasTransport?B, Blocks/binary>>,
@@ -89,6 +96,7 @@ build_packet(Blocks, BlockCount) ->
 
 
 
+-spec update_block(binary(), player_values()) -> binary().
 update_block(Mask, Values) ->
 	Guid = char_values:get_value(object_field_guid, Values),
 	UpdateType = ?updatetype_values,
@@ -101,6 +109,7 @@ update_block(Mask, Values) ->
 
 
 
+-spec create_block(maybe_tuple(), any_values(), boolean(), non_neg_integer(), non_neg_integer(), guid()) -> binary().
 create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag, Guid) ->
 	UpdateType = if IsSelf -> ?updatetype_create_object2;
 		not IsSelf -> ?updatetype_create_object
@@ -109,7 +118,10 @@ create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag, Guid) ->
 	%Guid = <<7, 41, 179, 24>>,
 %io:format("update binary guid: ~p~n", [Guid]),
 
-	MovementData = getMovementData(CharMove, IsSelf, UpdateFlag),
+	MovementData = if CharMove /= none ->
+			getMovementData(CharMove, IsSelf, UpdateFlag);
+		CharMove == none -> <<>>
+	end,
 	ValuesCount = (byte_size(Values) div 4) - 1,
 	Blocks = (ValuesCount + 31) div 32,
 	EmptyMaskBits = update_mask:empty(ValuesCount),
@@ -122,6 +134,7 @@ create_block(CharMove, Values, IsSelf, TypeId, UpdateFlag, Guid) ->
 
 
 
+-spec build_values_update(binary(), player_values(), non_neg_integer()) -> binary().
 build_values_update(MaskBits, Values, Count) ->
 	TypeFlags = object_values:get_int32_value(object_field_type, Values),
 	IsUnit = util:has_flag(TypeFlags, ?typemask_unit),
@@ -148,6 +161,7 @@ build_values_update(MaskBits, Values, Count) ->
 	end, <<>>, lists:seq(0, Count)).
 
 
+-spec is_non_neg_float_field(non_neg_integer()) -> boolean().
 is_non_neg_float_field(Index) ->
 	Fields = [
 		unit_field_baseattacktime,
@@ -165,6 +179,7 @@ is_non_neg_float_field(Index) ->
 	end, false, Fields).
 		
 
+-spec is_float_field(non_neg_integer()) -> boolean().
 is_float_field(Index) ->
 	Fields = [
 		player_field_posstat0,
@@ -201,17 +216,20 @@ is_float_field(Index) ->
 		
 
 % adds uint32 number to acc
+-spec build_uint32(non_neg_integer(), player_values(), binary()) -> binary().
 build_uint32(Index, Values, Bin) ->
 	Value = object_values:get_uint32_value(Index, Values),
 	<<Bin/binary, Value?L>>.
 
 % converts float to uint32
+-spec build_float(non_neg_integer(), player_values(), binary()) -> binary().
 build_float(Index, Values, Bin) ->
 	Value = object_values:get_float_value(Index, Values),
 	UintValue = round(Value),
 	<<Bin/binary, UintValue?L>>.
 
 % converts positive float to uint32
+-spec build_non_neg_float(non_neg_integer(), player_values(), binary()) -> binary().
 build_non_neg_float(Index, Values, Bin) ->
 	RawValue = object_values:get_float_value(Index, Values),
 	Value = if RawValue < 0 -> 0;
@@ -224,6 +242,7 @@ build_non_neg_float(Index, Values, Bin) ->
 
 
 
+-spec getMovementData(tuple(), boolean(), non_neg_integer()) -> binary().
 getMovementData(CharMove, IsSelf, Flags) ->
 	Self = ?updateflag_self,
 	UpdateFlags = if IsSelf -> Flags bor Self;
@@ -277,6 +296,7 @@ getMovementData(CharMove, IsSelf, Flags) ->
 
 
 
+-spec decompress(binary()) -> binary().
 decompress(Packet) ->
 	Z = zlib:open(),
 	zlib:inflateInit(Z),
@@ -284,6 +304,7 @@ decompress(Packet) ->
 	zlib:inflateEnd(Z),
 	list_to_binary(Data).
 
+-spec compress(binary()) -> binary().
 compress(Packet) ->
     Z  = zlib:open(),
     ok = zlib:deflateInit(Z, best_speed),

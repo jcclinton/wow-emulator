@@ -38,6 +38,7 @@
 -include("include/character.hrl").
 -include("include/items.hrl").
 -include("include/shared_defines.hrl").
+-include("include/data_types.hrl").
 
 
 
@@ -58,6 +59,7 @@ test() ->
 	ok.
 
 
+-spec destroy(non_neg_integer(), non_neg_integer(), guid()) -> term().
 destroy(SrcSlot, Count, Guid) ->
 	SrcEmpty = slot_empty(SrcSlot, Guid),
 	if SrcEmpty ->
@@ -83,6 +85,7 @@ destroy(SrcSlot, Count, Guid) ->
 			destroy_at_slot(SrcSlot, Guid)
 	end.
 
+-spec destroy_at_slot(non_neg_integer(), guid()) -> term().
 destroy_at_slot(SrcSlot, Guid) ->
 	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	item_data:delete_item(ItemGuid),
@@ -90,6 +93,7 @@ destroy_at_slot(SrcSlot, Guid) ->
 
 
 
+-spec swap(non_neg_integer(), non_neg_integer(), guid()) -> term().
 swap(SrcSlot, DestSlot, Guid) ->
 	SrcEmpty = slot_empty(SrcSlot, Guid),
 	DestEmpty = slot_empty(DestSlot, Guid),
@@ -146,6 +150,7 @@ swap(SrcSlot, DestSlot, Guid) ->
 
 	end.
 
+-spec can_split(non_neg_integer(), non_neg_integer(), non_neg_integer(), guid()) -> boolean().
 can_split(SrcSlot, DestSlot, Count, Guid) ->
 	DestIsValidSlot = is_valid_slot(DestSlot),
 	DestEmpty = slot_empty(DestSlot, Guid),
@@ -164,6 +169,7 @@ can_split(SrcSlot, DestSlot, Count, Guid) ->
 	ValidStack and ValidSlot.
 
 
+-spec split(non_neg_integer(), non_neg_integer(), non_neg_integer(), guid()) -> term().
 split(SrcSlot, DestSlot, Count, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	SrcItemValues = item_data:get_values(SrcItemGuid),
@@ -186,6 +192,7 @@ split(SrcSlot, DestSlot, Count, Guid) ->
 	update_data:build_create_update_packet_for_items([SrcItemGuid, DestItemGuid]).
 
 
+-spec can_merge(non_neg_integer(), non_neg_integer(), guid()) -> boolean().
 can_merge(SrcSlot, DestSlot, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
@@ -198,6 +205,7 @@ can_merge(SrcSlot, DestSlot, Guid) ->
 	SrcItemProto#item_proto.id == DestItemProto#item_proto.id andalso StackSize > 1.
 
 
+-spec merge(non_neg_integer(), non_neg_integer(), guid()) -> term().
 merge(SrcSlot, DestSlot, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
@@ -233,6 +241,7 @@ merge(SrcSlot, DestSlot, Guid) ->
 
 
 
+-spec can_swap(non_neg_integer(), non_neg_integer(), guid()) -> boolean().
 can_swap(SrcSlot, DestSlot, Guid) ->
 	DestIsInvSlot = is_inv_slot(DestSlot),
 	DestIsEquipSlot = is_equip_slot(DestSlot),
@@ -254,6 +263,7 @@ can_swap(SrcSlot, DestSlot, Guid) ->
 
 % internal function to swap slots
 % does not handle inventory checking
+-spec swap_slots(non_neg_integer(), non_neg_integer(), guid()) -> term().
 swap_slots(SrcSlot, DestSlot, Guid) ->
 	SrcItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	DestItemGuid = get_item_guid_at_slot(DestSlot, Guid),
@@ -284,6 +294,7 @@ swap_slots(SrcSlot, DestSlot, Guid) ->
 
 % remove from old slot
 % store in inventory
+-spec store_from_slot(non_neg_integer(), non_neg_integer(), guid()) -> term().
 store_from_slot(SrcSlot, DestSlot, Guid) ->
 	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	remove(SrcSlot, Guid),
@@ -291,6 +302,7 @@ store_from_slot(SrcSlot, DestSlot, Guid) ->
 
 % remove from old slot
 % equip item
+-spec equip_from_slot(non_neg_integer(), non_neg_integer(), guid()) -> term().
 equip_from_slot(SrcSlot, DestSlot, Guid) ->
 	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	remove(SrcSlot, Guid),
@@ -298,10 +310,12 @@ equip_from_slot(SrcSlot, DestSlot, Guid) ->
 	equip(ItemGuid, DestSlot, Guid).
 
 
+-spec can_equip_from_slot(non_neg_integer(), non_neg_integer(), guid()) -> boolean().
 can_equip_from_slot(SrcSlot, DestSlot, Guid) ->
 	ItemGuid = get_item_guid_at_slot(SrcSlot, Guid),
 	can_equip(ItemGuid, DestSlot).
 
+-spec can_equip(guid(), non_neg_integer()) -> boolean().
 can_equip(ItemGuid, Slot) ->
 	ItemProto = item_data:get_item_proto(ItemGuid),
 	InvType = ItemProto#item_proto.inventory_type,
@@ -310,6 +324,7 @@ can_equip(ItemGuid, Slot) ->
 
 
 
+-spec remove(non_neg_integer(), guid()) -> 'ok'.
 remove(Slot, OwnerGuid) ->
 	%ItemGuid = get_item_guid_at_slot(Slot, OwnerGuid),
 
@@ -320,22 +335,27 @@ remove(Slot, OwnerGuid) ->
 	ok.
 
 
+-spec is_valid_slot(non_neg_integer()) -> boolean().
 is_valid_slot(Slot) ->
 	is_inv_slot(Slot) orelse is_equip_slot(Slot).
 
 % inside bag
+-spec is_inv_slot(non_neg_integer()) -> boolean().
 is_inv_slot(Slot) ->
 	Slot >= ?inventory_slot_item_start andalso Slot < ?inventory_slot_item_end.
 
+-spec is_equip_slot(non_neg_integer()) -> boolean().
 is_equip_slot(Slot) ->
 	Slot >= ?equipment_slot_start andalso Slot < ?equipment_slot_end.
 
 
+-spec slot_empty(non_neg_integer(), guid()) -> boolean().
 slot_empty(Slot, Guid) ->
 	SlotGuid = get_item_guid_at_slot(Slot, Guid),
 	SlotGuid == 0.
 
 
+-spec get_item_guid_at_slot(non_neg_integer(), guid()) -> maybe_zero_guid().
 get_item_guid_at_slot(Slot, Guid) ->
 	player_state:run_sync_function(Guid, get_item_guid, [Slot]).
 
@@ -346,6 +366,7 @@ get_item_guid_at_slot(Slot, Guid) ->
 
 
 % get just equipped item guids
+-spec get_equipped_item_guids(guid() | binary()) -> [guid()].
 get_equipped_item_guids(Guid) when is_number(Guid) ->
 	ItemGuids = get_item_guids(Guid),
 	{Guids, _} = lists:split(?equipment_slot_end, ItemGuids),
@@ -357,6 +378,7 @@ get_equipped_item_guids(SlotValues) when is_binary(SlotValues) ->
 
 % returns guids for all items in inventory
 % this includes equipped and in bags
+-spec get_item_guids(guid() | binary()) -> [guid()].
 get_item_guids(Guid) when is_number(Guid) ->
 	SlotValues = player_state:run_sync_function(Guid, get_item_guids),
 	get_item_guids(SlotValues);
@@ -364,6 +386,7 @@ get_item_guids(SlotValues) when is_binary(SlotValues) ->
 	Guids = extract_slot_values_guids(SlotValues),
 	lists:reverse(Guids).
 
+-spec extract_slot_values_guids(binary()) -> [guid()].
 extract_slot_values_guids(SlotValues) ->
 	extract_slot_values_guids(SlotValues, []).
 extract_slot_values_guids(<<>>, Acc) -> Acc;
@@ -373,6 +396,7 @@ extract_slot_values_guids(<<Guid?Q, Rest/binary>>, Acc) ->
 
 
 
+-spec equip_new(non_neg_integer(), player_values(), guid()) -> player_values().
 equip_new(ItemId, Values, OwnerGuid) ->
 	ItemGuid = world:get_guid(?highguid_item, 0),
 	ItemValues = item_values:create(ItemGuid, ItemId, OwnerGuid),
@@ -383,6 +407,7 @@ equip_new(ItemId, Values, OwnerGuid) ->
 	NewValues.
 
 
+-spec equip_slot(guid(), non_neg_integer(), guid()) -> term().
 equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 	player_state:run_async_function(OwnerGuid, set_item, [{DestSlot, ItemGuid}]),
 
@@ -395,11 +420,13 @@ equip_slot(ItemGuid, DestSlot, OwnerGuid) ->
 
 	item_data:set_guids(ItemGuid, OwnerGuid).
 
+-spec equip(guid(), non_neg_integer(), guid()) -> term().
 equip(ItemGuid, DestSlot, OwnerGuid) ->
 	equip_slot(ItemGuid, DestSlot, OwnerGuid),
 	update_data:build_create_update_packet_for_items([ItemGuid]).
 
 % need to do everything manually because this is done out of game when a char is created
+-spec equip_out_of_game(guid(), non_neg_integer(), player_values(), guid()) -> player_values().
 equip_out_of_game(OwnerGuid, ItemId, Values, NewItemGuid) ->
 	ItemProto = content:lookup_item(ItemId),
 	Class = ItemProto#item_proto.class,
@@ -422,10 +449,12 @@ equip_out_of_game(OwnerGuid, ItemId, Values, NewItemGuid) ->
 			NewValues
 	end.
 
+-spec get_first_empty_inv_slot(guid()) -> integer().
 get_first_empty_inv_slot(OwnerGuid) ->
 	player_state:run_sync_function(OwnerGuid, get_first_empty_inv_slot).
 
 
+-spec visualize_item(guid(), guid(), non_neg_integer()) -> term().
 visualize_item(OwnerGuid, ItemGuid, Slot) ->
 	player_state:run_async_function(OwnerGuid, set_item, [{Slot, ItemGuid}]),
 
@@ -434,6 +463,7 @@ visualize_item(OwnerGuid, ItemGuid, Slot) ->
 	set_visual_item_slot(OwnerGuid, ItemGuid, Slot).
 
 
+-spec set_visual_item_slot(guid(), maybe_zero_guid(), non_neg_integer()) -> term().
 set_visual_item_slot(OwnerGuid, ItemGuid, Slot) ->
 	IsEquipSlot = is_equip_slot(Slot),
 	if IsEquipSlot ->
@@ -448,6 +478,7 @@ set_visual_item_slot(OwnerGuid, ItemGuid, Slot) ->
 
 
 
+-spec get_slot(non_neg_integer()) -> integer().
 get_slot(InvType) ->
 	case InvType of
 		?invtype_head -> ?equipment_slot_head;
@@ -477,6 +508,7 @@ get_slot(InvType) ->
 		_ -> -1
 	end.
 
+-spec is_equippable(tuple()) -> boolean().
 is_equippable(ItemProto) ->
 	InvType = ItemProto#item_proto.inventory_type,
 	Slot = item:get_slot(InvType),

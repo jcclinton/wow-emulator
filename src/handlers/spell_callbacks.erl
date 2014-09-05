@@ -27,8 +27,10 @@
 -include("include/binary.hrl").
 -include("include/spell.hrl").
 -include("include/database_records.hrl").
+-include("include/data_types.hrl").
 
 
+-spec cast(recv_data()) -> handler_response().
 cast(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
@@ -42,6 +44,7 @@ cast(Data) ->
 	ok.
 
 
+-spec cancel_cast(recv_data()) -> handler_response().
 cancel_cast(Data) ->
 	<<SpellId?L>> = recv_data:get(payload, Data),
 	io:format("cancel spell id: ~p~n", [SpellId]),

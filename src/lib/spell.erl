@@ -28,8 +28,10 @@
 -include("include/binary.hrl").
 -include("include/spell.hrl").
 -include("include/database_records.hrl").
+-include("include/data_types.hrl").
 
 
+-spec prepare(guid(), dict:dict(atom(), number()), tuple()) -> 'ok'.
 prepare(CasterGuid, TargetInfo, Spell) ->
 	send_spell_start(CasterGuid, TargetInfo, Spell),
 
@@ -39,6 +41,7 @@ prepare(CasterGuid, TargetInfo, Spell) ->
 	ok.
 
 
+-spec send_spell_result(guid(), dict:dict(atom(), number()), tuple()) -> 'ok'.
 send_spell_result(CasterGuid, _TargetInfo, Spell) ->
 	io:format("spell result~n"),
 
@@ -52,6 +55,7 @@ send_spell_result(CasterGuid, _TargetInfo, Spell) ->
 	ok.
 
 
+-spec send_spell_start(guid(), dict:dict(atom(), number()), tuple()) -> 'ok'.
 send_spell_start(CasterGuid, TargetInfo, Spell) ->
 	io:format("spell start~n"),
 	PackGuid = guid:pack(CasterGuid),
@@ -72,6 +76,7 @@ send_spell_start(CasterGuid, TargetInfo, Spell) ->
 	ok.
 
 
+-spec send_spell_go(guid(), dict:dict(atom(), number()), tuple()) -> 'ok'.
 send_spell_go(CasterGuid, TargetInfo, Spell) ->
 	io:format("spell go~n"),
 	TargetMask = spell_target_info:lookup(target_mask, TargetInfo),

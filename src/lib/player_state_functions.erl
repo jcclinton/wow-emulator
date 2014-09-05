@@ -31,14 +31,17 @@
 -include("include/character.hrl").
 -include("include/items.hrl").
 -include("include/binary.hrl").
+-include("include/data_types.hrl").
 
 
 % gets
 
+-spec get_first_empty_inv_slot(player_values()) -> integer().
 get_first_empty_inv_slot(Values) ->
 	FirstSlot = ?inventory_slot_item_start,
 	get_first_empty_inv_slot(Values, FirstSlot).
 
+-spec get_first_empty_inv_slot(player_values(), non_neg_integer()) -> integer().
 get_first_empty_inv_slot(_, ?inventory_slot_item_end) -> -1;
 get_first_empty_inv_slot(Values, Slot) ->
 	Index = object_fields:fields(player_field_inv_slot_head) + (2 * Slot),
@@ -50,12 +53,14 @@ get_first_empty_inv_slot(Values, Slot) ->
 	end.
 
 
+-spec get_item_guid(player_values(), non_neg_integer()) -> guid().
 get_item_guid(Values, Slot) ->
 	SlotGuids = get_item_guids(Values),
 	Offset = 8 * Slot,
 	<<_:Offset/binary, SlotGuid?Q, _/binary>> = SlotGuids,
 	SlotGuid.
 
+-spec get_item_guids(player_values()) -> binary().
 get_item_guids(Values) ->
 	Index = object_fields:fields(player_field_inv_slot_head) * 4,
 	% inventory_slot_item_end starts at 0
@@ -69,6 +74,7 @@ get_item_guids(Values) ->
 % sets
 
 
+-spec take_damage(player_values(), number()) -> {player_values(), [non_neg_integer()]}.
 take_damage(Values, Damage) ->
 	OldAmount = char_values:get_value(unit_field_health, Values),
 	NewAmount = if OldAmount >= Damage ->
@@ -78,6 +84,7 @@ take_damage(Values, Damage) ->
 	char_values:set_value(unit_field_health, NewAmount, Values).
 
 
+-spec apply_aura(player_values(), non_neg_integer(), non_neg_integer(), non_neg_integer()) -> {player_values(), [non_neg_integer()]}.
 apply_aura(Values, Slot, SpellId, Level) ->
 	Funs = [
 		{add_aura, {Slot, SpellId}},
@@ -92,6 +99,7 @@ apply_aura(Values, Slot, SpellId, Level) ->
 	end, {Values, []}, Funs).
 
 
+-spec set_item(player_values(), {non_neg_integer(), guid()}) -> {player_values(), [non_neg_integer()]}.
 set_item(Values, {Slot, ItemGuid}) ->
 	Field = player_field_inv_slot_head,
 	Offset = 2 * Slot,
@@ -104,6 +112,7 @@ set_item(Values, {Slot, ItemGuid}) ->
 	char_values:set_value({Field, Offset}, ItemGuid, Values).
 
 
+-spec set_visible_item(player_values(), {non_neg_integer(), non_neg_integer()}) -> {player_values(), [non_neg_integer()]}.
 set_visible_item(Values, {Slot, ItemId}) ->
 	Field = player_visible_item_1_0,
 	Offset = Slot * ?max_visible_item_offset,

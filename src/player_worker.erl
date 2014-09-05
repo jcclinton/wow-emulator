@@ -27,6 +27,7 @@
 -include("include/shared_defines.hrl").
 
 
+-spec start_link({tuple(), [any()]}) -> {'ok', pid()}.
 start_link(WorkerData) ->
 	Pid = spawn_link(?MODULE, call, [WorkerData]),
 	{ok, Pid}.
@@ -37,6 +38,7 @@ start_link(WorkerData) ->
 % if a callback returns ok, nothing happens
 % if it returns {OpAtom, Payload}
 % it sends that packet to this player
+-spec call({tuple(), [any()]}) -> any().
 call({Callback, Args}) ->
 	Data = recv_data:build(Args),
 	M = Callback#callback.module,

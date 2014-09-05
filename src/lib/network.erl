@@ -32,7 +32,7 @@
 
 
 % receive and decrypt a packet
--spec receive_packet(non_neg_integer(), key_state(), term(), boolean()) -> {non_neg_integer(), binary(), key_state()}.
+-spec receive_packet(non_neg_integer(), maybe_key_state(), term(), boolean()) -> {non_neg_integer(), binary(), key_state()}.
 receive_packet(HdrLen, KeyState, Socket, ShouldDecrypt) ->
 	{ok, HeaderIn} = case gen_tcp:recv(Socket, HdrLen) of
 		{error, ErrorIn} -> throw(ErrorIn);
@@ -96,7 +96,7 @@ build_packet(Opcode, Payload, HdrLen, KeyState, ShouldEncrypt) ->
 
 
 % take single packet data and send it
--spec send_packet(non_neg_integer(), binary(), non_neg_integer(), key_state(), term(), boolean()) -> key_state().
+-spec send_packet(non_neg_integer(), binary(), non_neg_integer(), maybe_key_state(), term(), boolean()) -> key_state().
 send_packet(Opcode, Payload, HdrLen, KeyState, Socket, ShouldEncrypt) ->
 	OpBin = if HdrLen == ?SEND_HDR_LEN -> <<Opcode?W>>;
 		HdrLen == ?RCV_HDR_LEN -> <<Opcode?L>>

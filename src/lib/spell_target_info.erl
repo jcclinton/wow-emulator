@@ -28,7 +28,9 @@
 -include("include/binary.hrl").
 -include("include/spell.hrl").
 -include("include/database_records.hrl").
+-include("include/data_types.hrl").
 
+-spec lookup(atom(), dict:dict(atom(), number())) -> number().
 lookup(Key, TargetInfo) ->
 	case dict:find(Key, TargetInfo) of
 		{ok, Value} -> Value;
@@ -36,6 +38,7 @@ lookup(Key, TargetInfo) ->
 	end.
 
 
+-spec read(non_neg_integer(), binary(), guid()) -> dict:dict(atom(), number()).
 read(TargetMask, TargetData, CasterGuid) ->
 	Funs = [
 		{?target_flag_self,

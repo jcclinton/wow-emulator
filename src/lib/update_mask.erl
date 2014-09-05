@@ -26,14 +26,20 @@
 -export([empty/1]).
 
 -include("include/binary.hrl").
+-include("include/data_types.hrl").
 
 
+-type bit() :: 0 | 1.
+
+
+-spec set_bit(atom() | non_neg_integer(), binary()) -> term().
 set_bit(Field, Mask) when is_atom(Field) ->
 	Index = object_fields:fields(Field),
 	set_bit(Index, Mask);
 set_bit(Index, Mask) ->
 	set_bit(Index, 1, Mask).
 
+-spec set_bit(non_neg_integer(), bit(), binary()) -> binary().
 set_bit(Index, Bit, Mask) ->
 	MaskIndex = Index bsr 3,
 	LowIndex = Index band 16#7,
@@ -43,6 +49,7 @@ set_bit(Index, Bit, Mask) ->
 	NewValue = OldValue bor BitValue,
 	<<Head/binary, NewValue?B, Tail/binary>>.
 
+-spec set_bits(non_neg_integer(), binary(), any_values()) -> binary().
 set_bits(Count, EmptyMask, Values) ->
 	lists:foldl(fun(Index, Mask) ->
 		Value = object_values:get_uint32_value(Index, Values),
@@ -53,6 +60,7 @@ set_bits(Count, EmptyMask, Values) ->
 	end, EmptyMask, lists:seq(0, Count)).
 
 
+-spec get_bit(binary(), non_neg_integer()) -> boolean().
 get_bit(Mask, Index) ->
 			MaskIndex = Index bsr 3,
 			LowIndex = Index band 16#7,
@@ -63,6 +71,7 @@ get_bit(Mask, Index) ->
 			NewValue > 0.
 
 
+-spec empty(atom() | non_neg_integer()) -> binary().
 empty(Type) when is_atom(Type) ->
 	TotalCount = object_fields:get_total_count(Type),
 	update_mask:empty(TotalCount - 1);

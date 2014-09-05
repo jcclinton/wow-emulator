@@ -33,9 +33,11 @@
 -include("include/binary.hrl").
 -include("include/items.hrl").
 -include("include/database_records.hrl").
+-include("include/data_types.hrl").
 
 
 % destroy an item at a slot
+-spec destroy_item(recv_data()) -> handler_response().
 destroy_item(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
@@ -48,6 +50,7 @@ destroy_item(Data) ->
 	end.
 
 % split an item from one slot to another
+-spec split_item(recv_data()) -> handler_response().
 split_item(Data) ->
 	Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
@@ -65,6 +68,7 @@ split_item(Data) ->
 
 
 % autoequip an item from a slot
+-spec autoequip_item(recv_data()) -> handler_response().
 autoequip_item(Data) ->
 	Guid = recv_data:get(guid, Data),
 	<<_SrcBag?B, SrcSlot?B>> = recv_data:get(payload, Data),
@@ -78,6 +82,7 @@ autoequip_item(Data) ->
 	swap_internal(SrcSlot, DestSlot, Guid).
 
 % use item at a slot
+-spec use_item(recv_data()) -> handler_response().
 use_item(Data) ->
 	_Guid = recv_data:get(guid, Data),
 	Payload = recv_data:get(payload, Data),
@@ -86,12 +91,14 @@ use_item(Data) ->
 	ok.
 
 % return full item prototype for an unknown item
+-spec item_query_single(recv_data()) -> handler_response().
 item_query_single(Data) ->
 	<<ItemId?L, ItemGuid?Q>> = recv_data:get(payload, Data),
 	io:format("unknown item: ~p with item guid: ~p~n", [ItemId, ItemGuid]),
 	ok.
 
 % swap an item from one slot to another
+-spec swap_inv_item(recv_data()) -> handler_response().
 swap_inv_item(Data) ->
 	<<SrcSlot?B, DestSlot?B>> = recv_data:get(payload, Data),
 	Guid = recv_data:get(guid, Data),
@@ -103,20 +110,17 @@ swap_inv_item(Data) ->
 
 %% private
 
+-spec swap_internal(non_neg_integer(), non_neg_integer(), guid()) -> handler_response().
 swap_internal(SrcSlot, DestSlot, Guid) ->
-	if SrcSlot < 0 ->
-			Error = ?equip_err_bag_full,
+	case item:swap(SrcSlot, DestSlot, Guid) of
+		{error, Error} ->
 			return_error(SrcSlot, DestSlot, Guid, Error);
-		SrcSlot >= 0 ->
-			case item:swap(SrcSlot, DestSlot, Guid) of
-				{error, Error} ->
-					return_error(SrcSlot, DestSlot, Guid, Error);
-				ok -> ok;
-				Msg -> Msg
-			end
+		ok -> ok;
+		Msg -> Msg
 	end.
 
 
+-spec return_error(non_neg_integer(), non_neg_integer(), guid(), term()) -> handler_response().
 return_error(SrcSlot, DestSlot, Guid, Error) ->
 	Level = if Error == ?equip_err_cant_equip_level_i -> <<100?L>>;
 		true -> <<>>
