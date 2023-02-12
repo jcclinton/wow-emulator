@@ -24,8 +24,14 @@
 -behaviour(gen_fsm).
 
 -export([start_link/1]).
--export([init/1, handle_sync_event/4, handle_event/3,
-				 handle_info/3, terminate/3, code_change/4]).
+-export([
+    init/1,
+    handle_sync_event/4,
+    handle_event/3,
+    handle_info/3,
+    terminate/3,
+    code_change/4
+]).
 
 -export([idle/2, attacking/2, attacking_out_of_range/2]).
 -export([start_melee_attack/1, stop_melee_attack/1]).
@@ -33,88 +39,82 @@
 
 -include("include/binary.hrl").
 
-
 -record(state, {
-	guid,
-	timer_swing,
-	timer,
-	seed
+    guid,
+    timer_swing,
+    timer,
+    seed
 }).
 
 %% public api
 start_melee_attack(Guid) ->
-	Pid = util:get_pid(?MODULE, Guid),
-	gen_fsm:send_event(Pid, start).
+    Pid = util:get_pid(?MODULE, Guid),
+    gen_fsm:send_event(Pid, start).
 
 stop_melee_attack(Guid) ->
-	Pid = util:get_pid(?MODULE, Guid),
-	gen_fsm:send_event(Pid, stop).
+    Pid = util:get_pid(?MODULE, Guid),
+    gen_fsm:send_event(Pid, stop).
 
 update() -> ok.
-
 
 %% behavior callbacks
 
 start_link(Guid) ->
-	gen_fsm:start_link(?MODULE, {Guid}, []).
+    gen_fsm:start_link(?MODULE, {Guid}, []).
 
 init({Guid}) ->
-	io:format("starting unit melee~n"),
+    io:format("starting unit melee~n"),
 
-	<<A:32, B:32, C:32>> = crypto:rand_bytes(12),
-	Seed = {A,B,C},
-	random:seed(Seed),
+    <<A:32, B:32, C:32>> = crypto:strong_rand_bytes(12),
+    Seed = {A, B, C},
+    rand:seed(exsss, Seed),
 
-	util:reg_proc(?MODULE, Guid),
+    util:reg_proc(?MODULE, Guid),
 
-	{ok, idle, #state{guid=Guid, timer=none, seed=Seed}}.
+    {ok, idle, #state{guid = Guid, timer = none, seed = Seed}}.
 
+idle(start, State = #state{guid = Guid}) ->
+    Timer = schedule_swing(Guid),
 
-idle(start, State = #state{guid=Guid}) ->
-	Timer = schedule_swing(Guid),
-
-	{next_state, attacking, State#state{timer=Timer}};
+    {next_state, attacking, State#state{timer = Timer}};
 idle(_, State) ->
-	{next_state, idle, State}.
+    {next_state, idle, State}.
 
-attacking(stop, State = #state{timer=Timer}) ->
-	timer:cancel(Timer),
-	{next_state, idle, State#state{timer=none}};
-attacking(swing, State = #state{guid=Guid, seed=Seed}) ->
-	{_Swung, NewSeed} = melee:swing(Guid, Seed),
+attacking(stop, State = #state{timer = Timer}) ->
+    timer:cancel(Timer),
+    {next_state, idle, State#state{timer = none}};
+attacking(swing, State = #state{guid = Guid, seed = Seed}) ->
+    {_Swung, NewSeed} = melee:swing(Guid, Seed),
 
-	Timer = schedule_swing(Guid),
+    Timer = schedule_swing(Guid),
 
-	{next_state, attacking, State#state{timer=Timer, seed=NewSeed}};
+    {next_state, attacking, State#state{timer = Timer, seed = NewSeed}};
 attacking(_, State) ->
-	{next_state, idle, State}.
+    {next_state, idle, State}.
 
 attacking_out_of_range(_, State) ->
-	{next_state, attacking_out_of_range, State}.
-
+    {next_state, attacking_out_of_range, State}.
 
 handle_info(_Info, State, Data) ->
-	{next_state, State, Data}.
+    {next_state, State, Data}.
 
 handle_event(_Event, State, Data) ->
-	{next_state, State, Data}.
+    {next_state, State, Data}.
 
 handle_sync_event(_Event, _From, State, Data) ->
-	{next_state, State, Data}.
+    {next_state, State, Data}.
 
 terminate(_Reason, _State, _Data) ->
-	ok.
+    ok.
 
 code_change(_OldVsn, State, Data, _Extra) ->
-	{ok, State, Data}.
-
-
+    {ok, State, Data}.
 
 %%%%%%%%%%%
 %% private
 
 schedule_swing(Guid) ->
-	TimerSwing = player_state:get_value(Guid, unit_field_baseattacktime),
-	TimerSwingInt = round(TimerSwing),
-	{ok, Timer} = timer:apply_after(TimerSwingInt, gen_fsm, send_event, [self(), swing]),
-	Timer.
+    TimerSwing = player_state:get_value(Guid, unit_field_baseattacktime),
+    TimerSwingInt = round(TimerSwing),
+    {ok, Timer} = timer:apply_after(TimerSwingInt, gen_fsm, send_event, [self(), swing]),
+    Timer.

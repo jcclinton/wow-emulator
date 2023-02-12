@@ -20,20 +20,19 @@
 %%   World of Warcraft, and all World of Warcraft or Warcraft art, images,
 %%   and lore ande copyrighted by Blizzard Entertainment, Inc.
 
-{application, emulator,
- [
-  {description, "wow emulator"},
-  {vsn, "0.1.0"},
-  {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib,
-									gproc
-                 ]},
-  {mod, { emulator_app, []}},
-  {env,
-	 [{realm_port, 3724},
-	 {world_port, 8899},
-	 {world_ip, "127.0.0.1"}
-	 ]}
- ]}.
+{application, emulator, [
+    {description, "wow emulator"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib,
+        gproc
+    ]},
+    {mod, {emulator_app, []}},
+    {env, [
+        {realm_port, 3724},
+        {world_port, 8899},
+        {world_ip, "127.0.0.1"}
+    ]}
+]}.

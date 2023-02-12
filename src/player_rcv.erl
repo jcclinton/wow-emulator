@@ -30,67 +30,65 @@
 -include("include/data_types.hrl").
 
 -record(state, {
-	socket,
-	key_state,
-	account_id
+    socket,
+    key_state,
+    account_id
 }).
 
 start_link(ListenSocket, ParentPid) ->
-	Pid = spawn_link(?MODULE, init, [{ListenSocket, ParentPid}]),
-	{ok, Pid}.
+    Pid = spawn_link(?MODULE, init, [{ListenSocket, ParentPid}]),
+    {ok, Pid}.
 
 init({ListenSocket, ParentPid}) ->
-	io:format("player starting rcv~n"),
-	{ok, Socket} = gen_tcp:accept(ListenSocket),
-	%% start another acceptor
-	players_sup:start_socket(),
+    io:format("player starting rcv~n"),
+    {ok, Socket} = gen_tcp:accept(ListenSocket),
+    %% start another acceptor
+    players_sup:start_socket(),
 
-	Seed   = random:uniform(16#FFFFFFFF),
-	Payload = <<Seed?L>>,
-	ChallengeOpcode = opcodes:get_num_by_atom(smsg_auth_challenge),
-	network:send_packet(ChallengeOpcode, Payload, ?SEND_HDR_LEN, _KeyState=nil, Socket, _ShouldEncrypt=false),
+    Seed = rand:uniform(16#FFFFFFFF),
+    Payload = <<Seed ?L>>,
+    ChallengeOpcode = opcodes:get_num_by_atom(smsg_auth_challenge),
+    network:send_packet(
+        ChallengeOpcode, Payload, ?SEND_HDR_LEN, nil, Socket, _ShouldEncrypt = false
+    ),
 
-	try network:receive_packet(?RCV_HDR_LEN, _KeyState=nil, Socket, _ShouldDecrypt=false) of
-		{Opcode, PayloadIn, _} ->
-			{PayloadOut, AccountId, KeyState} = auth_session(PayloadIn),
-			%% now authorized
+    try network:receive_packet(?RCV_HDR_LEN, nil, Socket, _ShouldDecrypt = false) of
+        {Opcode, PayloadIn, _} ->
+            {PayloadOut, AccountId, KeyState} = auth_session(PayloadIn),
+            %% now authorized
 
-			start_siblings(Socket, KeyState, AccountId, ParentPid),
+            start_siblings(Socket, KeyState, AccountId, ParentPid),
 
-			player_controller:packet_received(AccountId, Opcode, PayloadOut),
-			rcv(#state{key_state=KeyState, account_id=AccountId, socket=Socket})
-	catch
-		Error -> {error, Error}
-	end.
+            player_controller:packet_received(AccountId, Opcode, PayloadOut),
+            rcv(#state{key_state = KeyState, account_id = AccountId, socket = Socket})
+    catch
+        Error -> {error, Error}
+    end.
 
-
-rcv(State = #state{socket=Socket, key_state=KeyState, account_id=AccountId}) ->
-	try network:receive_packet(?RCV_HDR_LEN, KeyState, Socket, _ShouldDecrypt=true) of
-		{Opcode, Payload, NewKeyState} ->
-			%io:format("rcv: received payload ~p~n", [Rest]),
-			player_controller:packet_received(AccountId, Opcode, Payload),
-			rcv(State#state{key_state=NewKeyState})
-	catch
-		Error -> {error, Error}
-	end.
-
+rcv(State = #state{socket = Socket, key_state = KeyState, account_id = AccountId}) ->
+    try network:receive_packet(?RCV_HDR_LEN, KeyState, Socket, _ShouldDecrypt = true) of
+        {Opcode, Payload, NewKeyState} ->
+            %io:format("rcv: received payload ~p~n", [Rest]),
+            player_controller:packet_received(AccountId, Opcode, Payload),
+            rcv(State#state{key_state = NewKeyState})
+    catch
+        Error -> {error, Error}
+    end.
 
 upgrade() -> ok.
-
-
 
 %% private
 
 -spec auth_session(binary()) -> {binary(), binary(), key_state()}.
 auth_session(Rest) ->
-	AccountId = cmsg_auth_session(Rest),
-	Response = smsg_auth_response(),
-	Key = world_crypto:encryption_key(AccountId),
-	KeyState = world_crypto:create_key_state(Key),
-	{Response, AccountId, KeyState}.
+    AccountId = cmsg_auth_session(Rest),
+    Response = smsg_auth_response(),
+    Key = world_crypto:encryption_key(AccountId),
+    KeyState = world_crypto:create_key_state(Key),
+    {Response, AccountId, KeyState}.
 
 -spec cmsg_auth_session(binary()) -> binary().
-cmsg_auth_session(<<_Build?L, _Unk?L, Rest/binary>>) ->
+cmsg_auth_session(<<_Build ?L, _Unk ?L, Rest/binary>>) ->
     {Account, _Key} = cmsg_auth_session_extract(Rest, <<>>),
     Account;
 cmsg_auth_session(_) ->
@@ -106,20 +104,17 @@ cmsg_auth_session_extract(<<Letter?B, Rest/binary>>, AccountId) ->
 smsg_auth_response() ->
     <<16#0c?B, 0?L, 0?B, 0?L>>.
 
-
 -spec start_siblings(term(), key_state(), binary(), pid()) -> 'ok'.
 start_siblings(Socket, KeyState, AccountId, ParentPid) ->
-	SendPid = start_child(player_send, [Socket, KeyState], ParentPid, worker),
-	_ = start_child(player_controller_sup, [AccountId, SendPid], ParentPid, supervisor),
-	_ = start_child(player_workers_sup, [AccountId], ParentPid, supervisor),
-	_ = start_child(player_model_sup, [AccountId], ParentPid, supervisor),
-	ok.
+    SendPid = start_child(player_send, [Socket, KeyState], ParentPid, worker),
+    _ = start_child(player_controller_sup, [AccountId, SendPid], ParentPid, supervisor),
+    _ = start_child(player_workers_sup, [AccountId], ParentPid, supervisor),
+    _ = start_child(player_model_sup, [AccountId], ParentPid, supervisor),
+    ok.
 
 -type proc_type() :: worker | supervisor.
 -spec start_child(atom(), [any()], pid(), proc_type()) -> pid().
 start_child(Name, Args, ParentPid, Type) ->
-	Spec = {Name,
-		{Name, start_link, Args},
-		permanent, 2000, Type, [Name]},
-	{ok, Pid} = supervisor:start_child(ParentPid, Spec),
-	Pid.
+    Spec = {Name, {Name, start_link, Args}, permanent, 2000, Type, [Name]},
+    {ok, Pid} = supervisor:start_child(ParentPid, Spec),
+    Pid.
